@@ -634,20 +634,33 @@ const NEGOTIATION_OPTS = [
 
 
 // ── STATE ──────────────────────────────────────────────────────────────────
-let G = freshState ? freshState() : {};
+let G = {};  // populated by initGame()
 function freshState() {
-  return {
+  const s = {
     week:1, dayOfWeek:0, money:500, rep:0, fans:0,
     venueTier:0,
     headliner:null,
-    sfxOwned:{}, sfxActive:{},
-    achievements:[], contacts:[],
-    enquiries:[],
+    sfxOwned:{basic:true}, sfxActive:{basic:true},
+    achievements:[], contacts:{},
+    enquiries:[], messages:[],
     dailyNews:{},
     alerts:[],
     history:[],
     gameOver:false,
   };
+  return _addAliases(s);
+}
+
+function _addAliases(g) {
+  if (!Object.getOwnPropertyDescriptor(g,'cash'))
+    Object.defineProperty(g,'cash',{get(){return this.money;},set(v){this.money=v;},enumerable:false,configurable:true});
+  if (!Object.getOwnPropertyDescriptor(g,'bookedBand'))
+    Object.defineProperty(g,'bookedBand',{get(){return this.headliner!=null?BANDS[this.headliner]:null;},set(v){this.headliner=v?BANDS.indexOf(v):null;},enumerable:false,configurable:true});
+  if (!Object.getOwnPropertyDescriptor(g,'bands'))
+    Object.defineProperty(g,'bands',{get(){return BANDS;},enumerable:false,configurable:true});
+  if (!g.messages) g.messages = [];
+  if (!g.contacts || Array.isArray(g.contacts)) g.contacts = {};
+  return g;
 }
 
 // ── PERSISTENCE ────────────────────────────────────────────────────────────
@@ -655,7 +668,7 @@ function saveGame(){ try{ localStorage.setItem('csim_v3', JSON.stringify(G)); }c
 function loadGame(){
   try{
     const r=localStorage.getItem('csim_v3');
-    if(r){ G=Object.assign(freshState(),JSON.parse(r)); return true; }
+    if(r){ G=_addAliases(Object.assign(freshState(),JSON.parse(r))); return true; }
   }catch(e){}
   return false;
 }
@@ -1077,13 +1090,8 @@ function renderContacts() {
 
 // ── ALERTS ─────────────────────────────────────────────────────────────────
 function renderAlerts() {
-  const badge = document.getElementById('alerts-badge');
-  if(badge) badge.style.display='none';
-  const badge = document.getElementById('alerts-badge');
   const el = document.getElementById('alerts-list');
   if (!el) return;
-  const urgent = (G.alerts||[]).filter(a=>a.urgent).length;
-  if (badge) { badge.textContent = urgent||''; badge.style.display = urgent ? 'flex' : 'none'; }
   if (!G.alerts||!G.alerts.length) { el.innerHTML = '<p style="color:#4a3060;font-size:0.8rem;padding:1rem">No alerts.</p>'; return; }
   el.innerHTML = G.alerts.map(a =>
     '<div class="alert-item' + (a.urgent?' urgent':'') + '">' +
@@ -1091,6 +1099,7 @@ function renderAlerts() {
     '</div>'
   ).join('');
 }
+
 
 // ── SHOW FLOW ──────────────────────────────────────────────────────────────
 function runShow(){
@@ -1165,7 +1174,7 @@ function continueAfterShow(){
 function initGame(fresh){
   try {
     if(!fresh&&hasSave()){ loadGame(); }
-    else { wipeSave(); G=freshState(); }
+    else { wipeSave(); G=_addAliases(freshState()); }
     showScreen('game-screen');
     updateStatusBar();
     const firstNav=document.querySelector('.nav-btn[onclick*="office"]');
