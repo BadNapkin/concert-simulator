@@ -634,13 +634,13 @@ const NEGOTIATION_OPTS = [
 
 
 // ── STATE ──────────────────────────────────────────────────────────────────
-let G = {};
+let G = freshState ? freshState() : {};
 function freshState() {
   return {
     week:1, dayOfWeek:0, money:500, rep:0, fans:0,
     venueTier:0,
     headliner:null,
-    sfxOwned:[], sfxActive:[],
+    sfxOwned:{}, sfxActive:{},
     achievements:[], contacts:[],
     enquiries:[],
     dailyNews:{},
@@ -665,6 +665,8 @@ function wipeSave(){ localStorage.removeItem('csim_v3'); }
 // ── HELPERS ────────────────────────────────────────────────────────────────
 function setText(id,v){ const e=document.getElementById(id); if(e) e.textContent=v; }
 function rnd(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function fameLabel(f){ return ['Underground','Rising','Established','Headliner'][f]||'Unknown'; }
+function tierLabel(t){ return ['New','Familiar','Regular','Friend','Legend'][t]||'New'; }
 const DAYS=['MON','TUE','WED','THU','FRI','SAT','SUN'];
 
 // ── ROUTING ────────────────────────────────────────────────────────────────
@@ -843,7 +845,7 @@ function renderOffice(){
     const isCur=d===G.dayOfWeek;
     const isSat=d===6;
     const key=`${G.week}-${d}`;
-    const news=G.dailyNews[key]||[];
+    const news=(G.dailyNews&&G.dailyNews[key])||[];
     let content='';
     if(isSat){
       content= G.headliner!==null
@@ -941,8 +943,8 @@ function renderSFX() {
   if (!el) return;
   el.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;padding:1.5rem 2rem;overflow-y:auto;flex:1';
   el.innerHTML = Object.values(SFX_GEAR).map(gear => {
-    const owned  = !!G.sfxOwned[gear.id];
-    const active = !!G.sfxActive[gear.id];
+    const owned  = !!(G.sfxOwned&&G.sfxOwned[gear.id]);
+    const active = !!(G.sfxActive&&G.sfxActive[gear.id]);
     const synStr = gear.synergies.length ? '✓ Works with: ' + gear.synergies.join(', ') : '';
     const penStr = (gear.penalties||[]).length ? '✗ Clashes with: ' + (gear.penalties||[]).join(', ') : '';
     const buyable = gear.cost > 0 && !owned;
@@ -993,7 +995,7 @@ function renderAchievements() {
   const el = document.getElementById('achievements-list');
   if (!el) return;
   el.innerHTML = ACHIEVEMENTS.map(a => {
-    const ach = G.achievements.find(x => x.id === a.id);
+    const ach = (G.achievements||[]).find(x => x.id === a.id);
     const unlocked = ach && ach.unlocked;
     return '<div class="achievement' + (unlocked?' ach-unlocked':'') + '">' +
       '<span class="ach-icon">' + (unlocked ? a.icon : '🔒') + '</span>' +
@@ -1071,7 +1073,7 @@ function runShow(){
 
   // SFX nightly cost
   let sfxCost=0;
-  G.sfxActive.forEach(id=>{ const item=SFX_GEAR[id]; if(item) sfxCost+=item.nightly; });
+  Object.keys(G.sfxActive).forEach(id=>{ const item=SFX_GEAR[id]; if(item&&G.sfxActive[id]) sfxCost+=item.nightly; });
 
   // Attendance
   const cap=venue.capacity;
@@ -1090,7 +1092,7 @@ function runShow(){
   // SFX combo check
   let specialReview=null;
   COMBOS.forEach(combo=>{
-    if(G.sfxActive.includes(combo.sfx)&&combo.match(band)){
+    if(G.sfxActive[combo.sfx]&&combo.match(band)){
       specialReview=combo.reviewLine;
       unlockAchievement(combo.id);
     }
@@ -1134,13 +1136,16 @@ function continueAfterShow(){
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 function initGame(fresh){
-  if(!fresh&&hasSave()){ loadGame(); }
-  else { wipeSave(); G=freshState(); }
-  showScreen('game-screen');
-  updateStatusBar();
-  // Activate office panel + first nav btn
-  const firstNav=document.querySelector('.nav-btn[onclick*="office"]');
-  switchPanel('office', firstNav);
+  try {
+    if(!fresh&&hasSave()){ loadGame(); }
+    else { wipeSave(); G=freshState(); }
+    showScreen('game-screen');
+    updateStatusBar();
+    const firstNav=document.querySelector('.nav-btn[onclick*="office"]');
+    switchPanel('office', firstNav);
+  } catch(e) {
+    alert('ERROR in initGame: ' + e.message + '\n\nStack: ' + e.stack);
+  }
 }
 
 window.addEventListener('DOMContentLoaded',()=>{
