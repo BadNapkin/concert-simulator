@@ -321,8 +321,8 @@ canvas#stage { width: 100%; height: 100%; }
     <div class="nav-btn" data-panel="contacts" onclick="switchPanel('contacts',this)">
       <span>👥</span><span class="tooltip">CONTACTS</span>
     </div>
-    <div class="nav-btn" data-panel="alerts" onclick="switchPanel('alerts',this)">
-      <span>🔔</span><span class="tooltip">ALERTS</span>
+    <div class="nav-btn" data-panel="alerts" onclick="switchPanel('alerts',this)" style="position:relative">
+      <span>🔔</span><span class="tooltip">ALERTS</span><span id="alerts-badge" style="display:none;position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#ff4466;"></span>
     </div>
   </div>
 
@@ -747,9 +747,22 @@ function nextDay(){
 }
 
 function endWeek(){
+  // Upset mechanic: bands with unanswered enquiries lose relationship
+  if(G.enquiries){
+    G.enquiries.forEach(enq=>{
+      if(enq.status==='pending'||enq.status==='replied'){
+        const band=BANDS.find(b=>b.id===enq.bandId);
+        const name=band?band.name:'The band';
+        if(!G.contacts[enq.bandId]) G.contacts[enq.bandId]={tier:0};
+        G.contacts[enq.bandId].tier=Math.max(0,(G.contacts[enq.bandId].tier||0)-1);
+        G.rep=Math.max(0,G.rep-1);
+        addAlert('😤 '+name+"'s agent is unhappy — you ghosted them. -1 REP.", true);
+      }
+    });
+    G.enquiries=G.enquiries.filter(e=>e.status==='confirmed');
+  }
   G.week++; G.dayOfWeek=0;
   G.headliner=null;
-  G.enquiries=G.enquiries.filter(e=>e.status==='confirmed');
   saveGame(); updateStatusBar(); renderOffice();
 }
 
@@ -763,6 +776,17 @@ function bookBand(bandId, slot) {
     addAlert('✅ ' + band.name + ' confirmed as headliner at £' + band.feeVal + '. Show is Saturday!');
   }
   saveGame(); updateStatusBar(); renderBandCarousel(); renderOffice();
+}
+
+function addAlert(text, urgent=false){
+  if(!G.alerts) G.alerts=[];
+  const day = (typeof DAYS!=='undefined'&&G.dayOfWeek!==undefined) ? DAYS[G.dayOfWeek] : '';
+  G.alerts.unshift({text, urgent, date:'Wk '+G.week+' '+day});
+  if(G.alerts.length>50) G.alerts.length=50;
+  renderAlerts();
+  // flash badge dot
+  const badge = document.getElementById('alerts-badge');
+  if(badge){ badge.style.display='inline-block'; }
 }
 
 function enquireBand(bandId){
@@ -884,6 +908,7 @@ function _drawCard(el) {
   const bandIdx = BANDS.indexOf(band); const isHL = G.headliner === bandIdx;
   const isSup = false;
   const canAfford = G.money >= band.feeVal;
+          const hasEnq = G.enquiries && G.enquiries.some(e=>e.bandId===band.id && e.status!=='declined' && e.status!=='confirmed');
   const tier = G.contacts[band.id] ? G.contacts[band.id].tier : 0;
   const GENRE_EMOJI = { punk:'🎸', rock:'🎸', folk:'🪕', electronic:'🎛️', pop:'🎤', metal:'🤘', default:'🎵' };
   const emoji = GENRE_EMOJI[band.genreKey] || GENRE_EMOJI.default;
@@ -910,8 +935,8 @@ function _drawCard(el) {
           ${tier>0?'<div style="font-size:0.68rem;color:#507060;margin:0.3rem 0">Relationship: '+tierLabel(tier)+'</div>':''}
           <div class="band-agent">${band.agent} · Fee: ${band.fee}</div>
           <div class="carousel-actions">
-            <button class="book-btn" ${isHL||!canAfford?'disabled':''} onclick="bookBand('${band.id}','headline')">
-              ${isHL?'✓ Headliner':canAfford?'⭐ Book Headliner':'Can\'t afford'}
+            <button class="book-btn ${hasEnq?'enquired':''}" ${isHL||hasEnq?'disabled':''} onclick="enquireBand('${band.id}')">
+              ${isHL?'✓ Headliner Confirmed':hasEnq?'📨 Enquiry Sent':'📨 Enquire as Headliner'}
             </button>
             <button class="book-btn" style="font-size:0.65rem;opacity:0.8" ${isSup||band.fame>1||!canAfford?'disabled':''} onclick="bookBand('${band.id}','support')">
               ${isSup?'✓ Support':band.fame>1?'Too big for support':'➕ Support Act'}
@@ -1052,6 +1077,8 @@ function renderContacts() {
 
 // ── ALERTS ─────────────────────────────────────────────────────────────────
 function renderAlerts() {
+  const badge = document.getElementById('alerts-badge');
+  if(badge) badge.style.display='none';
   const badge = document.getElementById('alerts-badge');
   const el = document.getElementById('alerts-list');
   if (!el) return;
