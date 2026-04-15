@@ -45,20 +45,21 @@ body { background: #0a0a0f; color: #e8e0d0; font-family: 'Georgia', serif; overf
 /* ── STATUS BAR ── */
 .status-bar { position: absolute; bottom: 0; left: 64px; right: 0; height: 48px; background: #0e0e16; border-top: 1px solid #1e1e2e; display: flex; align-items: center; padding: 0 2rem; gap: 2rem; z-index: 50; flex-wrap: nowrap; overflow: hidden; }
 .status-item { font-size: 0.72rem; letter-spacing: 0.1em; color: #6050a0; white-space: nowrap; }
-.status-item span { color: #c0b0d8; }
-.status-week { color: #9080c0; font-size: 0.75rem; letter-spacing: 0.15em; white-space: nowrap; }
+.status-item span { color: #d0c0e8; font-weight: 600; }
+.status-week { color: #a090d0; font-size: 0.75rem; letter-spacing: 0.15em; white-space: nowrap; font-style:italic; }
+.status-bar { border-top: 1px solid #1e1e2e; background: linear-gradient(to right, #0c0c18, #0e0e16); }
 
 /* ── BANDBOOK PANEL ── */
-#panel-bandbook { padding-bottom: 48px; }
+#panel-bandbook { padding-bottom: 48px; display:flex; flex-direction:column; }
 .bandbook-tabs { display: flex; gap: 0; border-bottom: 1px solid #1e1e2e; flex-shrink: 0; background: #0e0e16; }
 .tab-btn { padding: 0.7rem 1.4rem; font-family: inherit; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; background: transparent; border: none; color: #504060; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
 .tab-btn.active { color: #c0a0f0; border-bottom-color: #8060c0; }
-.tab-content { flex: 1; overflow-y: auto; padding: 1.5rem 2rem; }
-.tab-pane { display: none; }
-.tab-pane.active { display: block; }
+.tab-content { flex: 1; overflow: hidden; padding: 0; display:flex; flex-direction:column; }
+.tab-pane { display: none; flex:1; flex-direction:column; overflow:hidden; }
+.tab-pane.active { display: flex; }
 
 /* Band cards */
-.band-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+.band-grid { flex:1; overflow:hidden; display:flex; flex-direction:column; }
 .band-card { background: #0e0e18; border: 1px solid #1e1e30; border-radius: 4px; padding: 1.2rem; cursor: pointer; transition: all 0.25s; position: relative; overflow: hidden; }
 .band-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(120,60,200,0.03) 0%, transparent 60%); pointer-events: none; }
 .band-card:hover { border-color: #3a2a60; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
@@ -216,20 +217,28 @@ canvas#stage { width: 100%; height: 100%; }
 .ach-pop { animation: achPop 0.5s ease forwards; }
 
 /* ── CAROUSEL ──────────────────────────────────── */
-.carousel-wrap { display:flex; align-items:center; gap:0.5rem; width:100%; }
+.carousel-outer { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:2rem 1rem 1rem; overflow-y:auto; flex:1; }
+.carousel-wrap { display:flex; align-items:center; gap:1rem; width:100%; max-width:520px; }
 .carousel-card { flex:1; min-width:0; }
-.carousel-arrow { background:none; border:1px solid #2a1a40; color:#7a5aaa; font-size:1.8rem; line-height:1; padding:0.3rem 0.6rem; border-radius:4px; cursor:pointer; transition:all 0.15s; flex-shrink:0; }
-.carousel-arrow:hover:not(:disabled) { border-color:#5a3a80; color:#c0a0ff; }
-.carousel-arrow:disabled { opacity:0.2; cursor:default; }
-.carousel-counter { font-size:0.6rem; letter-spacing:0.1em; color:#4a3060; margin-bottom:0.4rem; text-align:right; }
-.carousel-actions { display:flex; gap:0.5rem; margin-top:0.8rem; }
-.carousel-actions .book-btn { flex:1; }
-.carousel-dots { display:flex; justify-content:center; gap:6px; margin-top:0.8rem; flex-wrap:wrap; }
-.dot { width:7px; height:7px; border-radius:50%; background:#2a1a40; cursor:pointer; transition:background 0.2s; }
-.dot.active { background:#7a4aaa; }
-.combo-hints { display:flex; flex-wrap:wrap; gap:4px; margin:0.4rem 0; }
-.combo-hint-tag { font-size:0.62rem; background:rgba(120,60,180,0.2); border:1px solid rgba(120,60,180,0.4); color:#c0a0ff; padding:0.1rem 0.4rem; border-radius:3px; }
+.carousel-arrow { background:none; border:1px solid #2a1a40; color:#7a5aaa; font-size:2rem; line-height:1; padding:0.4rem 0.7rem; border-radius:6px; cursor:pointer; transition:all 0.15s; flex-shrink:0; user-select:none; }
+.carousel-arrow:hover:not(:disabled) { border-color:#5a3a80; color:#c0a0ff; background:rgba(90,40,140,0.15); }
+.carousel-arrow:disabled { opacity:0.15; cursor:default; }
+.carousel-counter { font-size:0.6rem; letter-spacing:0.12em; color:#4a3060; margin-bottom:0.5rem; text-align:center; text-transform:uppercase; }
+.carousel-actions { display:flex; gap:0.6rem; margin-top:1rem; }
+.carousel-actions .book-btn { flex:1; padding:0.6rem 0.5rem; }
+.carousel-dots { display:flex; justify-content:center; gap:7px; margin-top:1rem; flex-wrap:wrap; max-width:520px; }
+.dot { width:7px; height:7px; border-radius:50%; background:#2a1a40; cursor:pointer; transition:all 0.2s; }
+.dot.active { background:#8a5ac0; transform:scale(1.3); }
+.dot:hover { background:#4a2a70; }
+.combo-hints { display:flex; flex-wrap:wrap; gap:4px; margin:0.5rem 0; }
+.combo-hint-tag { font-size:0.62rem; background:rgba(120,60,180,0.2); border:1px solid rgba(120,60,180,0.4); color:#c0a0ff; padding:0.15rem 0.5rem; border-radius:3px; }
 .sfx-badge { display:inline-block; font-size:0.65rem; background:rgba(80,40,120,0.4); border:1px solid rgba(120,60,180,0.3); color:#c0a0ff; padding:0.15rem 0.5rem; border-radius:3px; margin:0.1rem; }
+/* Band avatar */
+.band-avatar { width:72px; height:72px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto 1rem; border:2px solid rgba(120,60,200,0.3); background:radial-gradient(circle at 40% 35%,rgba(120,60,200,0.25),rgba(10,10,20,0.9)); box-shadow:0 0 20px rgba(120,60,200,0.2); flex-shrink:0; }
+.band-card-inner { padding:1.4rem; background:#0e0e18; border:1px solid #1e1e30; border-radius:6px; position:relative; overflow:hidden; transition:border-color 0.2s,box-shadow 0.2s; }
+.band-card-inner::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(120,60,200,0.04) 0%,transparent 60%); pointer-events:none; }
+.band-card-inner.booked { border-color:rgba(80,200,120,0.35); box-shadow:0 0 18px rgba(80,200,120,0.08); }
+.booked-badge { position:absolute; top:0.7rem; right:0.7rem; font-size:0.58rem; letter-spacing:0.15em; color:#50c878; border:1px solid rgba(80,200,120,0.4); padding:0.18rem 0.45rem; border-radius:2px; }
 
 </style>
 </head>
@@ -768,8 +777,9 @@ function bookBand(bandId, slot) {
   }
   addMessage(band.agent, `Re: ${band.name} — ${slot==='headline'?'Headline':'Support'} slot confirmed for Week ${G.week+1}. Fee of £${band.feeVal} due on the night. Looking forward to it.`);
   updateStatusBar();
-  renderBandBook();
-  switchPanel('office', document.querySelector('[data-panel="office"]'));
+  renderOffice();
+  // Stay on BandBook so user can keep browsing / add support
+  renderBandCarousel();
 }
 
 function renderContacted() {
@@ -1320,58 +1330,72 @@ function _renderCarouselCard() {
   const isSupport = G.supportBand && G.supportBand.id === band.id;
   const canAfford = G.cash >= band.feeVal;
 
+  // Genre avatar
+  const genreAvatars = {metal:'🤘',hardcore:'🤘',jazz:'🎷',electronic:'🎛️',techno:'🎛️',house:'🎛️',folk:'🪕',acoustic:'🪕',country:'🪕','hip-hop':'🎤',rap:'🎤',soul:'🎙️',funk:'🎙️',punk:'⚡',classical:'🎻',reggae:'🌿',ska:'🌿',blues:'🎸',pop:'✨'};
+  const genreKey = Object.keys(genreAvatars).find(k => band.genre.toLowerCase().includes(k));
+  const avatar = genreAvatars[genreKey] || '🎵';
+
   // Combo hints
   const hints = [];
   COMBOS.forEach(combo => {
     if (G.sfxOwned && G.sfxOwned[combo.sfx] && combo.match(band)) {
       const g = SFX_GEAR[combo.sfx];
-      hints.push(`${g.icon} ${g.name} synergy!`);
+      hints.push(g.icon + ' ' + g.name + ' synergy!');
     }
   });
 
-  grid.innerHTML = `
-    <div class="carousel-wrap">
-      <button class="carousel-arrow carousel-prev" onclick="carouselPrev()" ${_carouselIdx === 0 ? 'disabled' : ''}>‹</button>
+  const bookedLabel = isBooked
+    ? '<div class="booked-badge">HEADLINER</div>'
+    : isSupport ? '<div class="booked-badge" style="color:#a0c0ff;border-color:rgba(100,150,255,0.4)">SUPPORT</div>' : '';
+  const hintsHTML = hints.length
+    ? '<div class="combo-hints">' + hints.map(h => '<span class="combo-hint-tag">✨ ' + h + '</span>').join('') + '</div>' : '';
+  const traitsHTML = band.traits.map(t => '<span class="trait-tag">' + t + '</span>').join('');
 
-      <div class="carousel-card band-card fade-in${isBooked || isSupport ? ' booked' : ''}"
-           id="carousel-main"
-           ontouchstart="swipeStart(event)"
-           ontouchend="swipeEnd(event)">
-        <div class="carousel-counter">${_carouselIdx + 1} / ${total}</div>
-        <div class="band-name">${band.name}</div>
-        <div class="band-genre">${band.genre} · ${fameLabel(band.fame)}</div>
-        <div class="band-bio">${band.bio}</div>
-        <div class="band-traits">${band.traits.map(t => `<span class="trait-tag">${t}</span>`).join('')}</div>
-        ${hints.length ? `<div class="combo-hints">${hints.map(h => `<span class="combo-hint-tag">✨ ${h}</span>`).join('')}</div>` : ''}
-        <div class="band-agent">${band.agent} · Fee: ${band.fee}</div>
-        <div class="carousel-actions">
-          <button class="book-btn" ${isBooked || !canAfford ? 'disabled' : ''} onclick="bookBand('${band.id}','headline')">
-            ${isBooked ? '✓ Headliner' : canAfford ? '⭐ Book Headliner' : 'Can\'t afford'}
-          </button>
-          <button class="book-btn" style="font-size:0.65rem;opacity:0.8" ${isSupport || band.fame > 1 || !canAfford ? 'disabled' : ''} onclick="bookBand('${band.id}','support')">
-            ${isSupport ? '✓ Support' : band.fame > 1 ? 'Too big for support' : '➕ Add Support'}
-          </button>
-        </div>
-      </div>
+  const headlineDisabled = isBooked || !canAfford ? 'disabled' : '';
+  const headlineLabel = isBooked ? '✓ Headliner' : canAfford ? '⭐ Book Headliner' : "Can't afford";
+  const supportDisabled = isSupport || band.fame > 1 || !canAfford ? 'disabled' : '';
+  const supportLabel = isSupport ? '✓ Support' : band.fame > 1 ? 'Too big for support' : '➕ Support';
 
-      <button class="carousel-arrow carousel-next" onclick="carouselNext()" ${_carouselIdx >= total - 1 ? 'disabled' : ''}>›</button>
-    </div>
-    <div class="carousel-dots">
-      ${_carouselBands.map((_, i) => `<span class="dot${i === _carouselIdx ? ' active' : ''}" onclick="carouselGoto(${i})"></span>`).join('')}
-    </div>`;
+  grid.innerHTML =
+    '<div class="carousel-outer">' +
+      '<div class="carousel-counter">' + (_carouselIdx + 1) + ' of ' + total + '</div>' +
+      '<div class="carousel-wrap">' +
+        '<button class="carousel-arrow" onclick="carouselPrev()" ' + (_carouselIdx === 0 ? 'disabled' : '') + '>&#8249;</button>' +
+        '<div class="carousel-card" ontouchstart="swipeStart(event)" ontouchend="swipeEnd(event)">' +
+          '<div class="band-card-inner' + (isBooked || isSupport ? ' booked' : '') + '" id="carousel-main">' +
+            bookedLabel +
+            '<div class="band-avatar">' + avatar + '</div>' +
+            '<div class="band-name" style="text-align:center;font-size:1.15rem;margin-bottom:0.2rem">' + band.name + '</div>' +
+            '<div class="band-genre" style="text-align:center;margin-bottom:0.9rem">' + band.genre + ' \u00b7 ' + fameLabel(band.fame) + '</div>' +
+            '<div class="band-bio">' + band.bio + '</div>' +
+            '<div class="band-traits" style="margin-top:0.6rem">' + traitsHTML + '</div>' +
+            hintsHTML +
+            '<div class="band-agent" style="margin-top:0.7rem;text-align:center">' + band.agent + ' \u00b7 Fee: ' + band.fee + '</div>' +
+            '<div class="carousel-actions">' +
+              '<button class="book-btn" ' + headlineDisabled + ' onclick="bookBand(\'' + band.id + '\',\'headline\')">' + headlineLabel + '</button>' +
+              '<button class="book-btn" style="font-size:0.65rem;opacity:0.85" ' + supportDisabled + ' onclick="bookBand(\'' + band.id + '\',\'support\')">' + supportLabel + '</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<button class="carousel-arrow" onclick="carouselNext()" ' + (_carouselIdx >= total - 1 ? 'disabled' : '') + '>&#8250;</button>' +
+      '</div>' +
+      '<div class="carousel-dots">' +
+        _carouselBands.map(function(_, i) { return '<span class="dot' + (i === _carouselIdx ? ' active' : '') + '" onclick="carouselGoto(' + i + ')"></span>'; }).join('') +
+      '</div>' +
+    '</div>';
 
-  // Animate card in
   const card = document.getElementById('carousel-main');
   if (card) {
     card.style.opacity = '0';
-    card.style.transform = 'translateY(12px) scale(0.97)';
-    requestAnimationFrame(() => {
-      card.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+    card.style.transform = 'translateY(14px) scale(0.97)';
+    requestAnimationFrame(function() {
+      card.style.transition = 'opacity 0.28s ease, transform 0.28s ease';
       card.style.opacity = '1';
       card.style.transform = 'translateY(0) scale(1)';
     });
   }
 }
+
 
 function carouselNext() {
   if (_carouselIdx < _carouselBands.length - 1) { _carouselIdx++; _renderCarouselCard(); }
