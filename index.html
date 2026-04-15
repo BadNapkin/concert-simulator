@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Concert Simulator</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a0f; color: #e8e0d0; font-family: 'Georgia', serif; overflow: hidden; height: 100vh; width: 100vw; }
+
+/* ── SCREENS ── */
+.screen { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; }
+.screen.active { display: flex; }
+
+/* ── START SCREEN ── */
+#start-screen { background: radial-gradient(ellipse at 50% 60%, #1a0a2e 0%, #0a0a0f 70%); }
+.start-glow { position: absolute; width: 600px; height: 600px; background: radial-gradient(circle, rgba(120,60,200,0.15) 0%, transparent 70%); top: 50%; left: 50%; transform: translate(-50%,-50%); pointer-events: none; }
+.start-title { font-size: 3.2rem; letter-spacing: 0.3em; text-transform: uppercase; color: #fff; text-shadow: 0 0 40px rgba(180,100,255,0.8), 0 0 80px rgba(180,100,255,0.3); margin-bottom: 0.3rem; }
+.start-sub { font-size: 0.85rem; letter-spacing: 0.25em; color: #8070a0; text-transform: uppercase; margin-bottom: 3rem; }
+.start-tagline { font-size: 1.05rem; color: #c0b0d8; font-style: italic; margin-bottom: 2.5rem; text-align: center; max-width: 420px; line-height: 1.7; }
+.btn { background: transparent; border: 1px solid rgba(180,100,255,0.5); color: #d0b8f0; padding: 0.75rem 2.5rem; font-family: inherit; font-size: 0.9rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.3s; }
+.btn:hover { border-color: rgba(180,100,255,0.9); color: #fff; box-shadow: 0 0 20px rgba(180,100,255,0.3); }
+.btn-primary { background: rgba(120,60,200,0.3); border-color: rgba(180,100,255,0.7); }
+
+/* ── MAIN GAME ── */
+#game-screen { background: #0a0a0f; align-items: stretch; justify-content: flex-start; flex-direction: row; }
+
+/* Sidebar nav */
+.sidebar { width: 64px; background: #0e0e16; border-right: 1px solid #1e1e2e; display: flex; flex-direction: column; align-items: center; padding: 1rem 0; gap: 0.5rem; flex-shrink: 0; }
+.nav-btn { width: 44px; height: 44px; background: transparent; border: 1px solid transparent; color: #504060; font-size: 1.2rem; cursor: pointer; border-radius: 8px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+.nav-btn:hover, .nav-btn.active { background: #1a1a2e; border-color: #3a2060; color: #b090e0; }
+.nav-btn .tooltip { display: none; position: absolute; left: 72px; background: #1a1a2e; border: 1px solid #3a2060; padding: 0.3rem 0.6rem; font-size: 0.7rem; white-space: nowrap; color: #c0b0d8; border-radius: 4px; letter-spacing: 0.1em; z-index: 100; }
+.nav-btn:hover .tooltip { display: block; }
+
+/* Main content */
+.main-content { flex: 1; overflow: hidden; position: relative; }
+
+/* ── PANELS ── */
+.panel { position: absolute; inset: 0; display: none; flex-direction: column; overflow: hidden; }
+.panel.active { display: flex; }
+.panel-header { padding: 1.5rem 2rem 1rem; border-bottom: 1px solid #1e1e2e; flex-shrink: 0; }
+.panel-title { font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase; color: #6050a0; margin-bottom: 0.25rem; }
+.panel-heading { font-size: 1.4rem; color: #e0d0f8; }
+
+/* ── STATUS BAR ── */
+.status-bar { position: absolute; bottom: 0; left: 64px; right: 0; height: 48px; background: #0e0e16; border-top: 1px solid #1e1e2e; display: flex; align-items: center; padding: 0 2rem; gap: 2rem; z-index: 50; }
+.status-item { font-size: 0.72rem; letter-spacing: 0.1em; color: #6050a0; }
+.status-item span { color: #c0b0d8; }
+.status-week { color: #9080c0; font-size: 0.75rem; letter-spacing: 0.15em; }
+
+/* ── BANDBOOK PANEL ── */
+#panel-bandbook { padding-bottom: 48px; }
+.bandbook-tabs { display: flex; gap: 0; border-bottom: 1px solid #1e1e2e; flex-shrink: 0; background: #0e0e16; }
+.tab-btn { padding: 0.7rem 1.4rem; font-family: inherit; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; background: transparent; border: none; color: #504060; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.tab-btn.active { color: #c0a0f0; border-bottom-color: #8060c0; }
+.tab-content { flex: 1; overflow-y: auto; padding: 1.5rem 2rem; }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* Band cards */
+.band-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+.band-card { background: #0e0e18; border: 1px solid #1e1e30; border-radius: 4px; padding: 1.2rem; cursor: pointer; transition: all 0.25s; position: relative; overflow: hidden; }
+.band-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(120,60,200,0.03) 0%, transparent 60%); pointer-events: none; }
+.band-card:hover { border-color: #3a2a60; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.band-card.booked { border-color: rgba(80,200,120,0.3); }
+.band-card.booked::after { content: 'BOOKED'; position: absolute; top: 0.6rem; right: 0.6rem; font-size: 0.6rem; letter-spacing: 0.15em; color: #50c878; border: 1px solid rgba(80,200,120,0.4); padding: 0.15rem 0.4rem; }
+.band-name { font-size: 1rem; color: #e0d0f8; margin-bottom: 0.2rem; letter-spacing: 0.05em; }
+.band-genre { font-size: 0.7rem; color: #6050a0; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.7rem; }
+.band-bio { font-size: 0.8rem; color: #9080a8; line-height: 1.6; font-style: italic; margin-bottom: 0.8rem; }
+.band-meta { display: flex; justify-content: space-between; align-items: center; }
+.band-fee { font-size: 0.75rem; color: #c0a060; letter-spacing: 0.1em; }
+.band-traits { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+.trait-tag { font-size: 0.6rem; background: #1a1428; border: 1px solid #2a1e48; color: #8070a8; padding: 0.15rem 0.4rem; letter-spacing: 0.08em; border-radius: 2px; }
+.band-agent { font-size: 0.68rem; color: #504060; margin-top: 0.5rem; }
+.book-btn { margin-top: 0.8rem; width: 100%; padding: 0.5rem; background: rgba(100,50,180,0.2); border: 1px solid rgba(120,60,200,0.4); color: #c0a0f0; font-family: inherit; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+.book-btn:hover { background: rgba(100,50,180,0.4); border-color: rgba(180,100,255,0.7); color: #fff; }
+.book-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── OFFICE PANEL ── */
+#panel-office { padding-bottom: 48px; }
+.office-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; padding: 1.5rem 2rem; overflow-y: auto; flex: 1; }
+.office-card { background: #0e0e18; border: 1px solid #1e1e30; border-radius: 4px; padding: 1.2rem; }
+.office-card h3 { font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: #6050a0; margin-bottom: 0.8rem; }
+.schedule-slot { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #1a1a28; font-size: 0.8rem; }
+.schedule-slot:last-child { border-bottom: none; }
+.slot-day { color: #7060a0; font-size: 0.72rem; letter-spacing: 0.1em; }
+.slot-act { color: #c0b0d8; }
+.slot-empty { color: #302040; font-style: italic; }
+.finances-row { display: flex; justify-content: space-between; padding: 0.4rem 0; font-size: 0.8rem; border-bottom: 1px solid #1a1a28; }
+.finances-row:last-child { border-bottom: none; }
+.fin-label { color: #7060a0; }
+.fin-value { color: #c0b0d8; }
+.fin-value.positive { color: #50c878; }
+.fin-value.negative { color: #e05060; }
+.notifications-list { display: flex; flex-direction: column; gap: 0.6rem; }
+.notif { background: #0a0a14; border-left: 2px solid #3a2060; padding: 0.6rem 0.8rem; font-size: 0.78rem; color: #9080b0; line-height: 1.5; }
+.notif.rival { border-left-color: #602020; color: #a07090; }
+.notif.good { border-left-color: #205040; color: #80b090; }
+.do-show-btn { grid-column: 1/-1; padding: 1rem; background: rgba(100,50,180,0.25); border: 1px solid rgba(120,60,200,0.5); color: #d0b8f0; font-family: inherit; font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.3s; }
+.do-show-btn:hover { background: rgba(100,50,180,0.45); box-shadow: 0 0 30px rgba(120,60,200,0.2); }
+.do-show-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── SHOW NIGHT ── */
+#show-screen { background: #050508; }
+.stage-container { position: relative; width: 100%; max-width: 700px; height: 420px; margin: 0 auto; }
+canvas#stage { width: 100%; height: 100%; }
+.show-info { text-align: center; margin-top: 1rem; }
+.show-band-name { font-size: 1.6rem; color: #e0d0f8; letter-spacing: 0.1em; margin-bottom: 0.3rem; }
+.show-genre { font-size: 0.75rem; color: #6050a0; letter-spacing: 0.2em; text-transform: uppercase; }
+.show-events { min-height: 60px; max-width: 600px; text-align: center; margin: 1rem auto 0; font-size: 0.85rem; color: #9080b8; font-style: italic; line-height: 1.7; padding: 0 2rem; }
+.show-progress-bar { width: 300px; height: 3px; background: #1a1a2e; margin: 1rem auto 0; border-radius: 2px; overflow: hidden; }
+.show-progress-fill { height: 100%; background: linear-gradient(90deg, #6030c0, #a060f0); width: 0%; transition: width 0.3s; }
+
+/* ── POST SHOW ── */
+#postshow-screen { background: #07070f; overflow-y: auto; padding: 2rem; }
+.postshow-inner { max-width: 600px; margin: 0 auto; }
+.postshow-title { font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase; color: #6050a0; margin-bottom: 0.5rem; }
+.postshow-band { font-size: 2rem; color: #e0d0f8; margin-bottom: 0.25rem; }
+.postshow-night { font-size: 0.8rem; color: #9080b0; margin-bottom: 2rem; }
+.postshow-review { background: #0e0e18; border: 1px solid #1e1e30; padding: 1.2rem; margin-bottom: 1.5rem; font-size: 0.85rem; color: #9080a8; line-height: 1.8; font-style: italic; border-left: 3px solid #4a2080; }
+.postshow-review cite { display: block; margin-top: 0.8rem; font-style: normal; font-size: 0.7rem; color: #5040a0; letter-spacing: 0.1em; }
+.revenue-breakdown { background: #0e0e18; border: 1px solid #1e1e30; padding: 1.2rem; margin-bottom: 1.5rem; }
+.revenue-breakdown h3 { font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: #6050a0; margin-bottom: 0.8rem; }
+.rev-row { display: flex; justify-content: space-between; font-size: 0.8rem; padding: 0.3rem 0; border-bottom: 1px solid #1a1a28; }
+.rev-row:last-child { border-bottom: none; font-weight: bold; color: #e0d0f8; }
+.rev-label { color: #7060a0; }
+.rival-text { background: #100808; border: 1px solid #2a1020; padding: 1rem; margin-bottom: 1rem; font-size: 0.82rem; color: #9a7090; line-height: 1.6; }
+.rival-from { font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: #5a3040; margin-bottom: 0.4rem; }
+.continue-btn { width: 100%; padding: 1rem; background: rgba(80,40,160,0.3); border: 1px solid rgba(120,80,200,0.4); color: #c0a0f0; font-family: inherit; font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.3s; margin-top: 1rem; }
+.continue-btn:hover { background: rgba(100,50,180,0.5); }
+
+/* ── CONTACTS PANEL ── */
+.contact-entry { background: #0e0e18; border: 1px solid #1e1e30; border-radius: 4px; padding: 1rem; margin-bottom: 0.8rem; }
+.contact-name { font-size: 1rem; color: #e0d0f8; margin-bottom: 0.2rem; }
+.contact-meta { font-size: 0.72rem; color: #6050a0; letter-spacing: 0.08em; margin-bottom: 0.6rem; }
+.contact-history { font-size: 0.78rem; color: #8070a0; line-height: 1.6; }
+.relationship-tier { display: inline-block; font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 2px; margin-left: 0.5rem; }
+.tier-0 { background: #1a1020; color: #5a4070; border: 1px solid #2a1a40; }
+.tier-1 { background: #0a1820; color: #407080; border: 1px solid #1a3040; }
+.tier-2 { background: #1a1a0a; color: #807040; border: 1px solid #3a3010; }
+.tier-3 { background: #0a1a0a; color: #408040; border: 1px solid #103010; }
+
+/* ── ALERTS PANEL ── */
+.alert-item { background: #0e0e18; border-left: 3px solid #4a2080; padding: 0.8rem 1rem; margin-bottom: 0.6rem; font-size: 0.82rem; color: #9080b0; line-height: 1.6; }
+.alert-item.urgent { border-left-color: #802040; color: #b07090; }
+.alert-date { font-size: 0.65rem; color: #4a3060; margin-bottom: 0.3rem; letter-spacing: 0.1em; }
+
+/* ── GAME OVER ── */
+#gameover-screen { background: radial-gradient(ellipse at 50% 40%, #1a0818 0%, #050508 70%); }
+.go-title { font-size: 2.5rem; letter-spacing: 0.2em; text-transform: uppercase; color: #c05080; text-shadow: 0 0 30px rgba(200,80,100,0.5); margin-bottom: 1rem; }
+.go-sub { font-size: 0.85rem; color: #704060; letter-spacing: 0.15em; margin-bottom: 2rem; }
+.go-legacy { background: #0e0814; border: 1px solid #2a1030; padding: 1.5rem 2rem; max-width: 500px; text-align: left; margin-bottom: 2rem; font-size: 0.82rem; color: #9070a0; line-height: 1.8; }
+.go-score { font-size: 1.8rem; color: #e0d0f8; text-align: center; margin-bottom: 0.3rem; }
+.go-label { font-size: 0.7rem; color: #6050a0; letter-spacing: 0.2em; text-align: center; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #0a0a0f; }
+::-webkit-scrollbar-thumb { background: #2a1a40; border-radius: 2px; }
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn 0.4s ease forwards; }
+@keyframes pulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
+.pulse { animation: pulse 2s infinite; }
+@keyframes crowdPulse { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.15); } }
+</style>
+</head>
+<body>
+
+<!-- START SCREEN -->
+<div class="screen active" id="start-screen">
+  <div class="start-glow"></div>
+  <div class="start-title">Concert Simulator</div>
+  <div class="start-sub">Talent Booker — The Dive Bar</div>
+  <div class="start-tagline">"Football Manager meets Tinder, set backstage."<br>Discover acts. Build scenes. Break artists.</div>
+  <button class="btn btn-primary" onclick="startGame()">Open the Doors</button>
+</div>
+
+<!-- MAIN GAME SCREEN -->
+<div class="screen" id="game-screen">
+  <div class="sidebar">
+    <nav-btn class="nav-btn active" data-panel="office" onclick="switchPanel('office',this)" title="Office">
+      <span>🏠</span><span class="tooltip">THE OFFICE</span>
+    </nav-btn>
+    <div class="nav-btn" data-panel="bandbook" onclick="switchPanel('bandbook',this)">
+      <span>📱</span><span class="tooltip">BANDBOOK</span>
+    </div>
+    <div class="nav-btn" data-panel="contacts" onclick="switchPanel('contacts',this)">
+      <span>👥</span><span class="tooltip">CONTACTS</span>
+    </div>
+    <div class="nav-btn" data-panel="alerts" onclick="switchPanel('alerts',this)">
+      <span>🔔</span><span class="tooltip">ALERTS</span>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <!-- OFFICE PANEL -->
+    <div class="panel active" id="panel-office">
+      <div class="panel-header">
+        <div class="panel-title">Home Base</div>
+        <div class="panel-heading">The Dive Bar</div>
+      </div>
+      <div class="office-grid" id="office-grid"></div>
+    </div>
+
+    <!-- BANDBOOK PANEL -->
+    <div class="panel" id="panel-bandbook">
+      <div class="panel-header">
+        <div class="panel-title">Booking App</div>
+        <div class="panel-heading">BandBook</div>
+      </div>
+      <div class="bandbook-tabs">
+        <button class="tab-btn active" onclick="switchTab('discover',this)">Discover</button>
+        <button class="tab-btn" onclick="switchTab('contacted',this)">Contacted</button>
+        <button class="tab-btn" onclick="switchTab('messages',this)">Messages</button>
+      </div>
+      <div class="tab-content">
+        <div class="tab-pane active" id="tab-discover">
+          <div class="band-grid" id="band-grid"></div>
+        </div>
+        <div class="tab-pane" id="tab-contacted">
+          <div id="contacted-list"></div>
+        </div>
+        <div class="tab-pane" id="tab-messages">
+          <div id="messages-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTACTS PANEL -->
+    <div class="panel" id="panel-contacts">
+      <div class="panel-header">
+        <div class="panel-title">Relationship History</div>
+        <div class="panel-heading">Contacts</div>
+      </div>
+      <div class="tab-content">
+        <div id="contacts-list"></div>
+      </div>
+    </div>
+
+    <!-- ALERTS PANEL -->
+    <div class="panel" id="panel-alerts">
+      <div class="panel-header">
+        <div class="panel-title">Notifications</div>
+        <div class="panel-heading">Alerts</div>
+      </div>
+      <div class="tab-content">
+        <div id="alerts-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span class="status-week">WEEK <span id="sb-week">1</span></span>
+    <span class="status-item">VENUE: <span id="sb-venue">The Dive Bar (cap. 100)</span></span>
+    <span class="status-item">CASH: <span id="sb-cash">£800</span></span>
+    <span class="status-item">BOOKED: <span id="sb-booked">—</span></span>
+  </div>
+</div>
+
+<!-- SHOW NIGHT SCREEN -->
+<div class="screen" id="show-screen">
+  <div class="show-info" style="margin-bottom:0.5rem">
+    <div class="show-band-name" id="show-band-name"></div>
+    <div class="show-genre" id="show-genre-label"></div>
+  </div>
+  <div class="stage-container">
+    <canvas id="stage" width="700" height="420"></canvas>
+  </div>
+  <div class="show-progress-bar"><div class="show-progress-fill" id="show-progress"></div></div>
+  <div class="show-events" id="show-events"></div>
+</div>
+
+<!-- POST-SHOW SCREEN -->
+<div class="screen" id="postshow-screen">
+  <div class="postshow-inner fade-in">
+    <div class="postshow-title">Post-Show</div>
+    <div class="postshow-band" id="ps-band"></div>
+    <div class="postshow-night" id="ps-night"></div>
+    <div class="postshow-review" id="ps-review"></div>
+    <div class="revenue-breakdown" id="ps-revenue"></div>
+    <div id="ps-rival"></div>
+    <button class="continue-btn" onclick="continueAfterShow()">Next Week →</button>
+  </div>
+</div>
+
+<!-- GAME OVER SCREEN -->
+<div class="screen" id="gameover-screen">
+  <div class="go-title">Venue Closed</div>
+  <div class="go-sub" id="go-sub">The money ran out.</div>
+  <div class="go-legacy" id="go-legacy"></div>
+  <div class="go-score" id="go-score"></div>
+  <div class="go-label">LEGACY SCORE</div>
+  <div style="margin-top:2rem; display:flex; gap:1rem;">
+    <button class="btn btn-primary" onclick="location.reload()">Try Again</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// GAME DATA
+// ═══════════════════════════════════════════════
+const BANDS = [
+  { id:'b01', name:'The Hollow Saints', genre:'Post-Punk', genreKey:'punk',
+    bio:"Four-piece. We've been told we're 'difficult'. We prefer 'uncompromising'. Touring the north this autumn — looking for the right rooms.",
+    traits:['Road Warriors','Underground Cred','Pyro Enthusiasts'], fee:'££', feeVal:180,
+    agent:'Liz Carrow @ Ironclad', fame:1, fans:40 },
+  { id:'b02', name:'Coral Vestiges', genre:'Indie Folk', genreKey:'folk',
+    bio:"Fingerpicking and field recordings. We play quiet rooms and ask that you do too. Our last EP got a feature in The Wire.",
+    traits:['Acoustic Purists','Industry Darlings','Punctual'], fee:'££', feeVal:150,
+    agent:'Theo Marsh @ Quiet Storm', fame:1, fans:35 },
+  { id:'b03', name:'NIGHTMARKET', genre:'Synthwave', genreKey:'electronic',
+    bio:"Neon. Nostalgia. Drum machines. We've played every warehouse in this city — now we want a stage with a roof.",
+    traits:['Face Paint','Merch Machine','Party Animals'], fee:'£££', feeVal:250,
+    agent:'Dana Cole @ Static Frequency', fame:2, fans:80 },
+  { id:'b04', name:'Gravel & Glass', genre:'Blues Rock', genreKey:'rock',
+    bio:"We've been doing this since before you were born, son. Ask your parents.",
+    traits:['Road Warriors','Punctual','Crowd Surfers'], fee:'££', feeVal:160,
+    agent:'Jim Rowe @ Blacktop', fame:1, fans:50 },
+  { id:'b05', name:'Seraph System', genre:'Noise Rock', genreKey:'punk',
+    bio:"Loud. Confrontational. Probably not for everyone — which is the point.",
+    traits:['Drama Queens','Uncompromising','Always Late'], fee:'£', feeVal:80,
+    agent:'Self-managed', fame:0, fans:12 },
+  { id:'b06', name:'Milk & Fever', genre:'Dream Pop', genreKey:'pop',
+    bio:"We make the kind of music you put on when you can't sleep. Hazy. Layered. True.",
+    traits:['Rising Stars','Method Actors','Label Pressure'], fee:'££', feeVal:200,
+    agent:'Cass Reid @ Bloom', fame:1, fans:60 },
+  { id:'b07', name:'Iron Gospel', genre:'Metal', genreKey:'metal',
+    bio:"We don't do half measures. Pyro, volume, and conviction. Book us or don't.",
+    traits:['Pyro Enthusiasts','Crowd Surfers','Drama Queens'], fee:'£££', feeVal:280,
+    agent:'Rick Voss @ Hammer', fame:2, fans:90 },
+  { id:'b08', name:'The Picket Line', genre:'Garage Punk', genreKey:'punk',
+    bio:"Political. Loud. Cheap. Playing every toilet venue in the country. Proudly.",
+    traits:['Local Heroes','Underground Cred','Always Late'], fee:'£', feeVal:60,
+    agent:'Self-managed', fame:0, fans:20 },
+  { id:'b09', name:'Sable & Rust', genre:'Post-Rock', genreKey:'rock',
+    bio:"Instrumental. Cinematic. We build slowly. Give us a room with good acoustics and we'll give you something you won't forget.",
+    traits:['Acoustic Purists','Method Actors','Punctual'], fee:'££', feeVal:170,
+    agent:'Theo Marsh @ Quiet Storm', fame:1, fans:45 },
+  { id:'b10', name:'DJ ZOETROPE', genre:'Electronic', genreKey:'electronic',
+    bio:"One decks. Infinite genres. I've played to 3 people and 3000. Both are fine.",
+    traits:['Chameleons','Merch Machine','Party Animals'], fee:'££', feeVal:140,
+    agent:'Dana Cole @ Static Frequency', fame:1, fans:55 },
+  { id:'b11', name:'Amber Frequency', genre:'Psych Rock', genreKey:'rock',
+    bio:"Two drummers. One vision. Currently between labels and loving it.",
+    traits:['Face Paint','Crowd Surfers','Rising Stars'], fee:'££', feeVal:190,
+    agent:'Liz Carrow @ Ironclad', fame:1, fans:48 },
+  { id:'b12', name:'The Ledger', genre:'Acoustic Soul', genreKey:'folk',
+    bio:"Just the songs. No effects. No production. Just us and the room.",
+    traits:['Acoustic Purists','Uncompromising','Industry Darlings'], fee:'£', feeVal:90,
+    agent:'Self-managed', fame:0, fans:15 },
+];
+
+const RIVALS = [
+  { name:'Derek', venue:'The Monarch', texts:[
+    "Heard that was a quiet one last night. Don't worry — not everyone can fill a room. 🤌",
+    "We just confirmed [act] for next weekend. Such a shame you couldn't land them.",
+    "Interesting review in The Static this week. I'm sure they meant it constructively.",
+    "Another week, another empty Tuesday for someone downtown. Chin up.",
+  ]},
+  { name:'Zoe', venue:'The Bunker', texts:[
+    "Noticed you booked [act]. Didn't have you down as a sellout venue tbh",
+    "Our show was rammed last night. Real fans know where to go 🖤",
+    "Congrats on the sell-out. Very… mainstream of you.",
+    "Still booking heritage acts I see. Some of us are looking forward.",
+  ]},
+  { name:'Marcus', venue:'The Pavilion', texts:[
+    "We just signed a 6-gig deal with [act]. Early bird gets the worm 🐛",
+    "Numbers don't lie mate. 800 in last Friday. How was your weekend?",
+    "Our production budget is triple yours FYI. Just so you know what you're competing with.",
+  ]},
+  { name:'Ange', venue:'The Taproom', texts:[
+    "You dropped [act]?? Booked them for next Thurs. Can't believe my luck lol",
+    "People keep coming in saying they heard about us from [act]. Cheers for that 😂",
+    "Sorry for texting late. Had the most mental night. Tell you about it sometime.",
+  ]},
+];
+
+const PRODUCTION_EFFECTS = {
+  pyro: { name:'Pyrotechnics', cost:120, icon:'🔥', synergies:['Pyro Enthusiasts','Drama Queens'], penalty:['Acoustic Purists','Method Actors'] },
+  laser: { name:'Laser Array', cost:80, icon:'💫', synergies:['Face Paint','Party Animals'], penalty:['Acoustic Purists','Method Actors'] },
+  smoke: { name:'Smoke Machine', cost:50, icon:'💨', synergies:['Underground Cred','Method Actors'], penalty:[] },
+  uv:    { name:'UV Flood', cost:40, icon:'🌈', synergies:['Face Paint','Chameleons'], penalty:[] },
+  spots: { name:'Coloured Spots', cost:30, icon:'🎨', synergies:['Acoustic Purists','Indie Folk'], penalty:[] },
+  basic: { name:'Basic Lighting', cost:0, icon:'💡', synergies:[], penalty:['Pyro Enthusiasts'] },
+};
+
+const REVIEWS_GOOD = [
+  "Whatever {venue} is doing with their {genre} bookings, other rooms should pay attention.",
+  "The {band} set was exactly what this city needed. Packed room. Earned sweat.",
+  "Smoke machines and {genre}. Someone downtown understands the assignment.",
+  "Word is spreading. {venue} keeps picking them before anyone else does.",
+  "{band} were exceptional. The production matched the room perfectly.",
+  "First time I've seen {band} and I've already told everyone I know.",
+];
+const REVIEWS_MID = [
+  "{band} delivered a solid set. Nothing revelatory, but the crowd left happy.",
+  "A competent night at {venue}. {band} know their audience.",
+  "Good energy, if not transcendent. {venue} continues to book dependably.",
+  "{band} on a {day} — niche crowd but loyal. Respectable numbers.",
+];
+const REVIEWS_BAD = [
+  "A difficult night. {band} seemed off. The room felt it.",
+  "{venue} misjudged the crowd this week. Better luck next time.",
+  "The production felt mismatched for {band}'s sound. A wasted opportunity.",
+  "Thin crowd, thin energy. {band} deserved a better night.",
+];
+
+// ═══════════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════════
+let G = {};
+function initGame() {
+  G = {
+    week: 1,
+    cash: 800,
+    venue: 'The Dive Bar',
+    capacity: 100,
+    bookedBand: null,
+    supportBand: null,
+    history: [],        // { week, band, attendance, revenue, score }
+    contacts: {},       // bandId -> { tier, gigs, bestNight }
+    alerts: [],
+    messages: [],
+    bands: JSON.parse(JSON.stringify(BANDS)), // deep copy so we can mutate fame
+    showsWithoutRevenue: 0,
+    totalActsBroken: 0,
+  };
+  G.alerts.push({ text: 'Welcome to The Dive Bar. Week 1. You have £800, a sticky floor, and a dream. Check BandBook to find your first act.', date: 'Week 1', urgent: false });
+  G.messages.push({ from: 'Derek @ The Monarch', text: "Heard you just took over The Dive Bar. Good luck with that. We just confirmed The Morrigan for New Year's. Exciting times. 🥂", date: 'Week 1' });
+}
+
+// ═══════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function switchPanel(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  if(id==='office') renderOffice();
+  if(id==='bandbook') renderBandBook();
+  if(id==='contacts') renderContacts();
+  if(id==='alerts') renderAlerts();
+}
+function switchTab(id, el) {
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+  if(id==='contacted') renderContacted();
+  if(id==='messages') renderMessages();
+}
+function updateStatusBar() {
+  document.getElementById('sb-week').textContent = G.week;
+  document.getElementById('sb-cash').textContent = '£'+G.cash;
+  document.getElementById('sb-booked').textContent = G.bookedBand ? G.bookedBand.name : '—';
+}
+function fameLabel(f) {
+  return ['Unknown','Local Buzz','Regional Act','National Touring','Headliner','Superstar'][f] || 'Unknown';
+}
+function tierLabel(t) {
+  return ['Cold Call','Familiar','Preferred Venue','Scene Partners','Legendary Partners'][t] || 'Cold Call';
+}
+
+// ═══════════════════════════════════════════════
+// RENDER BANDBOOK
+// ═══════════════════════════════════════════════
+function renderBandBook() {
+  const grid = document.getElementById('band-grid');
+  grid.innerHTML = '';
+  G.bands.forEach(band => {
+    const isBooked = G.bookedBand && G.bookedBand.id === band.id;
+    const isSupport = G.supportBand && G.supportBand.id === band.id;
+    const card = document.createElement('div');
+    card.className = 'band-card fade-in' + (isBooked||isSupport?' booked':'');
+    const tier = G.contacts[band.id]?.tier || 0;
+    const feeDisplay = band.fee;
+    card.innerHTML = `
+      <div class="band-name">${band.name}</div>
+      <div class="band-genre">${band.genre} · ${fameLabel(band.fame)}</div>
+      <div class="band-bio">${band.bio}</div>
+      <div class="band-traits">${band.traits.map(t=>`<span class="trait-tag">${t}</span>`).join('')}</div>
+      <div class="band-agent">${band.agent} · Fee: ${feeDisplay}</div>
+      ${tier>0?`<div class="band-agent" style="color:#407060">Relationship: ${tierLabel(tier)}</div>`:''}
+      <button class="book-btn" ${isBooked?'disabled':''} onclick="bookBand('${band.id}','headline')">
+        ${isBooked?'✓ Booked (Headline)':isSupport?'Booked as Support':'Book as Headliner'}
+      </button>
+      <button class="book-btn" style="margin-top:0.3rem;font-size:0.65rem;opacity:0.7" ${isSupport||band.fame>1?'disabled':''} onclick="bookBand('${band.id}','support')">
+        ${isSupport?'✓ Booked (Support)':band.fame>1?'Too big for support':'Add as Support Act'}
+      </button>`;
+    grid.appendChild(card);
+  });
+}
+
+function bookBand(bandId, slot) {
+  const band = G.bands.find(b=>b.id===bandId);
+  if(!band) return;
+  if(slot==='headline') {
+    if(G.cash < band.feeVal) {
+      addAlert(`Can't afford ${band.name} — fee is £${band.feeVal}, you have £${G.cash}.`, true);
+      switchPanel('alerts', document.querySelector('[data-panel="alerts"]'));
+      return;
+    }
+    G.bookedBand = band;
+  } else {
+    G.supportBand = band;
+  }
+  addMessage(`${band.agent}`, `Re: ${band.name} — ${slot==='headline'?'Headline':'Support'} slot confirmed for Week ${G.week+1}. Fee of £${band.feeVal} due on the night. Looking forward to it.`);
+  updateStatusBar();
+  renderBandBook();
+  switchPanel('office', document.querySelector('[data-panel="office"]'));
+  renderOffice();
+}
+
+function renderContacted() {
+  const el = document.getElementById('contacted-list');
+  el.innerHTML = '';
+  const contacted = [];
+  if(G.bookedBand) contacted.push({band:G.bookedBand, slot:'Headline'});
+  if(G.supportBand) contacted.push({band:G.supportBand, slot:'Support'});
+  if(!contacted.length) { el.innerHTML='<p style="color:#4a3060;font-size:0.8rem;padding:1rem">No bookings confirmed yet.</p>'; return; }
+  contacted.forEach(({band,slot})=>{
+    const div=document.createElement('div');
+    div.className='contact-entry fade-in';
+    div.innerHTML=`<div class="contact-name">${band.name} <span style="font-size:0.7rem;color:#507050">${slot}</span></div>
+    <div class="contact-meta">${band.genre} · Fee: £${band.feeVal}</div>
+    <div class="contact-history">${band.bio}</div>`;
+    el.appendChild(div);
+  });
+}
+
+function renderMessages() {
+  const el = document.getElementById('messages-list');
+  el.innerHTML = '';
+  if(!G.messages.length){ el.innerHTML='<p style="color:#4a3060;font-size:0.8rem;padding:1rem">No messages yet.</p>'; return; }
+  [...G.messages].reverse().forEach(m=>{
+    const div=document.createElement('div');
+    div.className='contact-entry fade-in';
+    div.innerHTML=`<div class="contact-name">${m.from}</div>
+    <div class="contact-meta">${m.date||''}</div>
+    <div class="contact-history">"${m.text}"</div>`;
+    el.appendChild(div);
+  });
+}
+
+function addMessage(from, text) {
+  G.messages.push({from, text, date:`Week ${G.week}`});
+}
+function addAlert(text, urgent=false) {
+  G.alerts.unshift({text, date:`Week ${G.week}`, urgent});
+}
+
+// ═══════════════════════════════════════════════
+// RENDER OFFICE
+// ═══════════════════════════════════════════════
+function renderOffice() {
+  const grid = document.getElementById('office-grid');
+  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const scheduleHTML = days.map(d=>{
+    const act = d==='Saturday' && G.bookedBand ? G.bookedBand.name : '';
+    const sup  = d==='Saturday' && G.supportBand ? `<br><span style="font-size:0.68rem;color:#507050">+ ${G.supportBand.name} (support)</span>` : '';
+    return `<div class="schedule-slot">
+      <span class="slot-day">${d}</span>
+      <span class="${act?'slot-act':'slot-empty'}">${act||'—'}${sup}</span>
+    </div>`;
+  }).join('');
+
+  const recent = G.history.slice(-3).reverse();
+  const finRows = recent.length ? recent.map(h=>
+    `<div class="finances-row"><span class="fin-label">${h.band} (Wk ${h.week})</span>
+     <span class="fin-value ${h.revenue>0?'positive':'negative'}">${h.revenue>=0?'+':''}£${h.revenue}</span></div>`
+  ).join('') : '<div class="finances-row"><span class="fin-label">No shows yet</span><span class="fin-value">—</span></div>';
+
+  const lastNotifs = G.alerts.slice(0,3).map(a=>
+    `<div class="notif ${a.urgent?'rival':''}">${a.text}</div>`
+  ).join('') || '<div class="notif">All quiet.</div>';
+
+  const canPlay = !!G.bookedBand;
+  grid.innerHTML = `
+    <div class="office-card"><h3>This Week's Schedule</h3>${scheduleHTML}</div>
+    <div class="office-card"><h3>Recent P&amp;L</h3>${finRows}
+      <div class="finances-row" style="margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid #1e1e30">
+        <span class="fin-label">Current Cash</span>
+        <span class="fin-value positive">£${G.cash}</span>
+      </div>
+    </div>
+    <div class="office-card" style="grid-column:1/-1"><h3>Notifications</h3>
+      <div class="notifications-list">${lastNotifs}</div>
+    </div>
+    <button class="do-show-btn" ${canPlay?'':'disabled'} onclick="runShow()">
+      ${canPlay?`▶  Run Show — ${G.bookedBand.name} · Saturday Night`:'Book an act in BandBook to run a show'}
+    </button>`;
+}
+
+function renderContacts() {
+  const el = document.getElementById('contacts-list');
+  el.innerHTML = '';
+  const seen = Object.keys(G.contacts);
+  if(!seen.length){ el.innerHTML='<p style="color:#4a3060;font-size:0.8rem;padding:1rem">No relationship history yet. Book and run some shows.</p>'; return; }
+  seen.forEach(id=>{
+    const c = G.contacts[id];
+    const band = G.bands.find(b=>b.id===id);
+    if(!band) return;
+    const div = document.createElement('div');
+    div.className='contact-entry fade-in';
+    div.innerHTML=`<div class="contact-name">${band.name}
+      <span class="relationship-tier tier-${c.tier}">${tierLabel(c.tier)}</span></div>
+      <div class="contact-meta">${band.genre} · Gigs together: ${c.gigs} · Fame: ${fameLabel(band.fame)}</div>
+      <div class="contact-history">Best night: ${c.bestNight||'None yet'}${c.agentNote?`<br><em style="color:#5a4070">"${c.agentNote}"</em>`:''}</div>`;
+    el.appendChild(div);
+  });
+}
+
+function renderAlerts() {
+  const el = document.getElementById('alerts-list');
+  el.innerHTML = '';
+  if(!G.alerts.length){ el.innerHTML='<p style="color:#4a3060;font-size:0.8rem;padding:1rem">No alerts.</p>'; return; }
+  G.alerts.forEach(a=>{
+    const div=document.createElement('div');
+    div.className='alert-item'+(a.urgent?' urgent':'');
+    div.innerHTML=`<div class="alert-date">${a.date}</div>${a.text}`;
+    el.appendChild(div);
+  });
+}
+</script>
+<script>
+// ═══════════════════════════════════════════════
+// SHOW NIGHT — CANVAS ANIMATION
+// ═══════════════════════════════════════════════
+let showAnim = null;
+let showParticles = [];
+let crowdPeople = [];
+let showT = 0;
+let showDuration = 420; // frames ~7s at 60fps
+let showScore = 0;
+let showEvents = [];
+
+function runShow() {
+  if(!G.bookedBand) return;
+  const band = G.bookedBand;
+
+  // Deduct fee upfront
+  G.cash -= band.feeVal;
+  if(G.supportBand) G.cash -= Math.floor(G.supportBand.feeVal * 0.5);
+
+  showScreen('show-screen');
+  document.getElementById('show-band-name').textContent = band.name;
+  document.getElementById('show-genre-label').textContent = band.genre.toUpperCase() + ' · THE DIVE BAR';
+  document.getElementById('show-events').textContent = '';
+
+  // Init canvas
+  const canvas = document.getElementById('stage');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 700; canvas.height = 420;
+
+  // Determine show quality
+  const hasPyro = band.traits.includes('Pyro Enthusiasts');
+  const hasAcoustic = band.traits.includes('Acoustic Purists');
+  const isDrama = band.traits.includes('Drama Queens');
+  const isRising = band.traits.includes('Rising Stars');
+  const isMerch = band.traits.includes('Merch Machine');
+  const isParty = band.traits.includes('Party Animals');
+
+  // Base score 40-80, modified by traits
+  let baseScore = 40 + Math.floor(Math.random()*40);
+  const tier = G.contacts[band.id]?.tier||0;
+  baseScore += tier * 8;
+  if(isRising) baseScore += 10;
+  if(isDrama && Math.random()<0.5) baseScore += 20; // high ceiling
+  if(isDrama && Math.random()<0.2) baseScore -= 15; // risk
+  showScore = Math.min(100, Math.max(10, baseScore));
+
+  // Determine attendance
+  const fillRate = 0.3 + (showScore/100)*0.65 + Math.random()*0.1;
+  const attendance = Math.min(G.capacity, Math.floor(G.capacity * fillRate));
+
+  // Show events narrative
+  const eventsPool = [];
+  if(hasPyro) eventsPool.push("The pyrotechnics hit. The crowd surges forward.");
+  if(hasAcoustic) eventsPool.push("The room falls quiet. Every note lands clean.");
+  if(isDrama && Math.random()<0.3) eventsPool.push("The singer drops the mic mid-set and walks offstage. Thirty seconds of silence. Then they return.");
+  if(isRising && showScore>70) eventsPool.push("Something shifts in the room. Everyone feels it.");
+  if(isParty) eventsPool.push("The bar runs dry before the encore. No one minds.");
+  if(band.traits.includes('Crowd Surfers')) eventsPool.push("Three people attempt crowd surfing. Two succeed.");
+  if(band.traits.includes('Always Late')) eventsPool.push("They're twenty minutes late. The crowd almost breaks. Almost.");
+  if(band.traits.includes('Face Paint')) eventsPool.push("Under the UV lights, the band looks like a ritual.");
+  eventsPool.push(showScore>75?"The set ends. No one leaves immediately.":showScore>50?"A solid night. The crowd disperses warmly.":"They play. It's fine. People leave.");
+  showEvents = eventsPool.slice(0,3);
+
+  // Build crowd
+  crowdPeople = [];
+  const rows = 4, cols = 18;
+  for(let r=0; r<rows; r++){
+    for(let c=0; c<cols; c++){
+      if(Math.random() < fillRate) {
+        crowdPeople.push({
+          x: 40 + c*36 + Math.random()*12,
+          y: 280 + r*28 + Math.random()*8,
+          phase: Math.random()*Math.PI*2,
+          speed: 0.04+Math.random()*0.04,
+          color: `hsl(${260+Math.random()*60},${30+Math.random()*40}%,${30+Math.random()*25}%)`,
+          size: 8+Math.random()*5,
+        });
+      }
+    }
+  }
+
+  showParticles = [];
+  showT = 0;
+  let eventIdx = 0;
+  let eventTimer = 0;
+
+  if(showAnim) cancelAnimationFrame(showAnim);
+
+  function frame() {
+    showT++;
+    const progress = showT / showDuration;
+    document.getElementById('show-progress').style.width = (progress*100)+'%';
+
+    // Emit particles
+    if(showScore > 50 && Math.random() < 0.3 + progress*0.4) {
+      const px = 300 + Math.random()*100;
+      showParticles.push({
+        x: px, y: 180,
+        vx: (Math.random()-0.5)*3,
+        vy: -2-Math.random()*3,
+        life: 1, decay: 0.015+Math.random()*0.015,
+        color: hasPyro ? `hsl(${20+Math.random()*40},100%,60%)` : `hsl(${250+Math.random()*80},80%,65%)`,
+        size: hasPyro ? 4+Math.random()*4 : 2+Math.random()*3,
+      });
+    }
+
+    // Update particles
+    showParticles = showParticles.filter(p=>p.life>0);
+    showParticles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.08; p.life-=p.decay; });
+
+    // DRAW
+    ctx.clearRect(0,0,700,420);
+
+    // Background gradient
+    const bg = ctx.createLinearGradient(0,0,0,420);
+    bg.addColorStop(0,'#040408');
+    bg.addColorStop(1,'#080810');
+    ctx.fillStyle=bg; ctx.fillRect(0,0,700,420);
+
+    // Stage floor
+    ctx.fillStyle='#0e0e1a'; ctx.fillRect(80,200,540,15);
+    ctx.fillStyle='#14142a'; ctx.fillRect(100,215,500,60);
+
+    // Stage lights - beams
+    const numLights = hasPyro ? 5 : 3;
+    for(let i=0;i<numLights;i++){
+      const lx = 150+i*(400/(numLights-1));
+      const hue = hasPyro ? 20+i*15 : hasAcoustic ? 40 : 260+i*30;
+      const pulse = 0.3+0.2*Math.sin(showT*0.05+i);
+      const grad = ctx.createRadialGradient(lx,60,0,lx,60,180);
+      grad.addColorStop(0,`hsla(${hue},80%,70%,${pulse})`);
+      grad.addColorStop(1,`hsla(${hue},80%,70%,0)`);
+      ctx.fillStyle=grad;
+      ctx.beginPath(); ctx.moveTo(lx,60); ctx.lineTo(lx-80,220); ctx.lineTo(lx+80,220); ctx.closePath();
+      ctx.fill();
+    }
+
+    // Band silhouettes on stage
+    const bandCount = band.genre==='Electronic'||band.genre==='Synthwave' ? 1 : band.traits.includes('Road Warriors') ? 4 : 3;
+    for(let i=0;i<bandCount;i++){
+      const bx = 230 + i*(240/(bandCount-1||1));
+      const by = 195;
+      const sway = Math.sin(showT*0.08+i*1.2)*4*(0.5+showScore/100);
+      // body
+      ctx.fillStyle=`hsl(${260+i*20},20%,${15+showScore/10}%)`;
+      ctx.fillRect(bx-10,by-60+sway,20,45);
+      // head
+      ctx.beginPath(); ctx.arc(bx,by-65+sway,10,0,Math.PI*2);
+      ctx.fillStyle=`hsl(${30+i*10},40%,${40+showScore/10}%)`;
+      ctx.fill();
+      // arms raised if high score
+      if(showScore>65){
+        const armRaise = Math.sin(showT*0.12+i)*20;
+        ctx.strokeStyle=`hsl(${260+i*20},20%,30%)`;
+        ctx.lineWidth=3;
+        ctx.beginPath(); ctx.moveTo(bx-10,by-40+sway); ctx.lineTo(bx-25,by-55+sway+armRaise); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(bx+10,by-40+sway); ctx.lineTo(bx+25,by-55+sway-armRaise); ctx.stroke();
+      }
+      // face paint glow
+      if(band.traits.includes('Face Paint')){
+        ctx.shadowBlur=15; ctx.shadowColor='rgba(180,100,255,0.8)';
+        ctx.beginPath(); ctx.arc(bx,by-65+sway,5,0,Math.PI*2);
+        ctx.fillStyle='rgba(200,150,255,0.6)'; ctx.fill();
+        ctx.shadowBlur=0;
+      }
+    }
+
+    // Crowd
+    crowdPeople.forEach(p=>{
+      const energy = showScore/100;
+      const bob = Math.sin(showT*p.speed+p.phase)*p.size*energy;
+      ctx.fillStyle=p.color;
+      ctx.beginPath(); ctx.arc(p.x,p.y+bob,p.size/2,0,Math.PI*2); ctx.fill();
+      // raised arms if energy high
+      if(energy>0.6 && Math.sin(showT*p.speed*2+p.phase)>0.5){
+        ctx.strokeStyle=p.color; ctx.lineWidth=1.5;
+        ctx.beginPath(); ctx.moveTo(p.x-3,p.y+bob); ctx.lineTo(p.x-8,p.y+bob-10); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(p.x+3,p.y+bob); ctx.lineTo(p.x+8,p.y+bob-10); ctx.stroke();
+      }
+    });
+
+    // Particles
+    showParticles.forEach(p=>{
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.shadowBlur = hasPyro ? 12 : 6;
+      ctx.shadowColor = p.color;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
+      ctx.shadowBlur=0;
+    });
+    ctx.globalAlpha=1;
+
+    // Pyro flash
+    if(hasPyro && Math.random()<0.008 && progress>0.3){
+      ctx.fillStyle='rgba(255,150,50,0.15)';
+      ctx.fillRect(0,0,700,420);
+    }
+
+    // Event text reveals
+    if(eventTimer===0 && eventIdx<showEvents.length){
+      const delay = Math.floor(showDuration/(showEvents.length+1));
+      if(showT >= delay*(eventIdx+1)){
+        document.getElementById('show-events').textContent = showEvents.slice(0,eventIdx+1).join('\n');
+        eventIdx++;
+      }
+    }
+
+    if(showT < showDuration) {
+      showAnim = requestAnimationFrame(frame);
+    } else {
+      // Show ended
+      setTimeout(()=>showPostShow(band, attendance, showScore, isMerch), 600);
+    }
+  }
+  showAnim = requestAnimationFrame(frame);
+}
+
+// ═══════════════════════════════════════════════
+// POST-SHOW
+// ═══════════════════════════════════════════════
+function showPostShow(band, attendance, score, isMerch) {
+  showScreen('postshow-screen');
+
+  // Revenue
+  const ticketPrice = band.fame>=2 ? 15 : band.fame>=1 ? 10 : 7;
+  const ticketRev = attendance * ticketPrice;
+  const barRev = Math.floor(attendance * (3 + score/30) * (band.traits.includes('Party Animals')?1.5:1));
+  const merchCut = isMerch ? Math.floor(attendance * 2.5) : 0;
+  const staffCost = 80;
+  const prodCost = 0; // basic lighting = free
+  const totalRev = ticketRev + barRev + merchCut - staffCost;
+
+  G.cash += totalRev;
+  G.cash = Math.max(0, G.cash);
+
+  // Update contact
+  if(!G.contacts[band.id]) G.contacts[band.id] = { tier:0, gigs:0, bestNight:null, agentNote:null };
+  const c = G.contacts[band.id];
+  c.gigs++;
+  if(score>70 && (!c.bestNight || score>c.bestScore||0)) {
+    c.bestNight = `Week ${G.week}, ${attendance}/${G.capacity} capacity`;
+    c.bestScore = score;
+  }
+  if(score>65 && c.tier < 3) c.tier = Math.min(3, c.tier+1);
+  if(score<40 && c.tier>0) c.tier--;
+  if(score>75) c.agentNote = `"They still talk about the ${band.genre.toLowerCase()} show."`;
+
+  // Fame progression
+  if(score>75 && band.fame<5) {
+    if(Math.random()<0.3) {
+      band.fame++;
+      addAlert(`${band.name} just levelled up — now ${fameLabel(band.fame)}. You had them early.`, false);
+      if(band.fame>=3) {
+        G.totalActsBroken++;
+        addAlert(`🎉 "${band.name} sold out their first headline show. You booked their first gig." — The Static`, false);
+      }
+    }
+  }
+
+  // Review
+  const pool = score>70 ? REVIEWS_GOOD : score>45 ? REVIEWS_MID : REVIEWS_BAD;
+  const tpl = pool[Math.floor(Math.random()*pool.length)];
+  const review = tpl
+    .replace('{venue}','The Dive Bar').replace('{band}',band.name)
+    .replace('{genre}',band.genre.toLowerCase()).replace('{day}','Saturday');
+
+  // Rival text (random chance)
+  let rivalHTML = '';
+  const rival = RIVALS[Math.floor(Math.random()*RIVALS.length)];
+  if(Math.random()<(score<45?0.7:0.3)) {
+    const txt = rival.texts[Math.floor(Math.random()*rival.texts.length)]
+      .replace('[act]',band.name).replace('[Band]',band.name);
+    rivalHTML = `<div class="rival-text"><div class="rival-from">📱 ${rival.name} @ ${rival.venue}</div>"${txt}"</div>`;
+    addMessage(rival.name+' @ '+rival.venue, txt);
+  }
+
+  // History
+  G.history.push({ week:G.week, band:band.name, attendance, revenue:totalRev, score });
+  G.showsWithoutRevenue = totalRev > 0 ? 0 : G.showsWithoutRevenue+1;
+
+  // Build post-show HTML
+  document.getElementById('ps-band').textContent = band.name;
+  document.getElementById('ps-night').textContent = `Week ${G.week} · Saturday · ${attendance}/${G.capacity} capacity · Score: ${score}/100`;
+  document.getElementById('ps-review').innerHTML = `"${review}"<cite>— The Static, Week ${G.week}</cite>`;
+  document.getElementById('ps-revenue').innerHTML = `
+    <h3>Revenue Breakdown</h3>
+    <div class="rev-row"><span class="rev-label">Ticket sales (${attendance} × £${ticketPrice})</span><span>£${ticketRev}</span></div>
+    <div class="rev-row"><span class="rev-label">Bar revenue</span><span>£${barRev}</span></div>
+    ${merchCut?`<div class="rev-row"><span class="rev-label">Merch cut</span><span>£${merchCut}</span></div>`:''}
+    <div class="rev-row"><span class="rev-label">Staff costs</span><span style="color:#e05060">-£${staffCost}</span></div>
+    <div class="rev-row"><span class="rev-label">Net revenue</span><span style="color:${totalRev>=0?'#50c878':'#e05060'}">${totalRev>=0?'+':''}£${totalRev}</span></div>
+    <div class="rev-row"><span class="rev-label">Cash after show</span><span>£${G.cash}</span></div>`;
+  document.getElementById('ps-rival').innerHTML = rivalHTML;
+
+  if(G.cash<=0) {
+    document.querySelector('.continue-btn').textContent = '⚠ You\'re broke — Continue anyway';
+  }
+}
+
+function continueAfterShow() {
+  G.week++;
+  G.bookedBand = null;
+  G.supportBand = null;
+
+  // Random event each week
+  randomWeeklyEvent();
+
+  if(G.cash <= 0 && G.week > 3) {
+    gameOver();
+    return;
+  }
+  // Optionally grow band pool slightly
+  if(G.week % 4 === 0) growBandPool();
+
+  updateStatusBar();
+  showScreen('game-screen');
+  switchPanel('office', document.querySelector('[data-panel="office"]'));
+  renderOffice();
+}
+
+function randomWeeklyEvent() {
+  const roll = Math.random();
+  if(roll<0.15) {
+    const r = RIVALS[Math.floor(Math.random()*RIVALS.length)];
+    addAlert(`${r.name} @ ${r.venue} just booked a big act for next weekend. Scene is watching.`, false);
+  } else if(roll<0.25) {
+    addAlert(`The Static ran a piece on emerging ${['psych rock','post-punk','synth-pop'][Math.floor(Math.random()*3)]} acts. Worth checking BandBook.`, false);
+  } else if(roll<0.3) {
+    addAlert(`Venue maintenance: loose stage bolt fixed. Cost £20.`, false);
+    G.cash = Math.max(0, G.cash-20);
+  }
+}
+
+function growBandPool() {
+  const newBands = [
+    { id:'bx'+G.week, name:['Violet Collapse','Echo Margin','The Pale Current','Rust & Silk','Low Circuit'][Math.floor(Math.random()*5)],
+      genre:['Indie Rock','Shoegaze','Post-Punk','Folk','Electronic'][Math.floor(Math.random()*5)],
+      genreKey:'rock', bio:"New to the circuit. Hungry. Booking cheap.",
+      traits:[['Rising Stars','Underground Cred','Punctual'][Math.floor(Math.random()*3)]],
+      fee:'£', feeVal:60+Math.floor(Math.random()*40), agent:'Self-managed', fame:0, fans:10+Math.floor(Math.random()*20) }
+  ];
+  G.bands.push(...newBands);
+  addAlert(`${newBands[0].name} just appeared on BandBook. Unknown. Cheap. Might be something.`, false);
+}
+
+// ═══════════════════════════════════════════════
+// GAME OVER
+// ═══════════════════════════════════════════════
+function gameOver() {
+  showScreen('gameover-screen');
+  const legacyScore = G.totalActsBroken*50 + G.history.length*10 + Object.values(G.contacts).filter(c=>c.tier>=2).length*25;
+  const legacyText = G.history.map(h=>`Week ${h.week}: ${h.band} — ${h.attendance} in.`).join('\n');
+  document.getElementById('go-sub').textContent = G.cash<=0 ? 'The money ran out. The doors closed.' : 'You decided your legacy was complete.';
+  document.getElementById('go-legacy').innerHTML = `<strong style="color:#c0a0d8;letter-spacing:0.1em">YOUR RUN AT THE DIVE BAR</strong><br><br>${legacyText || 'No shows run.'}<br><br>Acts broken: ${G.totalActsBroken}<br>Shows run: ${G.history.length}`;
+  document.getElementById('go-score').textContent = legacyScore;
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+function startGame() {
+  initGame();
+  updateStatusBar();
+  showScreen('game-screen');
+  renderOffice();
+  renderBandBook();
+  // fix nav-btn clicks (they're divs)
+  document.querySelectorAll('.nav-btn').forEach(el=>{
+    if(!el.getAttribute('data-panel')) return;
+    el.addEventListener('click',()=>{
+      document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+      el.classList.add('active');
+    });
+  });
+}
+</script>
+</body>
+</html>
