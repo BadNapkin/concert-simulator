@@ -955,9 +955,9 @@ function renderSFX() {
       '<div class="sfx-cost">Buy: £' + gear.cost + ' · Nightly: £' + gear.nightly + '</div>' +
       '<div class="sfx-actions">' +
         (owned
-          ? '<button class="sfx-btn' + (active?' toggle-on':'') + '" onclick="toggleSFX('' + gear.id + '')">' + (active?'Deactivate':'Activate') + '</button>'
+          ? '<button class="sfx-btn' + (active?' toggle-on':'') + '" onclick="toggleSFX(\'' + gear.id + '\')">' + (active?'Deactivate':'Activate') + '</button>'
           : (gear.cost > 0
-              ? '<button class="sfx-btn" ' + (G.money < gear.cost ? 'disabled' : '') + ' onclick="buySFX('' + gear.id + '')">Buy £' + gear.cost + '</button>'
+              ? '<button class="sfx-btn" ' + (G.money < gear.cost ? 'disabled' : '') + ' onclick="buySFX(\'' + gear.id + '\')">Buy £' + gear.cost + '</button>'
               : '<span style="color:#50c878;font-size:0.75rem">✓ Included</span>')) +
       '</div>' +
     '</div>';
