@@ -56,8 +56,8 @@ body { background: #0a0a0f; color: #e8e0d0; font-family: 'Georgia', serif; overf
 
 /* ── BANDBOOK PANEL ── */
 .bandbook-tabs { display: flex; gap: 0; border-bottom: 1px solid #1e1e2e; flex-shrink: 0; background: #0e0e16; }
-.tab-btn { padding: 0.7rem 1.4rem; font-family: inherit; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; background: transparent; border: none; color: #504060; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
-.tab-btn.active { color: #c0a0f0; border-bottom-color: #8060c0; }
+.tab-btn, .bb-tab { padding: 0.7rem 1.4rem; font-family: inherit; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; background: transparent; border: none; color: #504060; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.tab-btn.active, .bb-tab.active { color: #c0a0f0; border-bottom-color: #8060c0; }
 .tab-content { flex: 1; overflow: hidden; display:flex; flex-direction:column; }
 .tab-pane { display: none; flex:1; flex-direction:column; overflow:hidden; }
 .tab-pane.active { display: flex; }
@@ -82,6 +82,7 @@ body { background: #0a0a0f; color: #e8e0d0; font-family: 'Georgia', serif; overf
 .office-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; padding: 1.5rem 2rem; overflow-y: auto; flex: 1; }
 .office-card { background: #0e0e18; border: 1px solid #1e1e30; border-radius: 4px; padding: 1.2rem; }
 .office-card h3 { font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: #6050a0; margin-bottom: 0.8rem; }
+.schedule-slots { overflow-y: auto; flex: 1; padding: 1rem 2rem; }
 .schedule-slot { display: flex; justify-content: space-between; align-items: flex-start; padding: 0.45rem 0; border-bottom: 1px solid #1a1a28; font-size: 0.8rem; gap: 0.5rem; }
 .schedule-slot:last-child { border-bottom: none; }
 .slot-day { color: #7060a0; font-size: 0.72rem; letter-spacing: 0.1em; flex-shrink: 0; }
@@ -361,7 +362,7 @@ canvas#stage { width: 100%; height: 100%; }
         <div class="panel-title">Production Equipment</div>
         <div class="panel-heading">SFX Gear</div>
       </div>
-      <div id="sfx-list" class="sfx-list"></div>
+      <div id="sfx-list" class="sfx-grid"></div>
     </div>
 
     <!-- ACHIEVEMENTS PANEL -->
@@ -370,7 +371,7 @@ canvas#stage { width: 100%; height: 100%; }
         <div class="panel-title">Venue Reputation</div>
         <div class="panel-heading">Achievements</div>
       </div>
-      <div id="achievements-list" class="achievements-list"></div>
+      <div id="achievements-list" class="ach-grid"></div>
     </div>
 
     <!-- CONTACTS PANEL -->
@@ -751,6 +752,17 @@ function endWeek(){
 }
 
 // ── ENQUIRY SYSTEM ─────────────────────────────────────────────────────────
+function bookBand(bandId, slot) {
+  const band = BANDS.find(b => b.id === bandId);
+  if (!band) return;
+  if (G.money < band.feeVal) { addAlert('Not enough cash to book ' + band.name + '.'); return; }
+  if (slot === 'headline') {
+    G.headliner = BANDS.indexOf(band);
+    addAlert('✅ ' + band.name + ' confirmed as headliner at £' + band.feeVal + '. Show is Saturday!');
+  }
+  saveGame(); updateStatusBar(); renderBandCarousel(); renderOffice();
+}
+
 function enquireBand(bandId){
   const band=BANDS[bandId];
   const replyDay=Math.min(G.dayOfWeek+1+Math.floor(Math.random()*2),4);
@@ -858,7 +870,7 @@ let _ci = 0, _cb = [];
 function renderBandCarousel() {
   const el = document.getElementById('band-carousel');
   if (!el) return;
-  _cb = G.bands.filter(b => b.fame <= G.venueTier + 1);
+  _cb = BANDS.filter(b => b.fame <= G.venueTier + 1);
   if (!_cb.length) { el.innerHTML = '<p style="color:#4a3060;padding:2rem;text-align:center">No bands available at this venue tier yet.</p>'; return; }
   _ci = Math.min(_ci, _cb.length - 1);
   _drawCard(el);
@@ -867,9 +879,9 @@ function renderBandCarousel() {
 function _drawCard(el) {
   const band = _cb[_ci];
   const total = _cb.length;
-  const isHL = G.bookedBand && G.bookedBand.id === band.id;
-  const isSup = G.supportBand && G.supportBand.id === band.id;
-  const canAfford = G.cash >= band.feeVal;
+  const bandIdx = BANDS.indexOf(band); const isHL = G.headliner === bandIdx;
+  const isSup = false;
+  const canAfford = G.money >= band.feeVal;
   const tier = G.contacts[band.id] ? G.contacts[band.id].tier : 0;
   const GENRE_EMOJI = { punk:'🎸', rock:'🎸', folk:'🪕', electronic:'🎛️', pop:'🎤', metal:'🤘', default:'🎵' };
   const emoji = GENRE_EMOJI[band.genreKey] || GENRE_EMOJI.default;
@@ -927,24 +939,26 @@ function renderBandBook(){ _ci=0; renderBandCarousel(); }
 function renderSFX() {
   const el = document.getElementById('sfx-list');
   if (!el) return;
+  el.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;padding:1.5rem 2rem;overflow-y:auto;flex:1';
   el.innerHTML = Object.values(SFX_GEAR).map(gear => {
     const owned  = !!G.sfxOwned[gear.id];
     const active = !!G.sfxActive[gear.id];
     const synStr = gear.synergies.length ? '✓ Works with: ' + gear.synergies.join(', ') : '';
     const penStr = (gear.penalties||[]).length ? '✗ Clashes with: ' + (gear.penalties||[]).join(', ') : '';
-    return '<div class="sfx-item' + (owned?' sfx-owned':'') + (active?' sfx-active-item':'') + '">' +
-      '<div class="sfx-item-left">' +
-        '<div class="sfx-item-name">' + gear.icon + ' ' + gear.name + (active?' <span style="color:#7aff7a;font-size:0.65rem">● ACTIVE</span>':'') + '</div>' +
-        '<div class="sfx-item-cost">Buy: £' + gear.cost + ' · Nightly: £' + gear.nightly + '</div>' +
-        (synStr ? '<div class="sfx-synergy">' + synStr + '</div>' : '') +
-        (penStr ? '<div class="sfx-penalty">' + penStr + '</div>' : '') +
-      '</div>' +
-      '<div class="sfx-item-right">' +
+    const buyable = gear.cost > 0 && !owned;
+    return '<div class="sfx-card' + (owned?' owned':'') + (active?' active-sfx':'') + '">' +
+      '<div class="sfx-icon">' + gear.icon + '</div>' +
+      '<div class="sfx-name">' + gear.name + (active?' <span style="color:#60c878;font-size:0.6rem">● ON</span>':'') + '</div>' +
+      '<div class="sfx-desc">' + gear.desc + '</div>' +
+      (synStr ? '<div class="sfx-synergy">' + synStr + '</div>' : '') +
+      (penStr ? '<div class="sfx-penalty">' + penStr + '</div>' : '') +
+      '<div class="sfx-cost">Buy: £' + gear.cost + ' · Nightly: £' + gear.nightly + '</div>' +
+      '<div class="sfx-actions">' +
         (owned
-          ? '<button class="sfx-toggle' + (active?' sfx-toggle-on':'') + '" onclick="toggleSFX(\'' + gear.id + '\')">' + (active?'ON ✓':'OFF') + '</button>'
+          ? '<button class="sfx-btn' + (active?' toggle-on':'') + '" onclick="toggleSFX('' + gear.id + '')">' + (active?'Deactivate':'Activate') + '</button>'
           : (gear.cost > 0
-              ? '<button class="sfx-buy" ' + (G.cash < gear.cost ? 'disabled' : '') + ' onclick="buySFX(\'' + gear.id + '\')">Buy £' + gear.cost + '</button>'
-              : '<span style="color:#4caf50;font-size:0.75rem">✓ Included</span>')) +
+              ? '<button class="sfx-btn" ' + (G.money < gear.cost ? 'disabled' : '') + ' onclick="buySFX('' + gear.id + '')">Buy £' + gear.cost + '</button>'
+              : '<span style="color:#50c878;font-size:0.75rem">✓ Included</span>')) +
       '</div>' +
     '</div>';
   }).join('');
@@ -952,8 +966,8 @@ function renderSFX() {
 
 function buySFX(id) {
   const gear = SFX_GEAR[id]; if (!gear || G.sfxOwned[id]) return;
-  if (G.cash < gear.cost) { addAlert('Not enough cash to buy ' + gear.name + '.', true); return; }
-  G.cash -= gear.cost;
+  if (G.money < gear.cost) { addAlert('Not enough cash to buy ' + gear.name + '.', true); return; }
+  G.money -= gear.cost;
   G.sfxOwned[id] = true;
   addAlert(gear.icon + ' ' + gear.name + ' installed! Toggle it on before your next show.', false);
   updateStatusBar(); renderSFX(); saveGame();
@@ -999,7 +1013,7 @@ function renderInbox() {
   if (!el) return;
   const msgs = (G.messages || []).map(m => ({ type:'msg', from:m.from, text:m.text, date:m.date, urgent:false }));
   const enqs = (G.enquiries || []).map(e => {
-    const band = G.bands.find(b => b.id === e.bandId || (typeof e.bandId === 'number' && G.bands[e.bandId]));
+    const band = BANDS.find(b => b.id === e.bandId) || (typeof e.bandId === "number" ? BANDS[e.bandId] : null);
     const bname = band ? band.name : 'Unknown Band';
     return { type:'enq', from: bname + ' (Enquiry)', text: e.status === 'confirmed' ? '✓ Confirmed for Week ' + e.week : e.status === 'pending' ? 'Awaiting response...' : e.reply || e.status, date: e.date || 'Week ' + (e.week||'?'), urgent: e.status === 'replied' };
   });
@@ -1024,7 +1038,7 @@ function renderContacts() {
   const seen = Object.keys(G.contacts || {});
   if (!seen.length) { el.innerHTML = '<p style="color:#4a3060;font-size:0.8rem;padding:1rem">No relationship history yet.</p>'; return; }
   el.innerHTML = seen.map(id => {
-    const c = G.contacts[id], band = G.bands.find(b => b.id === id);
+    const c = G.contacts[id], band = BANDS.find(b => b.id === id);
     if (!band) return '';
     return '<div class="contact-entry fade-in">' +
       '<div class="contact-name">' + band.name + ' <span class="relationship-tier tier-' + c.tier + '">' + tierLabel(c.tier) + '</span></div>' +
