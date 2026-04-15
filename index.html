@@ -857,11 +857,6 @@ function buySFX(id) {
 function toggleSFX(id) {
   if (!G.sfxOwned[id]) return;
   G.sfxActive[id] = !G.sfxActive[id];
-  // Deactivate basic if something else is activated
-  if (id !== 'basic' && G.sfxActive[id]) G.sfxActive['basic'] = false;
-  if (id === 'basic' && G.sfxActive['basic']) {
-    Object.keys(G.sfxActive).forEach(k => { if (k!=='basic') G.sfxActive[k]=false; });
-  }
   updateStatusBar();
   renderSFX();
   saveGame();
@@ -943,8 +938,18 @@ function renderOffice() {
     <div class="office-card" style="grid-column:1/-1"><h3>Notifications</h3>
       <div class="notifications-list">${lastNotifs}</div>
     </div>
-    <button class="do-show-btn" ${canPlay?'':'disabled'} onclick="runShow()">
-      ${canPlay?`▶  Run Show — ${G.bookedBand.name} · Saturday Night · SFX: ${sfxSummary}`:'Book an act in BandBook to run a show'}
+    <div id="sfx-warning" style="display:none;grid-column:1/-1;background:#100c18;border:1px solid rgba(180,100,255,0.35);padding:0.9rem 1.2rem;font-size:0.8rem;color:#b090d8;line-height:1.6;border-radius:3px">
+      <strong style="display:block;font-size:0.65rem;letter-spacing:0.18em;text-transform:uppercase;color:#7050a0;margin-bottom:0.4rem">⚠ Equipment Check</strong>
+      You own gear that isn't active for tonight's show:<br>
+      <span id="sfx-warning-list" style="color:#d0a0ff"></span><br>
+      <span style="color:#6050a0;font-size:0.75rem">Head to the SFX panel to toggle them on, or proceed as-is.</span>
+      <div style="display:flex;gap:0.6rem;margin-top:0.8rem">
+        <button class="sfx-btn" onclick="switchPanel('sfx',document.querySelector('[data-panel=sfx]'));document.getElementById('sfx-warning').style.display='none'">Open SFX Panel</button>
+        <button class="sfx-btn toggle-on" onclick="runShow();document.getElementById('sfx-warning').style.display='none'">Proceed Anyway</button>
+      </div>
+    </div>
+    <button class="do-show-btn" ${canPlay?'':'disabled'} onclick="checkSFXThenRun()">
+      ${canPlay?'▶  Run Show — '+G.bookedBand.name+' · Saturday Night · SFX: '+sfxSummary:'Book an act in BandBook to run a show'}
     </button>`;
 }
 
@@ -978,6 +983,22 @@ function renderContacts() {
 }
 
 // ── SHOW NIGHT ────────────────────────────────────────────────────────────────
+
+function checkSFXThenRun() {
+  // Find owned gear that isn't active
+  const dormant = Object.keys(G.sfxOwned).filter(k => G.sfxOwned[k] && !G.sfxActive[k] && SFX_GEAR[k]);
+  if (dormant.length) {
+    const warning = document.getElementById('sfx-warning');
+    const list = document.getElementById('sfx-warning-list');
+    if (warning && list) {
+      list.textContent = dormant.map(k => SFX_GEAR[k].icon + ' ' + SFX_GEAR[k].name).join(', ');
+      warning.style.display = 'block';
+      warning.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      return;
+    }
+  }
+  runShow();
+}
 
 function runShow() {
   const band = G.bookedBand;
