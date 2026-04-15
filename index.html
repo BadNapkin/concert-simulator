@@ -713,7 +713,9 @@ function showScreen(id) {
 function switchPanel(id, el) {
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('panel-'+id).classList.add('active');
+  const panelEl = document.getElementById('panel-'+id);
+  if (!panelEl) return;
+  panelEl.classList.add('active');
   if (el) el.classList.add('active');
   if (id==='office')        renderOffice();
   if (id==='bandbook')      renderBandBook();
@@ -1076,13 +1078,12 @@ function runShow() {
     }).join('');
   }
 
-  showScreen('game-screen');
-  switchPanel('show', null);
+  showScreen('show-screen');
   animateShow(band);
 }
 
 function animateShow(band) {
-  const canvas = document.getElementById('show-canvas');
+  const canvas = document.getElementById('stage');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   canvas.width  = canvas.offsetWidth  || 600;
@@ -1434,7 +1435,7 @@ function showPostShow(band, pyroFritzed, comboTriggered) {
     if (bar) bar.style.width = newBuzz + '%';
   }, 400);
 
-  switchPanel('post-show', null);
+  showScreen('postshow-screen');
   checkAchievements(band, score, attendance);
   comboUnlocks.forEach(id => unlockAchievement(id));
   updateStatusBar();
@@ -1450,7 +1451,10 @@ function continueAfterShow() {
   randomWeeklyEvent();
   updateStatusBar();
   renderOffice();
+  renderBandBook();
+  showScreen('game-screen');
   switchPanel('office', document.querySelector('[data-panel="office"]'));
+  saveGame();
 }
 
 function randomWeeklyEvent() {
@@ -1509,7 +1513,7 @@ function gameOver() {
   set('go-weeks', G.week);
   set('go-shows', G.showsBooked || 0);
   set('go-cash',  '£' + G.cash.toLocaleString());
-  showScreen('game-over');
+  showScreen('gameover-screen');
   localStorage.removeItem('concertsim_save');
 }
 
