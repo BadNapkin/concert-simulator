@@ -243,10 +243,10 @@ canvas#stage { width: 100%; height: 100%; }
   <div class="start-glow"></div>
   <div class="start-title">Concert Simulator</div>
   <div class="start-sub">Talent Booker — The Dive Bar</div>
-  <div class="start-tagline">"Football Manager meets Tinder, set backstage."<br>Discover acts. Build scenes. Break artists.</div>
+  <div class="start-tagline">"Develop the acts. Build the scene. Leave a legacy."<br>Every great venue started with one good night.</div>
   <div style="display:flex;gap:1rem;">
     <button class="btn btn-primary" onclick="startGame()">Open the Doors</button>
-    <button class="btn" id="continue-btn" onclick="loadGame()" style="display:none">↩ Continue</button>
+    <button class="btn" id="continue-btn" onclick="startGame()" style="display:none">↩ Continue</button>
   </div>
 </div>
 
@@ -910,7 +910,7 @@ function renderOffice() {
   const nextTier = VENUE_TIERS[G.venueTier+1];
   const upgradeHTML = nextTier ? `
     <div class="upgrade-row">
-      <span class="upgrade-cost">${nextTier.upgradeLabel}</span>
+      <span class="upgrade-cost">Upgrade to ${nextTier.name} — £${nextTier.upgradeCost.toLocaleString()}</span>
       <button class="upgrade-btn" ${G.cash>=nextTier.upgradeCost?'':'disabled'} onclick="upgradeVenue()">
         Upgrade → ${nextTier.name}
       </button>
@@ -962,7 +962,12 @@ function renderContacts() {
     const d=document.createElement('div'); d.className='contact-entry fade-in';
     d.innerHTML=`<div class="contact-name">${band.name}
       <span class="relationship-tier tier-${c.tier}">${tierLabel(c.tier)}</span></div>
-      <div class="contact-meta">${band.genre} · Gigs: ${c.gigs} · Fame: ${fameLabel(band.fame)}</div>// ── SHOW NIGHT ────────────────────────────────────────────────────────────────
+      <div class="contact-meta">${band.genre} · Gigs: ${c.gigs} · Fame: ${fameLabel(band.fame)}</div>`;
+    el.appendChild(d);
+  });
+}
+
+// ── SHOW NIGHT ────────────────────────────────────────────────────────────────
 
 function runShow() {
   const band = G.bookedBand;
@@ -1191,7 +1196,7 @@ function showPostShow(band) {
     G.contacts[band.id].bestNight = `Week ${G.week} — ${score}/100`;
   }
 
-  const reviewPool = REVIEWS[score >= 80 ? 'great' : score >= 55 ? 'ok' : 'bad'];
+  const reviewPool = score >= 80 ? REVIEWS_GOOD : score >= 55 ? REVIEWS_MID : REVIEWS_BAD;
   const reviewText = reviewPool[Math.floor(Math.random() * reviewPool.length)];
   const stars = score >= 85 ? '★★★★★' : score >= 70 ? '★★★★☆' : score >= 50 ? '★★★☆☆' : score >= 30 ? '★★☆☆☆' : '★☆☆☆☆';
 
