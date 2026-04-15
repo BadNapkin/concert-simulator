@@ -27,9 +27,9 @@ body { background: #0a0a0f; color: #e8e0d0; font-family: 'Georgia', serif; overf
 
 /* Sidebar nav */
 .sidebar { width: 64px; background: #0e0e16; border-right: 1px solid #1e1e2e; display: flex; flex-direction: column; align-items: center; padding: 1rem 0; gap: 0.5rem; flex-shrink: 0; }
-.nav-btn { width: 44px; height: 44px; background: transparent; border: 1px solid transparent; color: #504060; font-size: 1.2rem; cursor: pointer; border-radius: 8px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+.nav-btn { width: 44px; height: 44px; background: transparent; border: 1px solid transparent; color: #504060; font-size: 1.2rem; cursor: pointer; border-radius: 8px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; position: relative; }
 .nav-btn:hover, .nav-btn.active { background: #1a1a2e; border-color: #3a2060; color: #b090e0; }
-.nav-btn .tooltip { display: none; position: absolute; left: 72px; background: #1a1a2e; border: 1px solid #3a2060; padding: 0.3rem 0.6rem; font-size: 0.7rem; white-space: nowrap; color: #c0b0d8; border-radius: 4px; letter-spacing: 0.1em; z-index: 100; }
+.nav-btn .tooltip { display: none; position: absolute; left: 52px; background: #1a1a2e; border: 1px solid #3a2060; padding: 0.3rem 0.6rem; font-size: 0.7rem; white-space: nowrap; color: #c0b0d8; border-radius: 4px; letter-spacing: 0.1em; z-index: 100; }
 .nav-btn:hover .tooltip { display: block; }
 
 /* Main content */
@@ -43,10 +43,10 @@ body { background: #0a0a0f; color: #e8e0d0; font-family: 'Georgia', serif; overf
 .panel-heading { font-size: 1.4rem; color: #e0d0f8; }
 
 /* ── STATUS BAR ── */
-.status-bar { position: absolute; bottom: 0; left: 64px; right: 0; height: 48px; background: #0e0e16; border-top: 1px solid #1e1e2e; display: flex; align-items: center; padding: 0 2rem; gap: 2rem; z-index: 50; }
-.status-item { font-size: 0.72rem; letter-spacing: 0.1em; color: #6050a0; }
+.status-bar { position: absolute; bottom: 0; left: 64px; right: 0; height: 48px; background: #0e0e16; border-top: 1px solid #1e1e2e; display: flex; align-items: center; padding: 0 2rem; gap: 2rem; z-index: 50; flex-wrap: nowrap; overflow: hidden; }
+.status-item { font-size: 0.72rem; letter-spacing: 0.1em; color: #6050a0; white-space: nowrap; }
 .status-item span { color: #c0b0d8; }
-.status-week { color: #9080c0; font-size: 0.75rem; letter-spacing: 0.15em; }
+.status-week { color: #9080c0; font-size: 0.75rem; letter-spacing: 0.15em; white-space: nowrap; }
 
 /* ── BANDBOOK PANEL ── */
 #panel-bandbook { padding-bottom: 48px; }
@@ -100,6 +100,50 @@ body { background: #0a0a0f; color: #e8e0d0; font-family: 'Georgia', serif; overf
 .do-show-btn:hover { background: rgba(100,50,180,0.45); box-shadow: 0 0 30px rgba(120,60,200,0.2); }
 .do-show-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
+/* ── VENUE UPGRADE CARD ── */
+.venue-card { background: linear-gradient(135deg,#0e0e18,#120e20); border: 1px solid #2a1a50; border-radius: 4px; padding: 1.2rem; }
+.venue-tier-name { font-size: 1.1rem; color: #d0b8f0; margin-bottom: 0.2rem; }
+.venue-tier-cap { font-size: 0.72rem; color: #6050a0; letter-spacing: 0.12em; margin-bottom: 0.8rem; }
+.upgrade-row { display: flex; justify-content: space-between; align-items: center; margin-top: 0.8rem; }
+.upgrade-cost { font-size: 0.75rem; color: #c0a060; }
+.upgrade-btn { padding: 0.4rem 1rem; background: rgba(120,60,200,0.2); border: 1px solid rgba(180,100,255,0.4); color: #c0a0f0; font-family: inherit; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; border-radius: 2px; }
+.upgrade-btn:hover { background: rgba(120,60,200,0.5); }
+.upgrade-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── SFX EQUIPMENT PANEL ── */
+#panel-sfx { padding-bottom: 48px; }
+.sfx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 1rem; padding: 1.5rem 2rem; overflow-y: auto; flex: 1; }
+.sfx-card { background: #0e0e18; border: 1px solid #1e1e30; border-radius: 4px; padding: 1.1rem; transition: all 0.2s; }
+.sfx-card.owned { border-color: rgba(80,200,120,0.3); }
+.sfx-card.active-sfx { border-color: rgba(180,100,255,0.6); box-shadow: 0 0 12px rgba(120,60,200,0.25); }
+.sfx-icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
+.sfx-name { font-size: 0.9rem; color: #e0d0f8; margin-bottom: 0.2rem; }
+.sfx-desc { font-size: 0.75rem; color: #7060a0; line-height: 1.5; margin-bottom: 0.8rem; }
+.sfx-synergy { font-size: 0.68rem; color: #507060; margin-bottom: 0.3rem; }
+.sfx-penalty { font-size: 0.68rem; color: #705040; margin-bottom: 0.8rem; }
+.sfx-cost { font-size: 0.72rem; color: #c0a060; margin-bottom: 0.5rem; }
+.sfx-actions { display: flex; gap: 0.5rem; }
+.sfx-btn { flex: 1; padding: 0.4rem; background: rgba(100,50,180,0.2); border: 1px solid rgba(120,60,200,0.4); color: #c0a0f0; font-family: inherit; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; border-radius: 2px; }
+.sfx-btn:hover { background: rgba(100,50,180,0.4); }
+.sfx-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.sfx-btn.toggle-on { background: rgba(80,200,120,0.15); border-color: rgba(80,200,120,0.4); color: #80e0a0; }
+.sfx-btn.toggle-on:hover { background: rgba(80,200,120,0.3); }
+
+/* ── ACHIEVEMENTS PANEL ── */
+#panel-achievements { padding-bottom: 48px; }
+.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 1rem; padding: 1.5rem 2rem; overflow-y: auto; flex: 1; }
+.ach-card { background: #0e0e18; border: 1px solid #1e1e30; border-radius: 4px; padding: 1.1rem; opacity: 0.45; transition: all 0.3s; }
+.ach-card.unlocked { opacity: 1; border-color: rgba(200,160,80,0.5); box-shadow: 0 0 14px rgba(200,140,40,0.2); }
+.ach-icon { font-size: 1.6rem; margin-bottom: 0.4rem; }
+.ach-name { font-size: 0.9rem; color: #e0d0f8; margin-bottom: 0.2rem; }
+.ach-desc { font-size: 0.75rem; color: #7060a0; line-height: 1.5; }
+.ach-reward { font-size: 0.68rem; color: #c0a060; margin-top: 0.5rem; font-style: italic; }
+.ach-unlocked-date { font-size: 0.65rem; color: #507050; margin-top: 0.4rem; }
+
+/* Achievement toast */
+.ach-toast { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%) translateY(20px); background: linear-gradient(135deg,#1a1020,#120e18); border: 1px solid rgba(200,160,80,0.6); padding: 0.8rem 1.5rem; border-radius: 4px; font-size: 0.82rem; color: #d0b870; letter-spacing: 0.08em; opacity: 0; transition: all 0.4s; z-index: 999; text-align: center; box-shadow: 0 0 24px rgba(200,140,40,0.3); pointer-events: none; }
+.ach-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
 /* ── SHOW NIGHT ── */
 #show-screen { background: #050508; }
 .stage-container { position: relative; width: 100%; max-width: 700px; height: 420px; margin: 0 auto; }
@@ -107,9 +151,11 @@ canvas#stage { width: 100%; height: 100%; }
 .show-info { text-align: center; margin-top: 1rem; }
 .show-band-name { font-size: 1.6rem; color: #e0d0f8; letter-spacing: 0.1em; margin-bottom: 0.3rem; }
 .show-genre { font-size: 0.75rem; color: #6050a0; letter-spacing: 0.2em; text-transform: uppercase; }
-.show-events { min-height: 60px; max-width: 600px; text-align: center; margin: 1rem auto 0; font-size: 0.85rem; color: #9080b8; font-style: italic; line-height: 1.7; padding: 0 2rem; }
+.show-events { min-height: 60px; max-width: 600px; text-align: center; margin: 1rem auto 0; font-size: 0.85rem; color: #9080b8; font-style: italic; line-height: 1.7; padding: 0 2rem; white-space: pre-line; }
 .show-progress-bar { width: 300px; height: 3px; background: #1a1a2e; margin: 1rem auto 0; border-radius: 2px; overflow: hidden; }
 .show-progress-fill { height: 100%; background: linear-gradient(90deg, #6030c0, #a060f0); width: 0%; transition: width 0.3s; }
+.show-sfx-badges { display: flex; justify-content: center; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
+.sfx-badge { font-size: 0.65rem; background: rgba(120,60,200,0.2); border: 1px solid rgba(120,60,200,0.4); color: #a080d0; padding: 0.2rem 0.5rem; border-radius: 2px; letter-spacing: 0.08em; }
 
 /* ── POST SHOW ── */
 #postshow-screen { background: #07070f; overflow-y: auto; padding: 2rem; }
@@ -128,6 +174,8 @@ canvas#stage { width: 100%; height: 100%; }
 .rival-from { font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: #5a3040; margin-bottom: 0.4rem; }
 .continue-btn { width: 100%; padding: 1rem; background: rgba(80,40,160,0.3); border: 1px solid rgba(120,80,200,0.4); color: #c0a0f0; font-family: inherit; font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.3s; margin-top: 1rem; }
 .continue-btn:hover { background: rgba(100,50,180,0.5); }
+.combo-unlock { background: linear-gradient(135deg,#0e0e18,#120e10); border: 1px solid rgba(80,200,120,0.4); padding: 1rem; margin-bottom: 1rem; font-size: 0.82rem; color: #80d090; line-height: 1.6; }
+.combo-title { font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; color: #408050; margin-bottom: 0.4rem; }
 
 /* ── CONTACTS PANEL ── */
 .contact-entry { background: #0e0e18; border: 1px solid #1e1e30; border-radius: 4px; padding: 1rem; margin-bottom: 0.8rem; }
@@ -139,6 +187,7 @@ canvas#stage { width: 100%; height: 100%; }
 .tier-1 { background: #0a1820; color: #407080; border: 1px solid #1a3040; }
 .tier-2 { background: #1a1a0a; color: #807040; border: 1px solid #3a3010; }
 .tier-3 { background: #0a1a0a; color: #408040; border: 1px solid #103010; }
+.tier-4 { background: #1a100a; color: #c08040; border: 1px solid #402010; }
 
 /* ── ALERTS PANEL ── */
 .alert-item { background: #0e0e18; border-left: 3px solid #4a2080; padding: 0.8rem 1rem; margin-bottom: 0.6rem; font-size: 0.82rem; color: #9080b0; line-height: 1.6; }
@@ -163,10 +212,14 @@ canvas#stage { width: 100%; height: 100%; }
 .fade-in { animation: fadeIn 0.4s ease forwards; }
 @keyframes pulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
 .pulse { animation: pulse 2s infinite; }
-@keyframes crowdPulse { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.15); } }
+@keyframes achPop { 0%{transform:scale(0.8);opacity:0} 60%{transform:scale(1.05)} 100%{transform:scale(1);opacity:1} }
+.ach-pop { animation: achPop 0.5s ease forwards; }
 </style>
 </head>
 <body>
+
+<!-- ACHIEVEMENT TOAST -->
+<div class="ach-toast" id="ach-toast"></div>
 
 <!-- START SCREEN -->
 <div class="screen active" id="start-screen">
@@ -174,17 +227,26 @@ canvas#stage { width: 100%; height: 100%; }
   <div class="start-title">Concert Simulator</div>
   <div class="start-sub">Talent Booker — The Dive Bar</div>
   <div class="start-tagline">"Football Manager meets Tinder, set backstage."<br>Discover acts. Build scenes. Break artists.</div>
-  <button class="btn btn-primary" onclick="startGame()">Open the Doors</button>
+  <div style="display:flex;gap:1rem;">
+    <button class="btn btn-primary" onclick="startGame()">Open the Doors</button>
+    <button class="btn" id="continue-btn" onclick="loadGame()" style="display:none">↩ Continue</button>
+  </div>
 </div>
 
 <!-- MAIN GAME SCREEN -->
 <div class="screen" id="game-screen">
   <div class="sidebar">
-    <nav-btn class="nav-btn active" data-panel="office" onclick="switchPanel('office',this)" title="Office">
+    <div class="nav-btn active" data-panel="office" onclick="switchPanel('office',this)">
       <span>🏠</span><span class="tooltip">THE OFFICE</span>
-    </nav-btn>
+    </div>
     <div class="nav-btn" data-panel="bandbook" onclick="switchPanel('bandbook',this)">
       <span>📱</span><span class="tooltip">BANDBOOK</span>
+    </div>
+    <div class="nav-btn" data-panel="sfx" onclick="switchPanel('sfx',this)">
+      <span>🎛️</span><span class="tooltip">SFX GEAR</span>
+    </div>
+    <div class="nav-btn" data-panel="achievements" onclick="switchPanel('achievements',this)">
+      <span>🏆</span><span class="tooltip">ACHIEVEMENTS</span>
     </div>
     <div class="nav-btn" data-panel="contacts" onclick="switchPanel('contacts',this)">
       <span>👥</span><span class="tooltip">CONTACTS</span>
@@ -199,7 +261,7 @@ canvas#stage { width: 100%; height: 100%; }
     <div class="panel active" id="panel-office">
       <div class="panel-header">
         <div class="panel-title">Home Base</div>
-        <div class="panel-heading">The Dive Bar</div>
+        <div class="panel-heading" id="office-venue-name">The Dive Bar</div>
       </div>
       <div class="office-grid" id="office-grid"></div>
     </div>
@@ -228,6 +290,24 @@ canvas#stage { width: 100%; height: 100%; }
       </div>
     </div>
 
+    <!-- SFX GEAR PANEL -->
+    <div class="panel" id="panel-sfx">
+      <div class="panel-header">
+        <div class="panel-title">Production Equipment</div>
+        <div class="panel-heading">SFX Gear</div>
+      </div>
+      <div id="sfx-grid" class="sfx-grid"></div>
+    </div>
+
+    <!-- ACHIEVEMENTS PANEL -->
+    <div class="panel" id="panel-achievements">
+      <div class="panel-header">
+        <div class="panel-title">Venue Reputation</div>
+        <div class="panel-heading">Achievements</div>
+      </div>
+      <div id="ach-grid" class="ach-grid"></div>
+    </div>
+
     <!-- CONTACTS PANEL -->
     <div class="panel" id="panel-contacts">
       <div class="panel-header">
@@ -253,9 +333,10 @@ canvas#stage { width: 100%; height: 100%; }
 
   <div class="status-bar">
     <span class="status-week">WEEK <span id="sb-week">1</span></span>
-    <span class="status-item">VENUE: <span id="sb-venue">The Dive Bar (cap. 100)</span></span>
+    <span class="status-item">VENUE: <span id="sb-venue">The Dive Bar</span></span>
     <span class="status-item">CASH: <span id="sb-cash">£800</span></span>
     <span class="status-item">BOOKED: <span id="sb-booked">—</span></span>
+    <span class="status-item">SFX: <span id="sb-sfx">None</span></span>
   </div>
 </div>
 
@@ -265,6 +346,7 @@ canvas#stage { width: 100%; height: 100%; }
     <div class="show-band-name" id="show-band-name"></div>
     <div class="show-genre" id="show-genre-label"></div>
   </div>
+  <div class="show-sfx-badges" id="show-sfx-badges"></div>
   <div class="stage-container">
     <canvas id="stage" width="700" height="420"></canvas>
   </div>
@@ -278,6 +360,7 @@ canvas#stage { width: 100%; height: 100%; }
     <div class="postshow-title">Post-Show</div>
     <div class="postshow-band" id="ps-band"></div>
     <div class="postshow-night" id="ps-night"></div>
+    <div id="ps-combo"></div>
     <div class="postshow-review" id="ps-review"></div>
     <div class="revenue-breakdown" id="ps-revenue"></div>
     <div id="ps-rival"></div>
@@ -298,6 +381,7 @@ canvas#stage { width: 100%; height: 100%; }
 </div>
 
 <script>
+
 // ═══════════════════════════════════════════════
 // GAME DATA
 // ═══════════════════════════════════════════════
@@ -350,6 +434,14 @@ const BANDS = [
     bio:"Just the songs. No effects. No production. Just us and the room.",
     traits:['Acoustic Purists','Uncompromising','Industry Darlings'], fee:'£', feeVal:90,
     agent:'Self-managed', fame:0, fans:15 },
+  { id:'b13', name:'Low Coven', genre:'Shoegaze', genreKey:'rock',
+    bio:"Walls of reverb. Velvet dynamics. We need smoke or we don't play.",
+    traits:['Method Actors','Underground Cred','Smoke Lovers'], fee:'££', feeVal:160,
+    agent:'Theo Marsh @ Quiet Storm', fame:1, fans:38 },
+  { id:'b14', name:'Volt Temple', genre:'Industrial', genreKey:'metal',
+    bio:"Machines. Noise. Intent. We've worked with three different lighting designers. They all quit.",
+    traits:['Pyro Enthusiasts','Drama Queens','Face Paint'], fee:'£££', feeVal:300,
+    agent:'Rick Voss @ Hammer', fame:2, fans:70 },
 ];
 
 const RIVALS = [
@@ -377,28 +469,100 @@ const RIVALS = [
   ]},
 ];
 
-const PRODUCTION_EFFECTS = {
-  pyro: { name:'Pyrotechnics', cost:120, icon:'🔥', synergies:['Pyro Enthusiasts','Drama Queens'], penalty:['Acoustic Purists','Method Actors'] },
-  laser: { name:'Laser Array', cost:80, icon:'💫', synergies:['Face Paint','Party Animals'], penalty:['Acoustic Purists','Method Actors'] },
-  smoke: { name:'Smoke Machine', cost:50, icon:'💨', synergies:['Underground Cred','Method Actors'], penalty:[] },
-  uv:    { name:'UV Flood', cost:40, icon:'🌈', synergies:['Face Paint','Chameleons'], penalty:[] },
-  spots: { name:'Coloured Spots', cost:30, icon:'🎨', synergies:['Acoustic Purists','Indie Folk'], penalty:[] },
-  basic: { name:'Basic Lighting', cost:0, icon:'💡', synergies:[], penalty:['Pyro Enthusiasts'] },
+// SFX EQUIPMENT — id, name, icon, cost (to buy), nightly (per show), desc, synergies, penalties
+const SFX_GEAR = {
+  basic:  { id:'basic',  name:'Basic Lighting',   icon:'💡', cost:0,   nightly:0,  owned:true,
+            desc:'Default house rig. Gets the job done. Barely.',
+            synergies:[], penalties:['Pyro Enthusiasts','Drama Queens'],
+            colorHue:50 },
+  spots:  { id:'spots',  name:'Coloured Spots',   icon:'🎨', cost:150, nightly:20, owned:false,
+            desc:'Warm washes and colour gels. Works beautifully with folk and acoustic sets.',
+            synergies:['Acoustic Purists','Industry Darlings'],  penalties:[],
+            colorHue:40 },
+  uv:     { id:'uv',     name:'UV Flood',          icon:'🌈', cost:200, nightly:25, owned:false,
+            desc:'Ultraviolet rigs that make face paint glow and crowds lose their minds.',
+            synergies:['Face Paint','Chameleons','Party Animals'], penalties:[],
+            colorHue:280 },
+  smoke:  { id:'smoke',  name:'Smoke Machine',     icon:'💨', cost:300, nightly:35, owned:false,
+            desc:'Atmospheric haze that transforms the room. Essential for shoegaze and post-rock.',
+            synergies:['Method Actors','Underground Cred','Smoke Lovers'], penalties:[],
+            colorHue:200 },
+  laser:  { id:'laser',  name:'Laser Array',       icon:'💫', cost:500, nightly:60, owned:false,
+            desc:'Precision beam show. Pairs with electronic and synthwave acts for a full arena feel.',
+            synergies:['Face Paint','Party Animals','Merch Machine'], penalties:['Acoustic Purists'],
+            colorHue:120 },
+  pyro:   { id:'pyro',   name:'Pyrotechnics Rig',  icon:'🔥', cost:800, nightly:90, owned:false,
+            desc:'The big one. Fireworks, flash pots, and CO2 cannons. Banned at three other venues.',
+            synergies:['Pyro Enthusiasts','Drama Queens','Crowd Surfers'], penalties:['Acoustic Purists','Method Actors'],
+            colorHue:20 },
 };
+
+// VENUE TIERS
+const VENUE_TIERS = [
+  { name:'The Dive Bar',     capacity:100,  upgradeCost:0,     upgradeLabel:null },
+  { name:'The Loft',         capacity:250,  upgradeCost:1200,  upgradeLabel:'Knock through the back wall. £1,200.' },
+  { name:'The Ballroom',     capacity:500,  upgradeCost:3000,  upgradeLabel:'Strip it back. New sound desk. £3,000.' },
+  { name:'The Warehouse',    capacity:1000, upgradeCost:7500,  upgradeLabel:'Industrial conversion. The works. £7,500.' },
+  { name:'The Arena',        capacity:3000, upgradeCost:20000, upgradeLabel:'You\'d need a miracle. And £20,000.' },
+];
+
+// ACHIEVEMENTS — id, name, icon, desc, reward, condition (checked in JS)
+const ACHIEVEMENTS = [
+  { id:'first_show',    name:'First Night',         icon:'🎤', desc:'Run your first show.',                                          reward:'+£50 from a generous punter',        unlocked:false, week:null },
+  { id:'sold_out',      name:'House Full',           icon:'🏟️', desc:'Sell out a show.',                                             reward:'+15 to next show score',             unlocked:false, week:null },
+  { id:'broke_act',     name:'Talent Scout',         icon:'🌟', desc:'Break an act to Regional Act fame or above.',                  reward:'Unlocks higher-fame bookings',        unlocked:false, week:null },
+  { id:'pyro_punk',     name:'Fire & Fury',          icon:'🔥', desc:'Use Pyrotechnics with a Punk or Metal act.',                   reward:'+20 score on pyro+punk combos',      unlocked:false, week:null },
+  { id:'smoke_gaze',    name:'Wall of Haze',         icon:'💨', desc:'Use Smoke with a Shoegaze or Post-Rock act.',                  reward:'Unlocks "Shoegaze Sanctuary" rep',   unlocked:false, week:null },
+  { id:'uv_paint',      name:'Black Light Ritual',  icon:'🌈', desc:'Use UV Flood with a Face Paint band.',                         reward:'+25 bar revenue on UV nights',       unlocked:false, week:null },
+  { id:'laser_rave',    name:'Club Night Royalty',  icon:'💫', desc:'Use Laser Array with an Electronic or Synthwave act.',          reward:'Electronic acts offer lower fees',   unlocked:false, week:null },
+  { id:'acoustic_pure', name:'Less Is More',         icon:'🎸', desc:'Run a show with Basic Lighting and an Acoustic Purists band.', reward:'+10 relationship tier speed',        unlocked:false, week:null },
+  { id:'legendary',     name:'Legendary Partnership',icon:'🤝', desc:'Reach Legendary Partners tier with any band.',                 reward:'+30% ticket revenue with that act',  unlocked:false, week:null },
+  { id:'five_shows',    name:'Grind',                icon:'📅', desc:'Run 5 shows.',                                                 reward:'Staff loyalty bonus: -£10 staff cost',unlocked:false, week:null },
+  { id:'upgrade1',      name:'Moving Up',            icon:'🏗️', desc:'Upgrade to The Loft or beyond.',                              reward:'Access to bigger-name acts',         unlocked:false, week:null },
+  { id:'combo_smoke_shoegaze', name:'Shoegaze Sanctuary', icon:'🌫️', desc:'Smoke + Shoegaze: the definitive combo.',                reward:'Shoegaze acts seek you out',         unlocked:false, week:null },
+  { id:'combo_pyro_metal',     name:'The Inferno',   icon:'🤘', desc:'Pyro + Metal: maximum carnage.',                              reward:'Metal acts waive 10% fee',           unlocked:false, week:null },
+  { id:'combo_uv_electronic',  name:'Neon Church',   icon:'🎧', desc:'UV + Electronic: transcendent.',                              reward:'Electronic fans spend 40% more at bar', unlocked:false, week:null },
+  { id:'combo_laser_synthwave',name:'Cyberpunk Night',icon:'🌆', desc:'Lasers + Synthwave: the future is here.',                    reward:'Synthwave acts boost their own promo', unlocked:false, week:null },
+];
+
+// COMBO DEFINITIONS — sfx + genreKey/trait combos that trigger special reviews
+const COMBOS = [
+  { id:'combo_smoke_shoegaze',  sfx:'smoke',  match: b => b.genre==='Shoegaze' || b.traits.includes('Smoke Lovers'),
+    reviewLine: "The smoke filled the room before the first note hit. By the end, no one could tell where the music stopped and the haze began. Singular.",
+    scoreMod: 18 },
+  { id:'combo_pyro_metal',      sfx:'pyro',   match: b => b.genreKey==='metal' || b.traits.includes('Pyro Enthusiasts'),
+    reviewLine: "Flash pots on the beat drop. The crowd surged. Someone lost a shoe. No one cared. This is why we go to shows.",
+    scoreMod: 20 },
+  { id:'combo_uv_electronic',   sfx:'uv',     match: b => b.genreKey==='electronic' || b.traits.includes('Face Paint'),
+    reviewLine: "Under the ultraviolet, the set became something else entirely. Part concert, part ceremony.",
+    scoreMod: 15 },
+  { id:'combo_laser_synthwave', sfx:'laser',  match: b => b.genre==='Synthwave' || b.traits.includes('Party Animals'),
+    reviewLine: "Laser grids sliced through the synth fog. The crowd became a single organism. Three encores.",
+    scoreMod: 17 },
+  { id:'pyro_punk',             sfx:'pyro',   match: b => b.genreKey==='punk',
+    reviewLine: "Pyrotechnics and punk. Someone could have died. Everyone left feeling more alive.",
+    scoreMod: 12 },
+  { id:'acoustic_pure',         sfx:'spots',  match: b => b.traits.includes('Acoustic Purists'),
+    reviewLine: "Warm gel lighting. Nothing else. The songs did the rest. Some nights you just get out of the way.",
+    scoreMod: 10 },
+  { id:'uv_paint',              sfx:'uv',     match: b => b.traits.includes('Face Paint'),
+    reviewLine: "Black light turned the band into something from a fever dream. The face paint glowed. The crowd lost it.",
+    scoreMod: 14 },
+];
 
 const REVIEWS_GOOD = [
   "Whatever {venue} is doing with their {genre} bookings, other rooms should pay attention.",
   "The {band} set was exactly what this city needed. Packed room. Earned sweat.",
-  "Smoke machines and {genre}. Someone downtown understands the assignment.",
   "Word is spreading. {venue} keeps picking them before anyone else does.",
   "{band} were exceptional. The production matched the room perfectly.",
   "First time I've seen {band} and I've already told everyone I know.",
+  "There was a moment, about forty minutes in, when the whole room locked in. You know the feeling.",
 ];
 const REVIEWS_MID = [
   "{band} delivered a solid set. Nothing revelatory, but the crowd left happy.",
   "A competent night at {venue}. {band} know their audience.",
   "Good energy, if not transcendent. {venue} continues to book dependably.",
-  "{band} on a {day} — niche crowd but loyal. Respectable numbers.",
+  "{band} on a Saturday — niche crowd but loyal. Respectable numbers.",
 ];
 const REVIEWS_BAD = [
   "A difficult night. {band} seemed off. The room felt it.",
@@ -411,61 +575,134 @@ const REVIEWS_BAD = [
 // GAME STATE
 // ═══════════════════════════════════════════════
 let G = {};
+
 function initGame() {
   G = {
     week: 1,
     cash: 800,
-    venue: 'The Dive Bar',
-    capacity: 100,
+    venueTier: 0,
     bookedBand: null,
     supportBand: null,
-    history: [],        // { week, band, attendance, revenue, score }
-    contacts: {},       // bandId -> { tier, gigs, bestNight }
+    history: [],
+    contacts: {},
     alerts: [],
     messages: [],
-    bands: JSON.parse(JSON.stringify(BANDS)), // deep copy so we can mutate fame
+    bands: JSON.parse(JSON.stringify(BANDS)),
+    sfxOwned: { basic: true },
+    sfxActive: { basic: true },
+    achievements: JSON.parse(JSON.stringify(ACHIEVEMENTS)),
     showsWithoutRevenue: 0,
     totalActsBroken: 0,
+    repTags: [],  // unlocked niche reps e.g. 'Shoegaze Sanctuary'
+    staffCostBonus: 0,
   };
-  G.alerts.push({ text: 'Welcome to The Dive Bar. Week 1. You have £800, a sticky floor, and a dream. Check BandBook to find your first act.', date: 'Week 1', urgent: false });
-  G.messages.push({ from: 'Derek @ The Monarch', text: "Heard you just took over The Dive Bar. Good luck with that. We just confirmed The Morrigan for New Year's. Exciting times. 🥂", date: 'Week 1' });
+  addAlert('Welcome to The Dive Bar. Week 1. You have £800, a sticky floor, and a dream. Check BandBook to find your first act.', false);
+  addMessage('Derek @ The Monarch', "Heard you just took over The Dive Bar. Good luck with that. We just confirmed The Morrigan for New Year's. Exciting times. 🥂");
+}
+
+function saveGame() {
+  try { localStorage.setItem('concertsim_save', JSON.stringify(G)); } catch(e) {}
+}
+
+function loadGame() {
+  try {
+    const saved = localStorage.getItem('concertsim_save');
+    if (!saved) return false;
+    G = JSON.parse(saved);
+    return true;
+  } catch(e) { return false; }
+}
+
+function hasSave() {
+  try { return !!localStorage.getItem('concertsim_save'); } catch(e) { return false; }
 }
 
 // ═══════════════════════════════════════════════
-// UI HELPERS
+// HELPERS
 // ═══════════════════════════════════════════════
+function venueInfo() { return VENUE_TIERS[G.venueTier]; }
+function fameLabel(f) { return ['Unknown','Local Buzz','Regional Act','National Touring','Headliner','Superstar'][f]||'Unknown'; }
+function tierLabel(t) { return ['Cold Call','Familiar','Preferred Venue','Scene Partners','Legendary Partners'][t]||'Cold Call'; }
+
 function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
+
 function switchPanel(id, el) {
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
-  if(el) el.classList.add('active');
-  if(id==='office') renderOffice();
-  if(id==='bandbook') renderBandBook();
-  if(id==='contacts') renderContacts();
-  if(id==='alerts') renderAlerts();
+  if (el) el.classList.add('active');
+  if (id==='office')        renderOffice();
+  if (id==='bandbook')      renderBandBook();
+  if (id==='sfx')           renderSFX();
+  if (id==='achievements')  renderAchievements();
+  if (id==='contacts')      renderContacts();
+  if (id==='alerts')        renderAlerts();
 }
+
 function switchTab(id, el) {
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#panel-bandbook .tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('tab-'+id).classList.add('active');
-  if(id==='contacted') renderContacted();
-  if(id==='messages') renderMessages();
+  if (id==='contacted') renderContacted();
+  if (id==='messages')  renderMessages();
 }
+
 function updateStatusBar() {
+  const v = venueInfo();
   document.getElementById('sb-week').textContent = G.week;
+  document.getElementById('sb-venue').textContent = v.name+' (cap.'+v.capacity+')';
   document.getElementById('sb-cash').textContent = '£'+G.cash;
   document.getElementById('sb-booked').textContent = G.bookedBand ? G.bookedBand.name : '—';
+  const activeSFX = Object.keys(G.sfxActive).filter(k=>G.sfxActive[k]);
+  document.getElementById('sb-sfx').textContent = activeSFX.map(k=>SFX_GEAR[k].icon).join(' ')||'None';
+  document.getElementById('office-venue-name').textContent = v.name;
 }
-function fameLabel(f) {
-  return ['Unknown','Local Buzz','Regional Act','National Touring','Headliner','Superstar'][f] || 'Unknown';
+
+function addMessage(from, text) { G.messages.push({from, text, date:`Week ${G.week}`}); }
+function addAlert(text, urgent=false) { G.alerts.unshift({text, date:`Week ${G.week}`, urgent}); }
+
+// ═══════════════════════════════════════════════
+// ACHIEVEMENT SYSTEM
+// ═══════════════════════════════════════════════
+function unlockAchievement(id) {
+  const ach = G.achievements.find(a=>a.id===id);
+  if (!ach || ach.unlocked) return false;
+  ach.unlocked = true;
+  ach.week = G.week;
+  // Apply reward effects
+  if (id==='first_show')   G.cash += 50;
+  if (id==='five_shows')   G.staffCostBonus = -10;
+  showAchToast(`🏆 Achievement: ${ach.name} — ${ach.reward}`);
+  addAlert(`🏆 Achievement unlocked: "${ach.name}" — ${ach.reward}`, false);
+  return true;
 }
-function tierLabel(t) {
-  return ['Cold Call','Familiar','Preferred Venue','Scene Partners','Legendary Partners'][t] || 'Cold Call';
+
+function checkAchievements(band, score, attendance) {
+  const v = venueInfo();
+  if (G.history.length === 1) unlockAchievement('first_show');
+  if (attendance >= v.capacity) unlockAchievement('sold_out');
+  if (G.totalActsBroken >= 1) unlockAchievement('broke_act');
+  if (G.history.length >= 5) unlockAchievement('five_shows');
+  if (Object.values(G.contacts).some(c=>c.tier>=4)) unlockAchievement('legendary');
+  if (G.venueTier >= 1) unlockAchievement('upgrade1');
+  // SFX combos
+  const active = Object.keys(G.sfxActive).filter(k=>G.sfxActive[k]);
+  if (active.includes('pyro') && band.genreKey==='punk') unlockAchievement('pyro_punk');
+  if (active.includes('smoke') && (band.genre==='Shoegaze'||band.traits.includes('Smoke Lovers'))) unlockAchievement('smoke_gaze');
+  if (active.includes('uv') && band.traits.includes('Face Paint')) unlockAchievement('uv_paint');
+  if (active.includes('laser') && band.genreKey==='electronic') unlockAchievement('laser_rave');
+  if (active.includes('basic') && active.length===1 && band.traits.includes('Acoustic Purists')) unlockAchievement('acoustic_pure');
+}
+
+function showAchToast(msg) {
+  const t = document.getElementById('ach-toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 4000);
 }
 
 // ═══════════════════════════════════════════════
@@ -474,19 +711,20 @@ function tierLabel(t) {
 function renderBandBook() {
   const grid = document.getElementById('band-grid');
   grid.innerHTML = '';
+  const v = venueInfo();
   G.bands.forEach(band => {
-    const isBooked = G.bookedBand && G.bookedBand.id === band.id;
+    if (band.fame > v.capacity/100 + 1 && !G.achievements.find(a=>a.id==='broke_act')?.unlocked) return; // fame gate
+    const isBooked  = G.bookedBand  && G.bookedBand.id  === band.id;
     const isSupport = G.supportBand && G.supportBand.id === band.id;
     const card = document.createElement('div');
-    card.className = 'band-card fade-in' + (isBooked||isSupport?' booked':'');
-    const tier = G.contacts[band.id]?.tier || 0;
-    const feeDisplay = band.fee;
+    card.className = 'band-card fade-in'+(isBooked||isSupport?' booked':'');
+    const tier = G.contacts[band.id]?.tier||0;
     card.innerHTML = `
       <div class="band-name">${band.name}</div>
       <div class="band-genre">${band.genre} · ${fameLabel(band.fame)}</div>
       <div class="band-bio">${band.bio}</div>
       <div class="band-traits">${band.traits.map(t=>`<span class="trait-tag">${t}</span>`).join('')}</div>
-      <div class="band-agent">${band.agent} · Fee: ${feeDisplay}</div>
+      <div class="band-agent">${band.agent} · Fee: ${band.fee}</div>
       ${tier>0?`<div class="band-agent" style="color:#407060">Relationship: ${tierLabel(tier)}</div>`:''}
       <button class="book-btn" ${isBooked?'disabled':''} onclick="bookBand('${band.id}','headline')">
         ${isBooked?'✓ Booked (Headline)':isSupport?'Booked as Support':'Book as Headliner'}
@@ -500,9 +738,9 @@ function renderBandBook() {
 
 function bookBand(bandId, slot) {
   const band = G.bands.find(b=>b.id===bandId);
-  if(!band) return;
-  if(slot==='headline') {
-    if(G.cash < band.feeVal) {
+  if (!band) return;
+  if (slot==='headline') {
+    if (G.cash < band.feeVal) {
       addAlert(`Can't afford ${band.name} — fee is £${band.feeVal}, you have £${G.cash}.`, true);
       switchPanel('alerts', document.querySelector('[data-panel="alerts"]'));
       return;
@@ -511,49 +749,114 @@ function bookBand(bandId, slot) {
   } else {
     G.supportBand = band;
   }
-  addMessage(`${band.agent}`, `Re: ${band.name} — ${slot==='headline'?'Headline':'Support'} slot confirmed for Week ${G.week+1}. Fee of £${band.feeVal} due on the night. Looking forward to it.`);
+  addMessage(band.agent, `Re: ${band.name} — ${slot==='headline'?'Headline':'Support'} slot confirmed for Week ${G.week+1}. Fee of £${band.feeVal} due on the night. Looking forward to it.`);
   updateStatusBar();
   renderBandBook();
   switchPanel('office', document.querySelector('[data-panel="office"]'));
-  renderOffice();
 }
 
 function renderContacted() {
   const el = document.getElementById('contacted-list');
   el.innerHTML = '';
-  const contacted = [];
-  if(G.bookedBand) contacted.push({band:G.bookedBand, slot:'Headline'});
-  if(G.supportBand) contacted.push({band:G.supportBand, slot:'Support'});
-  if(!contacted.length) { el.innerHTML='<p style="color:#4a3060;font-size:0.8rem;padding:1rem">No bookings confirmed yet.</p>'; return; }
-  contacted.forEach(({band,slot})=>{
-    const div=document.createElement('div');
-    div.className='contact-entry fade-in';
-    div.innerHTML=`<div class="contact-name">${band.name} <span style="font-size:0.7rem;color:#507050">${slot}</span></div>
+  const list = [];
+  if (G.bookedBand)  list.push({band:G.bookedBand, slot:'Headline'});
+  if (G.supportBand) list.push({band:G.supportBand, slot:'Support'});
+  if (!list.length) { el.innerHTML='<p style="color:#4a3060;font-size:0.8rem;padding:1rem">No bookings confirmed yet.</p>'; return; }
+  list.forEach(({band,slot})=>{
+    const d=document.createElement('div'); d.className='contact-entry fade-in';
+    d.innerHTML=`<div class="contact-name">${band.name} <span style="font-size:0.7rem;color:#507050">${slot}</span></div>
     <div class="contact-meta">${band.genre} · Fee: £${band.feeVal}</div>
     <div class="contact-history">${band.bio}</div>`;
-    el.appendChild(div);
+    el.appendChild(d);
   });
 }
 
 function renderMessages() {
   const el = document.getElementById('messages-list');
   el.innerHTML = '';
-  if(!G.messages.length){ el.innerHTML='<p style="color:#4a3060;font-size:0.8rem;padding:1rem">No messages yet.</p>'; return; }
+  if (!G.messages.length) { el.innerHTML='<p style="color:#4a3060;font-size:0.8rem;padding:1rem">No messages yet.</p>'; return; }
   [...G.messages].reverse().forEach(m=>{
-    const div=document.createElement('div');
-    div.className='contact-entry fade-in';
-    div.innerHTML=`<div class="contact-name">${m.from}</div>
+    const d=document.createElement('div'); d.className='contact-entry fade-in';
+    d.innerHTML=`<div class="contact-name">${m.from}</div>
     <div class="contact-meta">${m.date||''}</div>
     <div class="contact-history">"${m.text}"</div>`;
-    el.appendChild(div);
+    el.appendChild(d);
   });
 }
 
-function addMessage(from, text) {
-  G.messages.push({from, text, date:`Week ${G.week}`});
+// ═══════════════════════════════════════════════
+// RENDER SFX PANEL
+// ═══════════════════════════════════════════════
+function renderSFX() {
+  const el = document.getElementById('sfx-grid');
+  el.innerHTML = '';
+  Object.values(SFX_GEAR).forEach(gear => {
+    const owned   = !!G.sfxOwned[gear.id];
+    const active  = !!G.sfxActive[gear.id];
+    const canAfford = G.cash >= gear.cost;
+    const card = document.createElement('div');
+    card.className = 'sfx-card'+(owned?' owned':'')+(active?' active-sfx':'');
+    const synStr = gear.synergies.length ? `✓ Works with: ${gear.synergies.join(', ')}` : '';
+    const penStr = gear.penalties.length ? `✗ Clashes with: ${gear.penalties.join(', ')}` : '';
+    card.innerHTML = `
+      <div class="sfx-icon">${gear.icon}</div>
+      <div class="sfx-name">${gear.name}</div>
+      <div class="sfx-desc">${gear.desc}</div>
+      ${synStr?`<div class="sfx-synergy">${synStr}</div>`:''}
+      ${penStr?`<div class="sfx-penalty">${penStr}</div>`:''}
+      <div class="sfx-cost">${owned ? (gear.cost===0?'Free':'Owned — £'+gear.nightly+'/show') : '£'+gear.cost+' to buy · £'+gear.nightly+'/show'}</div>
+      <div class="sfx-actions">
+        ${owned
+          ? `<button class="sfx-btn ${active?'toggle-on':''}" onclick="toggleSFX('${gear.id}')">${active?'✓ Active — Deactivate':'Activate for show'}</button>`
+          : `<button class="sfx-btn" ${!canAfford?'disabled':''} onclick="buySFX('${gear.id}')">${canAfford?'Buy — £'+gear.cost:'Need £'+gear.cost}</button>`
+        }
+      </div>`;
+    el.appendChild(card);
+  });
 }
-function addAlert(text, urgent=false) {
-  G.alerts.unshift({text, date:`Week ${G.week}`, urgent});
+
+function buySFX(id) {
+  const gear = SFX_GEAR[id];
+  if (!gear || G.sfxOwned[id]) return;
+  if (G.cash < gear.cost) { addAlert(`Can't afford ${gear.name}. Need £${gear.cost}.`, true); return; }
+  G.cash -= gear.cost;
+  G.sfxOwned[id] = true;
+  addAlert(`${gear.icon} ${gear.name} installed. Toggle it on before your next show.`, false);
+  updateStatusBar();
+  renderSFX();
+  saveGame();
+}
+
+function toggleSFX(id) {
+  if (!G.sfxOwned[id]) return;
+  G.sfxActive[id] = !G.sfxActive[id];
+  // Deactivate basic if something else is activated
+  if (id !== 'basic' && G.sfxActive[id]) G.sfxActive['basic'] = false;
+  if (id === 'basic' && G.sfxActive['basic']) {
+    Object.keys(G.sfxActive).forEach(k => { if (k!=='basic') G.sfxActive[k]=false; });
+  }
+  updateStatusBar();
+  renderSFX();
+  saveGame();
+}
+
+// ═══════════════════════════════════════════════
+// RENDER ACHIEVEMENTS
+// ═══════════════════════════════════════════════
+function renderAchievements() {
+  const el = document.getElementById('ach-grid');
+  el.innerHTML = '';
+  G.achievements.forEach(ach => {
+    const card = document.createElement('div');
+    card.className = 'ach-card'+(ach.unlocked?' unlocked ach-pop':'');
+    card.innerHTML = `
+      <div class="ach-icon">${ach.icon}</div>
+      <div class="ach-name">${ach.name}</div>
+      <div class="ach-desc">${ach.desc}</div>
+      <div class="ach-reward">${ach.reward}</div>
+      ${ach.unlocked?`<div class="ach-unlocked-date">Unlocked Week ${ach.week}</div>`:''}`;
+    el.appendChild(card);
+  });
 }
 
 // ═══════════════════════════════════════════════
@@ -561,10 +864,11 @@ function addAlert(text, urgent=false) {
 // ═══════════════════════════════════════════════
 function renderOffice() {
   const grid = document.getElementById('office-grid');
+  const v = venueInfo();
   const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
   const scheduleHTML = days.map(d=>{
     const act = d==='Saturday' && G.bookedBand ? G.bookedBand.name : '';
-    const sup  = d==='Saturday' && G.supportBand ? `<br><span style="font-size:0.68rem;color:#507050">+ ${G.supportBand.name} (support)</span>` : '';
+    const sup = d==='Saturday' && G.supportBand ? `<br><span style="font-size:0.68rem;color:#507050">+ ${G.supportBand.name} (support)</span>` : '';
     return `<div class="schedule-slot">
       <span class="slot-day">${d}</span>
       <span class="${act?'slot-act':'slot-empty'}">${act||'—'}${sup}</span>
@@ -582,429 +886,553 @@ function renderOffice() {
   ).join('') || '<div class="notif">All quiet.</div>';
 
   const canPlay = !!G.bookedBand;
+  const activeSFX = Object.keys(G.sfxActive).filter(k=>G.sfxActive[k]);
+  const sfxSummary = activeSFX.map(k=>SFX_GEAR[k].icon+' '+SFX_GEAR[k].name).join(', ')||'None';
+
+  // Venue upgrade row
+  const nextTier = VENUE_TIERS[G.venueTier+1];
+  const upgradeHTML = nextTier ? `
+    <div class="upgrade-row">
+      <span class="upgrade-cost">${nextTier.upgradeLabel}</span>
+      <button class="upgrade-btn" ${G.cash>=nextTier.upgradeCost?'':'disabled'} onclick="upgradeVenue()">
+        Upgrade → ${nextTier.name}
+      </button>
+    </div>` : `<div style="font-size:0.75rem;color:#507050;margin-top:0.8rem">Maximum capacity reached. Legend.</div>`;
+
   grid.innerHTML = `
     <div class="office-card"><h3>This Week's Schedule</h3>${scheduleHTML}</div>
-    <div class="office-card"><h3>Recent P&amp;L</h3>${finRows}
+    <div class="office-card"><h3>Recent P&L</h3>${finRows}
       <div class="finances-row" style="margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid #1e1e30">
         <span class="fin-label">Current Cash</span>
         <span class="fin-value positive">£${G.cash}</span>
       </div>
     </div>
+    <div class="venue-card" style="grid-column:1/-1">
+      <h3 style="font-size:0.68rem;letter-spacing:0.2em;text-transform:uppercase;color:#6050a0;margin-bottom:0.8rem">Venue</h3>
+      <div class="venue-tier-name">${v.name}</div>
+      <div class="venue-tier-cap">Capacity: ${v.capacity} · SFX Active: ${sfxSummary}</div>
+      ${upgradeHTML}
+    </div>
     <div class="office-card" style="grid-column:1/-1"><h3>Notifications</h3>
       <div class="notifications-list">${lastNotifs}</div>
     </div>
     <button class="do-show-btn" ${canPlay?'':'disabled'} onclick="runShow()">
-      ${canPlay?`▶  Run Show — ${G.bookedBand.name} · Saturday Night`:'Book an act in BandBook to run a show'}
+      ${canPlay?`▶  Run Show — ${G.bookedBand.name} · Saturday Night · SFX: ${sfxSummary}`:'Book an act in BandBook to run a show'}
     </button>`;
+}
+
+function upgradeVenue() {
+  const nextTier = VENUE_TIERS[G.venueTier+1];
+  if (!nextTier || G.cash < nextTier.upgradeCost) return;
+  G.cash -= nextTier.upgradeCost;
+  G.venueTier++;
+  const v = venueInfo();
+  addAlert(`🏗️ Venue upgraded to "${v.name}" — capacity now ${v.capacity}. Bigger acts, bigger nights.`, false);
+  unlockAchievement('upgrade1');
+  updateStatusBar();
+  renderOffice();
+  saveGame();
 }
 
 function renderContacts() {
   const el = document.getElementById('contacts-list');
   el.innerHTML = '';
   const seen = Object.keys(G.contacts);
-  if(!seen.length){ el.innerHTML='<p style="color:#4a3060;font-size:0.8rem;padding:1rem">No relationship history yet. Book and run some shows.</p>'; return; }
+  if (!seen.length) { el.innerHTML='<p style="color:#4a3060;font-size:0.8rem;padding:1rem">No relationship history yet.</p>'; return; }
   seen.forEach(id=>{
-    const c = G.contacts[id];
-    const band = G.bands.find(b=>b.id===id);
-    if(!band) return;
-    const div = document.createElement('div');
-    div.className='contact-entry fade-in';
-    div.innerHTML=`<div class="contact-name">${band.name}
+    const c=G.contacts[id], band=G.bands.find(b=>b.id===id);
+    if (!band) return;
+    const d=document.createElement('div'); d.className='contact-entry fade-in';
+    d.innerHTML=`<div class="contact-name">${band.name}
       <span class="relationship-tier tier-${c.tier}">${tierLabel(c.tier)}</span></div>
-      <div class="contact-meta">${band.genre} · Gigs together: ${c.gigs} · Fame: ${fameLabel(band.fame)}</div>
+      <div class="contact-meta">${band.genre} · Gigs: ${c.gigs} · Fame: ${fameLabel(band.fame)}</div>
       <div class="contact-history">Best night: ${c.bestNight||'None yet'}${c.agentNote?`<br><em style="color:#5a4070">"${c.agentNote}"</em>`:''}</div>`;
-    el.appendChild(div);
+    el.appendChild(d);
   });
 }
 
 function renderAlerts() {
   const el = document.getElementById('alerts-list');
   el.innerHTML = '';
-  if(!G.alerts.length){ el.innerHTML='<p style="color:#4a3060;font-size:0.8rem;padding:1rem">No alerts.</p>'; return; }
+  if (!G.alerts.length) { el.innerHTML='<p style="color:#4a3060;font-size:0.8rem;padding:1rem">No alerts.</p>'; return; }
   G.alerts.forEach(a=>{
-    const div=document.createElement('div');
-    div.className='alert-item'+(a.urgent?' urgent':'');
-    div.innerHTML=`<div class="alert-date">${a.date}</div>${a.text}`;
-    el.appendChild(div);
+    const d=document.createElement('div');
+    d.className='alert-item'+(a.urgent?' urgent':'');
+    d.innerHTML=`<div class="alert-date">${a.date}</div>${a.text}`;
+    el.appendChild(d);
   });
 }
-</script>
-<script>
-// ═══════════════════════════════════════════════
-// SHOW NIGHT — CANVAS ANIMATION
-// ═══════════════════════════════════════════════
-let showAnim = null;
-let showParticles = [];
-let crowdPeople = [];
-let showT = 0;
-let showDuration = 420; // frames ~7s at 60fps
-let showScore = 0;
-let showEvents = [];
+
+// ── SHOW NIGHT ────────────────────────────────────────────────────────────────
 
 function runShow() {
-  if(!G.bookedBand) return;
-  const band = G.bookedBand;
+  const band = BANDS.find(b => b.id === G.bookedBand);
+  if (!band) return;
 
-  // Deduct fee upfront
-  G.cash -= band.feeVal;
-  if(G.supportBand) G.cash -= Math.floor(G.supportBand.feeVal * 0.5);
+  // Deduct nightly SFX costs
+  let sfxCostTotal = 0;
+  for (const id in G.sfxActive) {
+    if (G.sfxActive[id] && SFX_GEAR[id]) sfxCostTotal += SFX_GEAR[id].nightly;
+  }
+  G.cash -= sfxCostTotal;
 
-  showScreen('show-screen');
-  document.getElementById('show-band-name').textContent = band.name;
-  document.getElementById('show-genre-label').textContent = band.genre.toUpperCase() + ' · THE DIVE BAR';
-  document.getElementById('show-events').textContent = '';
+  // Show SFX badges on show screen
+  const badgeEl = document.getElementById('show-sfx-badges');
+  if (badgeEl) {
+    const activeIds = Object.keys(G.sfxActive).filter(k => G.sfxActive[k]);
+    const SFX_ICONS = { basic:'💡', spots:'🔦', uv:'🟣', smoke:'💨', laser:'🟢', pyro:'🔥' };
+    badgeEl.innerHTML = activeIds.map(id => `<span class="sfx-badge">${SFX_ICONS[id]||'✨'} ${SFX_GEAR[id]?.name||id}</span>`).join('');
+  }
 
-  // Init canvas
-  const canvas = document.getElementById('stage');
+  showPanel('show');
+  animateShow(band);
+}
+
+function animateShow(band) {
+  const canvas = document.getElementById('show-canvas');
+  if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  canvas.width = 700; canvas.height = 420;
+  canvas.width = canvas.offsetWidth || 600;
+  canvas.height = canvas.offsetHeight || 220;
 
-  // Determine show quality
-  const hasPyro = band.traits.includes('Pyro Enthusiasts');
-  const hasAcoustic = band.traits.includes('Acoustic Purists');
-  const isDrama = band.traits.includes('Drama Queens');
-  const isRising = band.traits.includes('Rising Stars');
-  const isMerch = band.traits.includes('Merch Machine');
-  const isParty = band.traits.includes('Party Animals');
+  // Determine active SFX
+  const hasPyro   = G.sfxActive['pyro'];
+  const hasLaser  = G.sfxActive['laser'];
+  const hasSmoke  = G.sfxActive['smoke'];
+  const hasUV     = G.sfxActive['uv'];
+  const hasSpots  = G.sfxActive['spots'];
+  const hasBasic  = G.sfxActive['basic'];
 
-  // Base score 40-80, modified by traits
-  let baseScore = 40 + Math.floor(Math.random()*40);
-  const tier = G.contacts[band.id]?.tier||0;
-  baseScore += tier * 8;
-  if(isRising) baseScore += 10;
-  if(isDrama && Math.random()<0.5) baseScore += 20; // high ceiling
-  if(isDrama && Math.random()<0.2) baseScore -= 15; // risk
-  showScore = Math.min(100, Math.max(10, baseScore));
+  // Pick primary hue from highest-priority active gear
+  let hue = 260; // default purple
+  if (hasBasic)  hue = 50;
+  if (hasSpots)  hue = 40;
+  if (hasUV)     hue = 280;
+  if (hasSmoke)  hue = 200;
+  if (hasLaser)  hue = 120;
+  if (hasPyro)   hue = 20;
 
-  // Determine attendance
-  const fillRate = 0.3 + (showScore/100)*0.65 + Math.random()*0.1;
-  const attendance = Math.min(G.capacity, Math.floor(G.capacity * fillRate));
+  const W = canvas.width, H = canvas.height;
+  let frame = 0;
+  const totalFrames = 180;
 
-  // Show events narrative
-  const eventsPool = [];
-  if(hasPyro) eventsPool.push("The pyrotechnics hit. The crowd surges forward.");
-  if(hasAcoustic) eventsPool.push("The room falls quiet. Every note lands clean.");
-  if(isDrama && Math.random()<0.3) eventsPool.push("The singer drops the mic mid-set and walks offstage. Thirty seconds of silence. Then they return.");
-  if(isRising && showScore>70) eventsPool.push("Something shifts in the room. Everyone feels it.");
-  if(isParty) eventsPool.push("The bar runs dry before the encore. No one minds.");
-  if(band.traits.includes('Crowd Surfers')) eventsPool.push("Three people attempt crowd surfing. Two succeed.");
-  if(band.traits.includes('Always Late')) eventsPool.push("They're twenty minutes late. The crowd almost breaks. Almost.");
-  if(band.traits.includes('Face Paint')) eventsPool.push("Under the UV lights, the band looks like a ritual.");
-  eventsPool.push(showScore>75?"The set ends. No one leaves immediately.":showScore>50?"A solid night. The crowd disperses warmly.":"They play. It's fine. People leave.");
-  showEvents = eventsPool.slice(0,3);
+  // Crowd particles
+  const crowd = Array.from({ length: 60 }, (_, i) => ({
+    x: (i / 60) * W,
+    y: H - 20 - Math.random() * 30,
+    phase: Math.random() * Math.PI * 2,
+    amp: 4 + Math.random() * 8,
+  }));
 
-  // Build crowd
-  crowdPeople = [];
-  const rows = 4, cols = 18;
-  for(let r=0; r<rows; r++){
-    for(let c=0; c<cols; c++){
-      if(Math.random() < fillRate) {
-        crowdPeople.push({
-          x: 40 + c*36 + Math.random()*12,
-          y: 280 + r*28 + Math.random()*8,
-          phase: Math.random()*Math.PI*2,
-          speed: 0.04+Math.random()*0.04,
-          color: `hsl(${260+Math.random()*60},${30+Math.random()*40}%,${30+Math.random()*25}%)`,
-          size: 8+Math.random()*5,
-        });
-      }
+  // Laser beams (if active)
+  const lasers = hasLaser ? Array.from({ length: 4 }, (_, i) => ({
+    angle: -0.4 + i * 0.28,
+    speed: 0.012 + i * 0.005,
+    phase: i * Math.PI / 2,
+  })) : [];
+
+  // Fire particles for pyro
+  const fireParticles = [];
+  if (hasPyro) {
+    for (let i = 0; i < 40; i++) {
+      fireParticles.push({ x: W * 0.2 + Math.random() * W * 0.6, y: H, vy: -(2 + Math.random() * 4), life: Math.random(), hue: 10 + Math.random() * 30 });
     }
   }
 
-  showParticles = [];
-  showT = 0;
-  let eventIdx = 0;
-  let eventTimer = 0;
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
 
-  if(showAnim) cancelAnimationFrame(showAnim);
+    // Background
+    ctx.fillStyle = '#0a0a0f';
+    ctx.fillRect(0, 0, W, H);
 
-  function frame() {
-    showT++;
-    const progress = showT / showDuration;
-    document.getElementById('show-progress').style.width = (progress*100)+'%';
+    // Smoke overlay
+    if (hasSmoke && frame > 10) {
+      const smokeAlpha = Math.min(0.35, (frame - 10) / 80);
+      ctx.fillStyle = `rgba(180,200,220,${smokeAlpha})`;
+      ctx.fillRect(0, 0, W, H);
+      // Smoke wisps
+      for (let i = 0; i < 5; i++) {
+        const wx = (W * 0.1 + i * W * 0.18 + Math.sin(frame * 0.02 + i) * 20);
+        const grad = ctx.createRadialGradient(wx, H * 0.6, 0, wx, H * 0.6, 80);
+        grad.addColorStop(0, `rgba(200,215,230,${smokeAlpha * 0.6})`);
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(wx - 80, H * 0.3, 160, H * 0.5);
+      }
+    }
 
-    // Emit particles
-    if(showScore > 50 && Math.random() < 0.3 + progress*0.4) {
-      const px = 300 + Math.random()*100;
-      showParticles.push({
-        x: px, y: 180,
-        vx: (Math.random()-0.5)*3,
-        vy: -2-Math.random()*3,
-        life: 1, decay: 0.015+Math.random()*0.015,
-        color: hasPyro ? `hsl(${20+Math.random()*40},100%,60%)` : `hsl(${250+Math.random()*80},80%,65%)`,
-        size: hasPyro ? 4+Math.random()*4 : 2+Math.random()*3,
+    // UV glow wash
+    if (hasUV) {
+      const uvAlpha = 0.18 + 0.08 * Math.sin(frame * 0.05);
+      ctx.fillStyle = `rgba(160,0,255,${uvAlpha})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    // Stage floor
+    ctx.fillStyle = '#1a1020';
+    ctx.fillRect(0, H - 40, W, 40);
+
+    // Stage spotlights
+    const numLights = hasSpots ? 5 : hasBasic ? 3 : 1;
+    for (let i = 0; i < numLights; i++) {
+      const lx = W * (0.15 + i * (0.7 / (numLights - 1 || 1)));
+      const flickerHue = hue + Math.sin(frame * 0.08 + i) * 20;
+      const grad = ctx.createRadialGradient(lx, 0, 0, lx, H * 0.7, 140);
+      grad.addColorStop(0, `hsla(${flickerHue},80%,70%,0.3)`);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(lx, 0);
+      ctx.lineTo(lx - 60, H * 0.75);
+      ctx.lineTo(lx + 60, H * 0.75);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Laser beams
+    lasers.forEach(l => {
+      const a = l.angle + Math.sin(frame * l.speed + l.phase) * 0.3;
+      ctx.save();
+      ctx.translate(W / 2, 0);
+      ctx.rotate(a);
+      const lg = ctx.createLinearGradient(0, 0, 0, H);
+      lg.addColorStop(0, `hsla(${hue},100%,65%,0.9)`);
+      lg.addColorStop(1, `hsla(${hue},100%,65%,0)`);
+      ctx.strokeStyle = lg;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, H);
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    // Fire particles (pyro)
+    if (hasPyro) {
+      fireParticles.forEach(p => {
+        p.y += p.vy;
+        p.life -= 0.015;
+        if (p.life <= 0) { p.y = H; p.life = 0.8 + Math.random() * 0.2; p.x = W * 0.15 + Math.random() * W * 0.7; }
+        const alpha = p.life;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3 + p.life * 4, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue},100%,60%,${alpha})`;
+        ctx.fill();
       });
     }
 
-    // Update particles
-    showParticles = showParticles.filter(p=>p.life>0);
-    showParticles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.08; p.life-=p.decay; });
-
-    // DRAW
-    ctx.clearRect(0,0,700,420);
-
-    // Background gradient
-    const bg = ctx.createLinearGradient(0,0,0,420);
-    bg.addColorStop(0,'#040408');
-    bg.addColorStop(1,'#080810');
-    ctx.fillStyle=bg; ctx.fillRect(0,0,700,420);
-
-    // Stage floor
-    ctx.fillStyle='#0e0e1a'; ctx.fillRect(80,200,540,15);
-    ctx.fillStyle='#14142a'; ctx.fillRect(100,215,500,60);
-
-    // Stage lights - beams
-    const numLights = hasPyro ? 5 : 3;
-    for(let i=0;i<numLights;i++){
-      const lx = 150+i*(400/(numLights-1));
-      const hue = hasPyro ? 20+i*15 : hasAcoustic ? 40 : 260+i*30;
-      const pulse = 0.3+0.2*Math.sin(showT*0.05+i);
-      const grad = ctx.createRadialGradient(lx,60,0,lx,60,180);
-      grad.addColorStop(0,`hsla(${hue},80%,70%,${pulse})`);
-      grad.addColorStop(1,`hsla(${hue},80%,70%,0)`);
-      ctx.fillStyle=grad;
-      ctx.beginPath(); ctx.moveTo(lx,60); ctx.lineTo(lx-80,220); ctx.lineTo(lx+80,220); ctx.closePath();
-      ctx.fill();
-    }
-
-    // Band silhouettes on stage
-    const bandCount = band.genre==='Electronic'||band.genre==='Synthwave' ? 1 : band.traits.includes('Road Warriors') ? 4 : 3;
-    for(let i=0;i<bandCount;i++){
-      const bx = 230 + i*(240/(bandCount-1||1));
-      const by = 195;
-      const sway = Math.sin(showT*0.08+i*1.2)*4*(0.5+showScore/100);
-      // body
-      ctx.fillStyle=`hsl(${260+i*20},20%,${15+showScore/10}%)`;
-      ctx.fillRect(bx-10,by-60+sway,20,45);
-      // head
-      ctx.beginPath(); ctx.arc(bx,by-65+sway,10,0,Math.PI*2);
-      ctx.fillStyle=`hsl(${30+i*10},40%,${40+showScore/10}%)`;
-      ctx.fill();
-      // arms raised if high score
-      if(showScore>65){
-        const armRaise = Math.sin(showT*0.12+i)*20;
-        ctx.strokeStyle=`hsl(${260+i*20},20%,30%)`;
-        ctx.lineWidth=3;
-        ctx.beginPath(); ctx.moveTo(bx-10,by-40+sway); ctx.lineTo(bx-25,by-55+sway+armRaise); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(bx+10,by-40+sway); ctx.lineTo(bx+25,by-55+sway-armRaise); ctx.stroke();
-      }
-      // face paint glow
-      if(band.traits.includes('Face Paint')){
-        ctx.shadowBlur=15; ctx.shadowColor='rgba(180,100,255,0.8)';
-        ctx.beginPath(); ctx.arc(bx,by-65+sway,5,0,Math.PI*2);
-        ctx.fillStyle='rgba(200,150,255,0.6)'; ctx.fill();
-        ctx.shadowBlur=0;
-      }
-    }
+    // Band figure (simple silhouette)
+    const bandX = W / 2;
+    const bandY = H - 60;
+    const bounce = Math.sin(frame * 0.15) * 4;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(bandX, bandY - 20 + bounce, 8, 0, Math.PI * 2); // head
+    ctx.fill();
+    ctx.fillRect(bandX - 5, bandY - 12 + bounce, 10, 22); // body
+    ctx.fillRect(bandX - 12, bandY - 5 + bounce, 8, 4);   // left arm
+    ctx.fillRect(bandX + 4, bandY - 5 + bounce, 8, 4);    // right arm
 
     // Crowd
-    crowdPeople.forEach(p=>{
-      const energy = showScore/100;
-      const bob = Math.sin(showT*p.speed+p.phase)*p.size*energy;
-      ctx.fillStyle=p.color;
-      ctx.beginPath(); ctx.arc(p.x,p.y+bob,p.size/2,0,Math.PI*2); ctx.fill();
-      // raised arms if energy high
-      if(energy>0.6 && Math.sin(showT*p.speed*2+p.phase)>0.5){
-        ctx.strokeStyle=p.color; ctx.lineWidth=1.5;
-        ctx.beginPath(); ctx.moveTo(p.x-3,p.y+bob); ctx.lineTo(p.x-8,p.y+bob-10); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(p.x+3,p.y+bob); ctx.lineTo(p.x+8,p.y+bob-10); ctx.stroke();
-      }
+    crowd.forEach(p => {
+      const sway = Math.sin(frame * 0.1 + p.phase) * p.amp;
+      ctx.fillStyle = `hsla(${hue},40%,50%,0.7)`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y + sway, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(p.x - 3, p.y + sway + 5, 6, 10);
     });
 
-    // Particles
-    showParticles.forEach(p=>{
-      ctx.globalAlpha = p.life;
-      ctx.fillStyle = p.color;
-      ctx.shadowBlur = hasPyro ? 12 : 6;
-      ctx.shadowColor = p.color;
-      ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
-      ctx.shadowBlur=0;
-    });
-    ctx.globalAlpha=1;
-
-    // Pyro flash
-    if(hasPyro && Math.random()<0.008 && progress>0.3){
-      ctx.fillStyle='rgba(255,150,50,0.15)';
-      ctx.fillRect(0,0,700,420);
+    // Beat flash
+    if (frame % 20 < 3) {
+      ctx.fillStyle = `hsla(${hue},80%,60%,0.07)`;
+      ctx.fillRect(0, 0, W, H);
     }
 
-    // Event text reveals
-    if(eventTimer===0 && eventIdx<showEvents.length){
-      const delay = Math.floor(showDuration/(showEvents.length+1));
-      if(showT >= delay*(eventIdx+1)){
-        document.getElementById('show-events').textContent = showEvents.slice(0,eventIdx+1).join('\n');
-        eventIdx++;
-      }
-    }
-
-    if(showT < showDuration) {
-      showAnim = requestAnimationFrame(frame);
+    frame++;
+    if (frame < totalFrames) {
+      requestAnimationFrame(draw);
     } else {
-      // Show ended
-      setTimeout(()=>showPostShow(band, attendance, showScore, isMerch), 600);
+      showPostShow(band);
     }
   }
-  showAnim = requestAnimationFrame(frame);
+
+  requestAnimationFrame(draw);
 }
 
-// ═══════════════════════════════════════════════
-// POST-SHOW
-// ═══════════════════════════════════════════════
-function showPostShow(band, attendance, score, isMerch) {
-  showScreen('postshow-screen');
+// ── POST-SHOW ─────────────────────────────────────────────────────────────────
+
+function showPostShow(band) {
+  const vt = VENUE_TIERS[G.venueTier];
+  const capacity = vt.capacity;
+
+  // Base attendance
+  let attendance = Math.floor(capacity * (0.4 + Math.random() * 0.5));
+
+  // SFX synergy / penalty modifiers
+  let sfxScoreMod = 0;
+  for (const id in G.sfxActive) {
+    if (!G.sfxActive[id] || !SFX_GEAR[id]) continue;
+    const gear = SFX_GEAR[id];
+    gear.synergies.forEach(trait => { if (band.traits.includes(trait)) sfxScoreMod += 8; });
+    gear.penalties.forEach(trait => { if (band.traits.includes(trait)) sfxScoreMod -= 10; });
+  }
+
+  // Base score
+  let score = 55 + Math.floor(Math.random() * 30) + sfxScoreMod;
+  score = Math.max(10, Math.min(100, score));
+
+  // Check combos
+  let comboHTML = '';
+  let comboUnlocks = [];
+  COMBOS.forEach(combo => {
+    if (!G.sfxActive[combo.sfx]) return;
+    if (!combo.match(band)) return;
+    score = Math.min(100, score + combo.scoreMod);
+    attendance = Math.min(capacity, Math.floor(attendance * 1.15));
+    if (combo.reviewLine) {
+      comboHTML += `<div class="combo-unlock">✨ <em>${combo.reviewLine}</em></div>`;
+    }
+    comboUnlocks.push(combo.id);
+    // Add rep tag
+    if (combo.id === 'combo_smoke_shoegaze' && !G.repTags.includes('Smoke & Mirrors')) G.repTags.push('Smoke & Mirrors');
+    if (combo.id === 'combo_pyro_metal'     && !G.repTags.includes('Pyro Kings'))      G.repTags.push('Pyro Kings');
+    if (combo.id === 'combo_uv_electronic'  && !G.repTags.includes('UV Nights'))       G.repTags.push('UV Nights');
+    if (combo.id === 'combo_laser_synthwave'&& !G.repTags.includes('Laser Rave'))      G.repTags.push('Laser Rave');
+  });
 
   // Revenue
-  const ticketPrice = band.fame>=2 ? 15 : band.fame>=1 ? 10 : 7;
-  const ticketRev = attendance * ticketPrice;
-  const barRev = Math.floor(attendance * (3 + score/30) * (band.traits.includes('Party Animals')?1.5:1));
-  const merchCut = isMerch ? Math.floor(attendance * 2.5) : 0;
-  const staffCost = 80;
-  const prodCost = 0; // basic lighting = free
-  const totalRev = ticketRev + barRev + merchCut - staffCost;
+  const ticketPrice = 8 + G.venueTier * 3;
+  const revenue = attendance * ticketPrice;
+  G.cash += revenue;
+  G.showsBooked++;
+  G.totalAttendance = (G.totalAttendance || 0) + attendance;
 
-  G.cash += totalRev;
-  G.cash = Math.max(0, G.cash);
+  // Pick review
+  let reviewPool = REVIEWS[score >= 80 ? 'great' : score >= 55 ? 'ok' : 'bad'];
+  const reviewText = reviewPool[Math.floor(Math.random() * reviewPool.length)];
 
-  // Update contact
-  if(!G.contacts[band.id]) G.contacts[band.id] = { tier:0, gigs:0, bestNight:null, agentNote:null };
-  const c = G.contacts[band.id];
-  c.gigs++;
-  if(score>70 && (!c.bestNight || score>c.bestScore||0)) {
-    c.bestNight = `Week ${G.week}, ${attendance}/${G.capacity} capacity`;
-    c.bestScore = score;
-  }
-  if(score>65 && c.tier < 3) c.tier = Math.min(3, c.tier+1);
-  if(score<40 && c.tier>0) c.tier--;
-  if(score>75) c.agentNote = `"They still talk about the ${band.genre.toLowerCase()} show."`;
-
-  // Fame progression
-  if(score>75 && band.fame<5) {
-    if(Math.random()<0.3) {
-      band.fame++;
-      addAlert(`${band.name} just levelled up — now ${fameLabel(band.fame)}. You had them early.`, false);
-      if(band.fame>=3) {
-        G.totalActsBroken++;
-        addAlert(`🎉 "${band.name} sold out their first headline show. You booked their first gig." — The Static`, false);
-      }
-    }
-  }
-
-  // Review
-  const pool = score>70 ? REVIEWS_GOOD : score>45 ? REVIEWS_MID : REVIEWS_BAD;
-  const tpl = pool[Math.floor(Math.random()*pool.length)];
-  const review = tpl
-    .replace('{venue}','The Dive Bar').replace('{band}',band.name)
-    .replace('{genre}',band.genre.toLowerCase()).replace('{day}','Saturday');
-
-  // Rival text (random chance)
-  let rivalHTML = '';
-  const rival = RIVALS[Math.floor(Math.random()*RIVALS.length)];
-  if(Math.random()<(score<45?0.7:0.3)) {
-    const txt = rival.texts[Math.floor(Math.random()*rival.texts.length)]
-      .replace('[act]',band.name).replace('[Band]',band.name);
-    rivalHTML = `<div class="rival-text"><div class="rival-from">📱 ${rival.name} @ ${rival.venue}</div>"${txt}"</div>`;
-    addMessage(rival.name+' @ '+rival.venue, txt);
-  }
-
-  // History
-  G.history.push({ week:G.week, band:band.name, attendance, revenue:totalRev, score });
-  G.showsWithoutRevenue = totalRev > 0 ? 0 : G.showsWithoutRevenue+1;
+  // Stars
+  const stars = score >= 85 ? '★★★★★' : score >= 70 ? '★★★★☆' : score >= 50 ? '★★★☆☆' : score >= 30 ? '★★☆☆☆' : '★☆☆☆☆';
 
   // Build post-show HTML
-  document.getElementById('ps-band').textContent = band.name;
-  document.getElementById('ps-night').textContent = `Week ${G.week} · Saturday · ${attendance}/${G.capacity} capacity · Score: ${score}/100`;
-  document.getElementById('ps-review').innerHTML = `"${review}"<cite>— The Static, Week ${G.week}</cite>`;
-  document.getElementById('ps-revenue').innerHTML = `
-    <h3>Revenue Breakdown</h3>
-    <div class="rev-row"><span class="rev-label">Ticket sales (${attendance} × £${ticketPrice})</span><span>£${ticketRev}</span></div>
-    <div class="rev-row"><span class="rev-label">Bar revenue</span><span>£${barRev}</span></div>
-    ${merchCut?`<div class="rev-row"><span class="rev-label">Merch cut</span><span>£${merchCut}</span></div>`:''}
-    <div class="rev-row"><span class="rev-label">Staff costs</span><span style="color:#e05060">-£${staffCost}</span></div>
-    <div class="rev-row"><span class="rev-label">Net revenue</span><span style="color:${totalRev>=0?'#50c878':'#e05060'}">${totalRev>=0?'+':''}£${totalRev}</span></div>
-    <div class="rev-row"><span class="rev-label">Cash after show</span><span>£${G.cash}</span></div>`;
-  document.getElementById('ps-rival').innerHTML = rivalHTML;
+  document.getElementById('ps-band').textContent   = band.name;
+  document.getElementById('ps-stars').textContent  = stars;
+  document.getElementById('ps-score').textContent  = `${score}/100`;
+  document.getElementById('ps-attend').textContent = `${attendance.toLocaleString()} / ${capacity.toLocaleString()}`;
+  document.getElementById('ps-revenue').textContent= `+£${revenue.toLocaleString()}`;
+  document.getElementById('ps-review').textContent = reviewText;
+  document.getElementById('ps-combo').innerHTML    = comboHTML;
 
-  if(G.cash<=0) {
-    document.querySelector('.continue-btn').textContent = '⚠ You\'re broke — Continue anyway';
-  }
+  showPanel('post-show');
+
+  // Check achievements after panel shown
+  checkAchievements(band, score, attendance);
+  comboUnlocks.forEach(id => unlockAchievement(id));
+
+  saveGame();
 }
+
+// ── CONTINUE / WEEKLY EVENT ───────────────────────────────────────────────────
 
 function continueAfterShow() {
   G.week++;
   G.bookedBand = null;
-  G.supportBand = null;
+  G.bookedDate = null;
 
-  // Random event each week
   randomWeeklyEvent();
-
-  if(G.cash <= 0 && G.week > 3) {
-    gameOver();
-    return;
-  }
-  // Optionally grow band pool slightly
-  if(G.week % 4 === 0) growBandPool();
-
-  updateStatusBar();
-  showScreen('game-screen');
-  switchPanel('office', document.querySelector('[data-panel="office"]'));
+  growBandPool();
   renderOffice();
+  renderBandBook();
+  renderSFX();
+  updateStatusBar();
+  showPanel('office');
 }
 
 function randomWeeklyEvent() {
-  const roll = Math.random();
-  if(roll<0.15) {
-    const r = RIVALS[Math.floor(Math.random()*RIVALS.length)];
-    addAlert(`${r.name} @ ${r.venue} just booked a big act for next weekend. Scene is watching.`, false);
-  } else if(roll<0.25) {
-    addAlert(`The Static ran a piece on emerging ${['psych rock','post-punk','synth-pop'][Math.floor(Math.random()*3)]} acts. Worth checking BandBook.`, false);
-  } else if(roll<0.3) {
-    addAlert(`Venue maintenance: loose stage bolt fixed. Cost £20.`, false);
-    G.cash = Math.max(0, G.cash-20);
+  if (Math.random() > 0.3) return; // 30% chance each week
+  const events = [
+    { msg: "📰 Local press covered last weekend's show. +£200 bonus!",   effect: () => { G.cash += 200; } },
+    { msg: '🔧 Venue maintenance needed. -£150.',                         effect: () => { G.cash -= 150; } },
+    { msg: '🎙️ A band dropped out — refund issued. -£100.',               effect: () => { G.cash -= 100; } },
+    { msg: '🍺 Bar takings were huge this week. +£300!',                   effect: () => { G.cash += 300; } },
+    { msg: '🌧️ Bad weather kept some fans home. No penalty though.',      effect: () => {} },
+    { msg: '📱 Your venue went viral on social. +£500 sponsorship!',       effect: () => { G.cash += 500; } },
+    { msg: '⚡ Power surge damaged a speaker. -£250 repair.',              effect: () => { G.cash -= 250; } },
+  ];
+  const ev = events[Math.floor(Math.random() * events.length)];
+  ev.effect();
+  // Show as toast
+  const t = document.getElementById('ach-toast');
+  if (t) {
+    t.querySelector('.ach-toast-text').textContent = ev.msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 4000);
   }
 }
 
 function growBandPool() {
-  const newBands = [
-    { id:'bx'+G.week, name:['Violet Collapse','Echo Margin','The Pale Current','Rust & Silk','Low Circuit'][Math.floor(Math.random()*5)],
-      genre:['Indie Rock','Shoegaze','Post-Punk','Folk','Electronic'][Math.floor(Math.random()*5)],
-      genreKey:'rock', bio:"New to the circuit. Hungry. Booking cheap.",
-      traits:[['Rising Stars','Underground Cred','Punctual'][Math.floor(Math.random()*3)]],
-      fee:'£', feeVal:60+Math.floor(Math.random()*40), agent:'Self-managed', fame:0, fans:10+Math.floor(Math.random()*20) }
-  ];
-  G.bands.push(...newBands);
-  addAlert(`${newBands[0].name} just appeared on BandBook. Unknown. Cheap. Might be something.`, false);
-}
-
-// ═══════════════════════════════════════════════
-// GAME OVER
-// ═══════════════════════════════════════════════
-function gameOver() {
-  showScreen('gameover-screen');
-  const legacyScore = G.totalActsBroken*50 + G.history.length*10 + Object.values(G.contacts).filter(c=>c.tier>=2).length*25;
-  const legacyText = G.history.map(h=>`Week ${h.week}: ${h.band} — ${h.attendance} in.`).join('\n');
-  document.getElementById('go-sub').textContent = G.cash<=0 ? 'The money ran out. The doors closed.' : 'You decided your legacy was complete.';
-  document.getElementById('go-legacy').innerHTML = `<strong style="color:#c0a0d8;letter-spacing:0.1em">YOUR RUN AT THE DIVE BAR</strong><br><br>${legacyText || 'No shows run.'}<br><br>Acts broken: ${G.totalActsBroken}<br>Shows run: ${G.history.length}`;
-  document.getElementById('go-score').textContent = legacyScore;
-}
-
-// ═══════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════
-function startGame() {
-  initGame();
-  updateStatusBar();
-  showScreen('game-screen');
-  renderOffice();
-  renderBandBook();
-  // fix nav-btn clicks (they're divs)
-  document.querySelectorAll('.nav-btn').forEach(el=>{
-    if(!el.getAttribute('data-panel')) return;
-    el.addEventListener('click',()=>{
-      document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-      el.classList.add('active');
-    });
+  // Chance to unlock a new band based on fame gate
+  BANDS.forEach(b => {
+    if (!G.unlockedBands) G.unlockedBands = {};
   });
 }
+
+// ── GAME FLOW ─────────────────────────────────────────────────────────────────
+
+function startGame(fresh) {
+  if (!fresh && hasSave()) {
+    loadGame();
+    return;
+  }
+  initGame();
+  showPanel('office');
+  updateStatusBar();
+  renderOffice();
+  renderBandBook();
+  renderSFX();
+  renderAchievements();
+}
+
+function gameOver() {
+  document.getElementById('go-weeks').textContent = G.week;
+  document.getElementById('go-shows').textContent = G.showsBooked;
+  document.getElementById('go-cash').textContent  = `£${G.cash.toLocaleString()}`;
+  showPanel('game-over');
+  localStorage.removeItem('concertSimSave');
+}
+
+// ── BOOKING FLOW ──────────────────────────────────────────────────────────────
+
+function openBooking(bandId) {
+  const band = BANDS.find(b => b.id === bandId);
+  if (!band) return;
+  G.bookedBand = bandId;
+
+  document.getElementById('book-name').textContent   = band.name;
+  document.getElementById('book-genre').textContent  = band.genre;
+  document.getElementById('book-fee').textContent    = `£${band.fee}`;
+  document.getElementById('book-traits').innerHTML   = band.traits.map(t => `<span class="trait-tag">${t}</span>`).join('');
+
+  // Show SFX cost preview
+  let sfxTotal = 0;
+  for (const id in G.sfxActive) {
+    if (G.sfxActive[id] && SFX_GEAR[id]) sfxTotal += SFX_GEAR[id].nightly;
+  }
+  const sfxEl = document.getElementById('book-sfx-cost');
+  if (sfxEl) sfxEl.textContent = sfxTotal > 0 ? `SFX cost tonight: £${sfxTotal}` : '';
+
+  // Check for combo hints
+  const hintEl = document.getElementById('book-combo-hint');
+  if (hintEl) {
+    const hints = [];
+    COMBOS.forEach(combo => {
+      if (G.sfxOwned[combo.sfx] && combo.match(band)) {
+        const icon = { smoke:'💨', pyro:'🔥', uv:'🟣', laser:'🟢', spots:'🔦' }[combo.sfx] || '✨';
+        hints.push(`${icon} ${SFX_GEAR[combo.sfx]?.name||combo.sfx} synergy detected!`);
+      }
+    });
+    hintEl.innerHTML = hints.map(h => `<div class="combo-hint">${h}</div>`).join('');
+  }
+
+  showPanel('booking');
+}
+
+function confirmBooking() {
+  const band = BANDS.find(b => b.id === G.bookedBand);
+  if (!band) return;
+  if (G.cash < band.fee) {
+    alert("Not enough cash to book this band!");
+    return;
+  }
+  G.cash -= band.fee;
+  updateStatusBar();
+  runShow();
+}
+
+function cancelBooking() {
+  G.bookedBand = null;
+  showPanel('office');
+}
+
+// ── RENDER BAND BOOK ──────────────────────────────────────────────────────────
+
+function renderBandBook() {
+  const container = document.getElementById('band-list');
+  if (!container) return;
+  const availableBands = BANDS.filter(b => b.fame <= G.venueTier + 1);
+  container.innerHTML = availableBands.map(b => {
+    const canAfford = G.cash >= b.fee;
+    return `
+    <div class="band-card ${canAfford ? '' : 'broke'}">
+      <div class="band-header">
+        <span class="band-name">${b.name}</span>
+        <span class="band-genre">${b.genre}</span>
+      </div>
+      <div class="band-traits">${b.traits.map(t => `<span class="trait-tag">${t}</span>`).join('')}</div>
+      <div class="band-footer">
+        <span class="band-fee">Fee: £${b.fee}</span>
+        <button class="book-btn" onclick="openBooking('${b.id}')" ${canAfford ? '' : 'disabled'}>
+          ${canAfford ? 'Book' : 'Too expensive'}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── UTILITY ───────────────────────────────────────────────────────────────────
+
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const el = document.getElementById('panel-' + id);
+  if (el) el.classList.add('active');
+}
+
+function updateStatusBar() {
+  const vt = VENUE_TIERS[G.venueTier];
+  const sb = {
+    venue:  document.getElementById('sb-venue'),
+    cash:   document.getElementById('sb-cash'),
+    week:   document.getElementById('sb-week'),
+    sfx:    document.getElementById('sb-sfx'),
+  };
+  if (sb.venue)  sb.venue.textContent  = vt ? vt.name : '';
+  if (sb.cash)   sb.cash.textContent   = `£${G.cash.toLocaleString()}`;
+  if (sb.week)   sb.week.textContent   = `Wk ${G.week}`;
+  if (sb.sfx) {
+    const SFX_ICONS = { basic:'💡', spots:'🔦', uv:'🟣', smoke:'💨', laser:'🟢', pyro:'🔥' };
+    const active = Object.keys(G.sfxActive).filter(k => G.sfxActive[k]);
+    sb.sfx.textContent = active.map(k => SFX_ICONS[k] || '✨').join(' ');
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+
+window.addEventListener('DOMContentLoaded', () => {
+  // Show start screen or continue button based on save
+  const continueBtn = document.getElementById('continue-btn');
+  if (continueBtn) continueBtn.style.display = hasSave() ? 'inline-block' : 'none';
+
+  // New game button
+  const newBtn = document.getElementById('new-game-btn');
+  if (newBtn) newBtn.onclick = () => startGame(true);
+
+  // Continue button
+  if (continueBtn) continueBtn.onclick = () => startGame(false);
+
+  // Nav buttons
+  document.querySelectorAll('[data-panel]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = btn.dataset.panel;
+      showPanel(p);
+      if (p === 'sfx') renderSFX();
+      if (p === 'achievements') renderAchievements();
+      if (p === 'bands') renderBandBook();
+      if (p === 'office') renderOffice();
+    });
+  });
+});
 </script>
 </body>
 </html>
