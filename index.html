@@ -412,16 +412,9 @@ canvas#stage { width: 100%; height: 100%; }
         <div class="panel-title">Booking App</div>
         <div class="panel-heading">BandBook</div>
       </div>
-      <div class="bandbook-tabs">
-        <button class="bb-tab active" data-tab="discover" onclick="switchTab('discover')">Discover</button>
-        <button class="bb-tab" data-tab="inbox" onclick="switchTab('inbox')">Inbox</button>
-      </div>
-      <div class="tab-content">
-        <div class="tab-pane active" id="tab-discover">
+      <div class="tab-content" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+        <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
           <div class="band-grid" id="band-carousel"></div>
-        </div>
-        <div class="tab-pane" id="tab-inbox">
-          <div style="overflow-y:auto;flex:1;padding:1rem 1.5rem" id="inbox-list"></div>
         </div>
       </div>
     </div>
@@ -848,12 +841,13 @@ function switchPanel(id, btnEl){
   if(id==='inbox')        { renderInbox(); const b=document.getElementById('inbox-badge'); if(b) b.style.display='none'; }
 }
 function switchTab(tab){
+  // inbox is now a top-level panel, redirect there
+  if(tab==='inbox'){ switchPanel('inbox', document.querySelector('.nav-btn[data-panel="inbox"]')); return; }
   document.querySelectorAll('.bb-tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.tab-pane').forEach(c=>c.classList.remove('active'));
   const btn=document.querySelector(`.bb-tab[data-tab="${tab}"]`);
   if(btn) btn.classList.add('active');
   const ct=document.getElementById('tab-'+tab); if(ct) ct.classList.add('active');
-  if(tab==='inbox') renderInbox();
 }
 
 // ── STATUS BAR ─────────────────────────────────────────────────────────────
@@ -1604,8 +1598,9 @@ function runShow(){
   if(G.history.length===1) unlockAchievement('first_show');
   if(G.history.length>=5) unlockAchievement('five_shows');
 
-  // Post-show screen
-  showScreen('postshow-screen');
+  // Show animation then post-show screen
+  startShowAnimation(band, venue, attendance, cap, profit, ()=>{
+    showScreen('postshow-screen');
   setText('ps-week',       G.week);
   setText('ps-band',       band.name);
   setText('ps-attendance', `${attendance} / ${cap}`);
@@ -1628,8 +1623,92 @@ function runShow(){
   if(promo) setText('ps-score-line','📣 '+promo.label+' boosted attendance');
   else setText('ps-score-line','');
 
-  if(G.money<=0){ G.gameOver=true; }
-  saveGame();
+    if(G.money<=0){ G.gameOver=true; }
+    saveGame();
+  }); // end startShowAnimation callback
+}
+
+function startShowAnimation(band, venue, attendance, cap, profit, onDone){
+  showScreen('show-screen');
+  // Set show screen labels
+  const el=document.getElementById('show-band-name'); if(el) el.textContent=band.name;
+  const gl=document.getElementById('show-genre-label'); if(gl) gl.textContent=band.genre+' · '+venue.name;
+  // SFX badges
+  const sb=document.getElementById('show-sfx-badges');
+  if(sb) sb.innerHTML=Object.keys(G.sfxActive||{}).map(id=>{
+    const g=SFX_GEAR[id]; return g?`<span style="background:#1a0a40;border:1px solid #3a2060;border-radius:12px;padding:0.2rem 0.6rem;font-size:0.75rem;color:#c9b8ff">${g.icon} ${g.name}</span>`:'';
+  }).join('');
+
+  // Canvas animation
+  const canvas=document.getElementById('stage');
+  if(!canvas){ setTimeout(onDone, 400); return; }
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  const GENRE_COLORS={punk:'#ff4466',rock:'#ff6600',folk:'#60c878',electronic:'#00cfff',pop:'#ff80c0',metal:'#cc44ff',default:'#b090ff'};
+  const col=GENRE_COLORS[band.genreKey]||GENRE_COLORS.default;
+
+  // Progress bar
+  const prog=document.getElementById('show-progress');
+  const events=document.getElementById('show-events');
+  const showMoments=['🎸 Doors open...','🎤 Support act warming up the crowd...','🔥 Headliner takes the stage!','⚡ Crowd going wild!','🎶 Final encore...'];
+  let frame=0, totalFrames=180, momentIdx=0;
+  if(prog) prog.style.width='0%';
+  if(events) events.textContent=showMoments[0];
+
+  // Particles
+  const particles=[];
+  for(let i=0;i<60;i++) particles.push({
+    x:Math.random()*W, y:H+Math.random()*60,
+    vx:(Math.random()-0.5)*2, vy:-(1+Math.random()*3),
+    r:2+Math.random()*4, life:1, col
+  });
+
+  function loop(){
+    ctx.clearRect(0,0,W,H);
+    // Stage background
+    ctx.fillStyle='#06030f'; ctx.fillRect(0,0,W,H);
+    // Stage lights
+    const beams=[[W*0.2,'#ff4466'],[W*0.5,'#b090ff'],[W*0.8,'#00cfff']];
+    beams.forEach(([bx,bc])=>{
+      const g=ctx.createRadialGradient(bx,H*0.1,0,bx,H*0.1,H*0.8);
+      g.addColorStop(0,bc.replace(')',',0.18)').replace('rgb','rgba').replace('#','rgba(').replace(/([0-9a-f]{2})/gi,(_,h)=>parseInt(h,16)+',')+'0.15)');
+      g.addColorStop(0,bc+'33'); g.addColorStop(1,'transparent');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.moveTo(bx,0); ctx.lineTo(bx-80,H); ctx.lineTo(bx+80,H); ctx.closePath(); ctx.fill();
+    });
+    // Crowd silhouettes
+    ctx.fillStyle='#110820';
+    for(let i=0;i<20;i++){
+      const cx=30+i*(W/20), cy=H-30+Math.sin(frame*0.05+i)*8;
+      ctx.beginPath(); ctx.arc(cx,cy,8,0,Math.PI*2); ctx.fill();
+      ctx.fillRect(cx-4,cy,8,20);
+    }
+    // Particles
+    particles.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.vy+=0.04; p.life-=0.008;
+      if(p.life<=0||p.y<-10){ p.x=Math.random()*W; p.y=H+10; p.vy=-(1+Math.random()*3); p.life=1; }
+      ctx.globalAlpha=p.life*0.8;
+      ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha=1;
+    // Band name pulse
+    ctx.font=`bold ${28+Math.sin(frame*0.08)*3}px Georgia`;
+    ctx.fillStyle=col; ctx.textAlign='center';
+    ctx.shadowColor=col; ctx.shadowBlur=20;
+    ctx.fillText(band.name, W/2, H/2-20);
+    ctx.shadowBlur=0;
+    ctx.font='14px Georgia'; ctx.fillStyle='#8070a0';
+    ctx.fillText(band.genre, W/2, H/2+10);
+
+    frame++;
+    const pct=Math.round((frame/totalFrames)*100);
+    if(prog) prog.style.width=pct+'%';
+    const mIdx=Math.floor((frame/totalFrames)*showMoments.length);
+    if(mIdx!==momentIdx&&mIdx<showMoments.length){ momentIdx=mIdx; if(events) events.textContent=showMoments[mIdx]; }
+
+    if(frame<totalFrames){ requestAnimationFrame(loop); }
+    else { setTimeout(onDone, 300); }
+  }
+  requestAnimationFrame(loop);
 }
 
 function continueAfterShow(){
