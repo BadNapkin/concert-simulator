@@ -1433,6 +1433,19 @@ function renderAchievements() {
   }).join('');
 }
 
+function unlockAchievement(id){
+  if(!G.achievements) G.achievements=[];
+  if(G.achievements.find(a=>a.id===id&&a.unlocked)) return; // already unlocked
+  const def=ACHIEVEMENTS.find(a=>a.id===id);
+  if(!def) return;
+  const existing=G.achievements.find(a=>a.id===id);
+  if(existing){ existing.unlocked=true; existing.week=G.week; }
+  else { G.achievements.push({id, unlocked:true, week:G.week}); }
+  addAlert('🏆 Achievement unlocked: '+def.name+'!');
+  renderAchievements();
+  saveGame();
+}
+
 // ── INBOX (messages + enquiries combined) ──────────────────────────────────
 function renderInbox() {
   const el = document.getElementById('inbox-list');
