@@ -789,6 +789,13 @@ const BANDS = [
     bio:"Slow. Heavy. Inevitable. Like getting old, but louder.",
     traits:['Uncompromising','Pyro Enthusiasts','Always Late'], fee:'££', feeVal:210,
     agent:'Nora Finch @ Riff Co.', fame:1, fans:48, rivals:['b07','b13'] },
+  { id:'b16', name:'Trojika', genre:'Alt Rock', genreKey:'rock',
+    bio:"Three friends, one van, zero plans. Trojika thrive in small sweaty rooms and oversized festival stages alike — wherever the crowd is pressed close enough to feel the bass.",
+    traits:['Crowd Pleasers','High Energy','Grassroots'], fee:'£', feeVal:80,
+    agent:'Self-managed', fame:0, fans:15, rivals:[],
+    isTROJIKA:true,
+    trojikaTip:"Trojika love a packed room. The fuller the venue, the better they play.",
+  },
   { id:'b15', name:'TNT', genre:'Hard Rock', genreKey:'rock',
     bio:"We bring the thunder. Literally. Our pyro tech is 'self-taught'. Three venues have asked us not to come back — we consider that a five-star review.",
     traits:['Pyro Enthusiasts','Drama Queens','Always Late'], fee:'££', feeVal:200,
@@ -1052,7 +1059,6 @@ function nextDay(){
   G.dayOfWeek++;
 
   if(G.dayOfWeek===5){
-    addAlert('🎸 Show night is TOMORROW (Saturday). Make sure your lineup is confirmed!');
     // deliver any last-minute replies before planning page
     G.enquiries.forEach(enq=>{
       if(enq.status==='pending'){
@@ -1527,7 +1533,7 @@ function renderOffice(){
     html+=`<div style="background:#0e0e18;border:1px solid #1e1e30;border-radius:8px;padding:1rem 1.2rem;margin-bottom:0.8rem">
       <div style="font-size:0.65rem;color:#6050a0;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.6rem">📖 Last Show</div>
       <div style="color:#c9b8ff;font-size:0.85rem;font-weight:600">${last.band}</div>
-      <div style="color:#6050a0;font-size:0.72rem;margin:0.2rem 0">${last.attendance}/${last.capacity} attendance · ${last.profit>=0?'+':''}£${last.profit}</div>
+      <div style="color:#6050a0;font-size:0.72rem;margin:0.2rem 0">${last.attendance}/${last.capacity} attendance · ${last.fillRate}% full</div>
       <div style="color:#807090;font-size:0.75rem;font-style:italic;margin-top:0.4rem;line-height:1.5">"${last.review}"</div>
     </div>`;
   }
@@ -1814,7 +1820,7 @@ const CROWD_ARCHETYPES = [
       'Four people had a spiritual experience near the speaker stack. Two are still there.',
     ],
     bossBonus:4, bossGenres:['electronic'],
-    // Ravers: sober but intensely friendly — bar sales down, vibe up
+    // Ravers: sober but intensely friendly — bar sales tank (boss unhappy), but band gains new fans
     sideEffect(band, bossDelta){
       const lines = [
         'Bar sales were down 40%. Everyone was on water and profound eye contact.',
@@ -1824,7 +1830,10 @@ const CROWD_ARCHETYPES = [
       ];
       const line = lines[Math.floor(Math.random()*lines.length)];
       G._showLog.push({text:'💧 '+line, urgent:false});
-      return bossDelta + 2; // crowd happiness offsets bar loss for most bosses
+      G._showLog.push({text:'📈 But word spread — '+band.name+' gained extra fans from the night.', urgent:false});
+      // Bar loss annoys boss (-4), but the band wins new converts (+fans)
+      band.fans = (band.fans||0) + Math.floor(5 + Math.random()*8);
+      return bossDelta - 4;
     }
   },
   { id:'hipsters',  label:'🧣 Hipsters',  genreKeys:['folk','shoegaze','indie'],
@@ -2465,6 +2474,20 @@ function runShow(){
       addAlert(`💥 TNT caused chaos anyway. Something is definitely broken. (-5 Boss Satisfaction)`, true);
     }
   }
+  // ── TROJIKA FILL-RATE BONUS ──
+  if(band.isTROJIKA){
+    if(fillRate>=0.85){
+      const bonus=8;
+      bossDelta+=bonus;
+      addAlert('🔥 Trojika fed off the packed crowd — electric set! Boss loved the energy. (+'+bonus+' satisfaction)', false);
+      band.fans=(band.fans||0)+Math.floor(8+Math.random()*10);
+    } else if(fillRate>=0.6){
+      addAlert('🎸 Trojika gave it their all. They\'d love a fuller room next time.', false);
+    } else {
+      bossDelta-=3;
+      addAlert('😬 Trojika struggled in the sparse crowd. They play better when it\'s packed.', true);
+    }
+  }
   G.bossSatisfaction = Math.min(100, Math.max(0, (G.bossSatisfaction||50) + bossDelta));
 
   // Boss trait reaction alerts
@@ -2757,6 +2780,7 @@ function _doShowAnimation(canvas, band, venue, attendance, cap, profit, onDone, 
 }
 
 function renderPostShow({band,venue,attendance,cap,repGain,bossDelta,review,promo}){
+  const fill=s=>s.replace(/{venue}/g,venue.name).replace(/{band}/g,band.name).replace(/{genre}/g,band.genre);
   const setText=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   const fillRate = attendance/cap;
   const stars = Math.min(5,Math.max(1,Math.round(fillRate*5)));
@@ -2774,7 +2798,7 @@ function renderPostShow({band,venue,attendance,cap,repGain,bossDelta,review,prom
   setText('ps-rep', '+'+repGain);
 
   // Press — tiered by rep/fame
-  const hl = fill(rnd(profit>50?REVIEWS_GOOD:profit>0?REVIEWS_MID:REVIEWS_BAD));
+  const hl = fill(rnd(fillRate>=0.75?REVIEWS_GOOD:fillRate>=0.45?REVIEWS_MID:REVIEWS_BAD));
   setText('ps-headline', hl);
   setText('ps-review', review);
 
