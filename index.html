@@ -496,8 +496,8 @@ canvas#stage { width: 100%; height: 100%; }
 
     <!-- SUPPORT ACT -->
     <div style="margin-bottom:1.2rem">
-      <div style="font-size:0.75rem;color:#8070b0;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.6rem">🎵 Support Act <span style="color:#4a3060;text-transform:none;font-size:0.68rem">(optional · fame 0 only)</span></div>
-      <div id="plan-support" style="display:flex;flex-wrap:wrap;gap:0.5rem"></div>
+      <div style="font-size:0.75rem;color:#8070b0;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.6rem">🎵 Support Act <span style="color:#4a3060;text-transform:none;font-size:0.68rem">(optional · enquire via Band Book)</span></div>
+      <div id="plan-support-readout" style="font-size:0.82rem;color:#a090d0;padding:0.4rem 0.7rem;background:#08041a;border:1px solid #2a1a50;border-radius:8px">No support act confirmed.</div>
     </div>
 
     <!-- SFX GEAR -->
@@ -796,6 +796,13 @@ const ENQUIRY_REPLIES = [
   "Good timing. {band} just had a cancellation. They can do it for £{fee}.",
   "We've passed your enquiry to {band}. They're keen. Fee: £{fee}. Awaiting your confirmation.",
 ];
+const SUPPORT_ENQUIRY_REPLIES = [
+  "Support slot? Fine, we'll do it. {band} can open for £{fee}. Don't make a big deal of it.",
+  "We checked the diary — {band} are free that night. Support works. £{fee} and we're done.",
+  "Look, {band} don't usually do support, but the room sounds decent. £{fee}, take it or leave it.",
+  "Our client {band} will consider opening the night. Standard support fee: £{fee}.",
+  "Honestly? {band} could use the exposure. They'll do it for £{fee}. Keep that between us.",
+];
 const NEGOTIATION_OPTS = [
   { label: 'Accept standard fee', effect: 'standard' },
   { label: 'Negotiate down 15% (relationship risk)', effect: 'negotiate' },
@@ -907,7 +914,8 @@ function nextDay(){
         enq.status='replied';
         const band=BANDS.find(b=>b.id===enq.bandId)||BANDS[enq.bandId];
         if(!band) return;
-        const tmpl=rnd(ENQUIRY_REPLIES);
+        const replyPool=enq.slot==='support'?SUPPORT_ENQUIRY_REPLIES:ENQUIRY_REPLIES;
+        const tmpl=rnd(replyPool);
         enq.replyText=tmpl.replace('{band}',band.name).replace('{fee}',enq.feeOffered);
         addAlert(`📬 Reply from ${band.name}'s agent — check your Inbox (📬).`);
       }
@@ -933,7 +941,8 @@ function nextDay(){
       enq.status='replied';
       const band=BANDS.find(b=>b.id===enq.bandId)||BANDS[enq.bandId];
       if(!band) return;
-      const tmpl=rnd(ENQUIRY_REPLIES);
+      const replyPool=enq.slot==='support'?SUPPORT_ENQUIRY_REPLIES:ENQUIRY_REPLIES;
+      const tmpl=rnd(replyPool);
       enq.replyText=tmpl.replace('{band}',band.name).replace('{fee}',enq.feeOffered);
       addAlert(`📬 Reply from ${band.name}'s agent — check your Inbox (📬).`);
       const b=document.getElementById('inbox-badge'); if(b) b.style.display='block';
@@ -1001,20 +1010,43 @@ function addAlert(text, urgent=false){
   if(badge){ badge.style.display='inline-block'; }
 }
 
-function enquireBand(bandId){
+function enquireBand(bandId, slot){
+  slot = slot || 'headline';
   const band=BANDS.find(b=>b.id===bandId);
   if(!band){ addAlert('Band not found.'); return; }
   if(G.enquiries.some(e=>e.bandId===bandId&&e.status!=='declined')){
     addAlert('Already have an active enquiry for '+band.name+'.'); return;
   }
+  // Support slot: high-fame bands scoff
+  if(slot==='support' && band.fame>=2){
+    const scoffs=[
+      `"Support slot? Us? Are you serious?" — ${band.name}'s agent hung up.`,
+      `${band.name}'s agent laughed for 30 seconds before declining.`,
+      `"We headlined three continents last year. No thanks." — ${band.agent}`,
+      `${band.name} sent back a one-word reply: "No."`,
+    ];
+    addAlert('😤 '+scoffs[Math.floor(Math.random()*scoffs.length)]);
+    return;
+  }
+  // Support slot: fame 1 bands are reluctant but may agree
+  const supportHesitant = slot==='support' && band.fame===1;
   const replyDay=Math.min(G.dayOfWeek+1+Math.floor(Math.random()*2),4);
+  let replyText='';
+  if(slot==='headline'){
+    replyText=`"${band.name} would be happy to headline. We're looking at £${band.feeVal} for the night."`;
+  } else if(supportHesitant){
+    replyText=`"Support slot? Look, we're a bit beyond that, but... we'll do it for £${band.feeVal}. Don't tell anyone."`;
+  } else {
+    replyText=`"Support slot works for us! £${band.feeVal} and we're in."`;
+  }
   G.enquiries.push({
-    id:Date.now(), bandId,
+    id:Date.now(), bandId, slot,
     status:'pending', replyDay,
     feeOffered:band.feeVal,
-    replyText:'', negotiationStep:0,
+    replyText, negotiationStep:0,
   });
-  addAlert(`📨 Enquiry sent to ${band.name}'s agent. Expect reply by ${DAYS[replyDay]}.`);
+  addAlert(`📨 Support enquiry sent to ${band.name}. Expect reply by ${DAYS[replyDay]}.`, false);
+  if(slot==='support') addAlert(`💡 Tip: matching genres between support and headliner gives a crowd bonus!`);
   saveGame(); renderBandCarousel(); switchTab('inbox');
 }
 
@@ -1024,7 +1056,7 @@ function renderEnquiries(){
     el.innerHTML='<p style="color:#6050a0;padding:1rem">No active enquiries. Go to Discover and send one!</p>'; return;
   }
   el.innerHTML=G.enquiries.map(enq=>{
-    const band=BANDS[enq.bandId];
+    const band=BANDS.find(b=>b.id===enq.bandId)||BANDS[enq.bandId];
     let badge='', actions='';
     if(enq.status==='pending'){
       badge=`<span class="enquiry-btn pending">⏳ Awaiting reply by ${DAYS[enq.replyDay]}</span>`;
@@ -1039,10 +1071,13 @@ function renderEnquiries(){
     } else if(enq.status==='declined'){
       badge=`<span class="enquiry-btn" style="background:#2e0d0d;color:#cf6679;border-color:#6a2a2a">✗ Declined</span>`;
     }
+    const slotLabel = enq.slot==='support'
+      ? '<span style="font-size:0.65rem;color:#5080a0;background:#0a1a30;border:1px solid #2a3a60;border-radius:4px;padding:1px 5px;margin-left:0.4rem">SUPPORT</span>'
+      : '<span style="font-size:0.65rem;color:#8060a0;background:#1a0a30;border:1px solid #3a2a60;border-radius:4px;padding:1px 5px;margin-left:0.4rem">HEADLINER</span>';
     return `<div class="msg-entry">
-      <strong style="color:#c9b8ff">${band.name}</strong>
+      <strong style="color:#c9b8ff">${band.name}</strong>${slotLabel}
       <span style="color:#6050a0;font-size:0.72rem;margin-left:0.5rem">${band.genre}</span>
-      <span style="float:right">£${band.feeVal}</span>
+      <span style="float:right">£${enq.feeOffered}</span>
       <div style="margin-top:0.4rem">${badge}</div>
       ${actions}
     </div>`;
@@ -1056,22 +1091,26 @@ function handleNegotiation(enquiryId, choiceIndex){
   const band=BANDS.find(b=>b.id===enq.bandId);
   if(!band) return;
   const bandIdx=BANDS.indexOf(band);
+  const isSupport = enq.slot === 'support';
   if(opt.effect==='standard'){
-    enq.status='confirmed'; G.headliner=bandIdx;
-    addAlert(`✅ ${band.name} confirmed as headliner at £${enq.feeOffered}.`);
+    enq.status='confirmed';
+    if(isSupport){ G.support=band.id; addAlert(`✅ ${band.name} confirmed as support act at £${enq.feeOffered}.`); }
+    else { G.headliner=bandIdx; addAlert(`✅ ${band.name} confirmed as headliner at £${enq.feeOffered}.`); }
   } else if(opt.effect==='negotiate'){
     const reduced=Math.round(enq.feeOffered*0.85);
     if(Math.random()>0.4){
-      enq.feeOffered=reduced; enq.status='confirmed'; G.headliner=bandIdx;
-      addAlert(`✅ Negotiated! ${band.name} confirmed at £${reduced}.`);
+      enq.feeOffered=reduced; enq.status='confirmed';
+      if(isSupport){ G.support=band.id; addAlert(`✅ Negotiated! ${band.name} supporting at £${reduced}.`); }
+      else { G.headliner=bandIdx; addAlert(`✅ Negotiated! ${band.name} confirmed at £${reduced}.`); }
     } else {
       enq.status='declined';
       addAlert(`❌ ${band.name}'s agent rejected the lowball. They walked.`);
     }
   } else if(opt.effect==='bonus'){
-    enq.status='confirmed'; G.headliner=bandIdx;
+    enq.status='confirmed';
     G.rep=Math.min(100,G.rep+2);
-    addAlert(`✅ ${band.name} confirmed! Guest list sweetener earned +2 REP.`);
+    if(isSupport){ G.support=band.id; addAlert(`✅ ${band.name} supporting! Guest list sweetener earned +2 REP.`); }
+    else { G.headliner=bandIdx; addAlert(`✅ ${band.name} confirmed! Guest list sweetener earned +2 REP.`); }
   } else if(opt.effect==='decline'){
     enq.status='declined';
     addAlert(`📋 Passed on ${band.name}. Enquiry closed.`);
@@ -1211,7 +1250,8 @@ function _drawCard(el) {
   const bandIdx = BANDS.indexOf(band); const isHL = G.headliner === bandIdx;
   const isSup = G.support === band.id;
   const canAfford = G.money >= band.feeVal;
-          const hasEnq = G.enquiries && G.enquiries.some(e=>e.bandId===band.id && e.status!=='declined' && e.status!=='confirmed');
+          const hasEnq = G.enquiries && G.enquiries.some(e=>e.bandId===band.id && e.slot!=='support' && e.status!=='declined' && e.status!=='confirmed');
+  const hasSuppEnq = G.enquiries && G.enquiries.some(e=>e.bandId===band.id && e.slot==='support' && e.status!=='declined' && e.status!=='confirmed');
   const tier = G.contacts[band.id] ? G.contacts[band.id].tier : 0;
   const GENRE_EMOJI = { punk:'🎸', rock:'🎸', folk:'🪕', electronic:'🎛️', pop:'🎤', metal:'🤘', default:'🎵' };
   const emoji = GENRE_EMOJI[band.genreKey] || GENRE_EMOJI.default;
@@ -1241,8 +1281,10 @@ function _drawCard(el) {
             <button class="book-btn ${hasEnq?'enquired':''}" ${isHL||hasEnq?'disabled':''} onclick="enquireBand('${band.id}')">
               ${isHL?'✓ Headliner Confirmed':hasEnq?'📨 Enquiry Sent':'📨 Enquire as Headliner'}
             </button>
-            <button class="book-btn" style="font-size:0.65rem;opacity:0.8" ${isSup||band.fame>1||!canAfford?'disabled':''} onclick="bookBand('${band.id}','support')">
-              ${isSup?'✓ Support':band.fame>1?'Too big for support':'➕ Support Act'}
+            <button class="book-btn" style="font-size:0.65rem;opacity:0.8"
+              ${isSup||hasSuppEnq||band.isBackup?'disabled':''}
+              onclick="enquireBand('${band.id}','support')">
+              ${isSup?'✓ Support Act':hasSuppEnq?'📨 Support Enquiry Sent':band.fame>=2?'📨 Enquire as Support (risky)':'📨 Enquire as Support'}
             </button>
           </div>
         </div>
@@ -1378,7 +1420,6 @@ function renderInbox() {
 }
 
 function renderMessages() { renderInbox(); }
-function renderEnquiries() { renderInbox(); }
 
 // ── CONTACTS ───────────────────────────────────────────────────────────────
 function renderContacts() {
@@ -1454,23 +1495,15 @@ function openPlanning(){
 }
 
 function renderPlanSupport(){
-  const el=document.getElementById('plan-support'); if(!el) return;
-  const available=BANDS.filter(b=>b.fame===0&&!b.isBackup);
-  if(!available.length){ el.innerHTML='<span style="color:#4a3060;font-size:0.75rem">No support acts available yet.</span>'; return; }
-  el.innerHTML=available.map(band=>{
-    const isSel=G.support===band.id;
-    const canAfford=G.money>=band.feeVal;
-    return '<div onclick="'+(canAfford?'selectPlanSupport(\''+band.id+'\')':'')+'" style="cursor:'+(canAfford?'pointer':'default')+';padding:0.4rem 0.8rem;border-radius:8px;border:1px solid '+(isSel?'#306090':'#2a1a50')+';background:'+(isSel?'#0a1a30':'#0a0520')+';font-size:0.75rem;color:'+(canAfford?'#90c0e0':'#4a3060')+'">' +
-      band.name+' <span style="color:#5a5080">£'+band.feeVal+'</span>'+(isSel?' <span style="color:#60c8a0">✓</span>':'')+
-    '</div>';
-  }).join('');
-}
-
-function selectPlanSupport(bandId){
-  G.support = (G.support===bandId) ? null : bandId;
-  const band=BANDS.find(b=>b.id===bandId);
-  if(G.support&&band) addAlert('🎵 '+band.name+' added as support act.');
-  saveGame(); renderPlanSupport(); renderPlanCosts();
+  const el=document.getElementById('plan-support-readout'); if(!el) return;
+  const supportBand=G.support?BANDS.find(b=>b.id===G.support):null;
+  if(supportBand){
+    const enq=G.enquiries?G.enquiries.find(e=>e.bandId===supportBand.id&&e.slot==='support'&&e.status==='confirmed'):null;
+    const fee=enq?enq.feeOffered:supportBand.feeVal;
+    el.innerHTML='<span style="color:#60c8a0">✓ '+supportBand.name+'</span> <span style="color:#5a5080;font-size:0.75rem">· £'+fee+' · '+supportBand.genre+'</span>';
+  } else {
+    el.innerHTML='<span style="color:#4a3060">None confirmed — enquire via Band Book earlier in the week.</span>';
+  }
 }
 
 function closePlanning(){
@@ -1488,9 +1521,7 @@ function confirmPlanning(){
   }
   G.dayOfWeek=6;
   saveGame(); updateStatusBar();
-  // Show the show-screen first so canvas has real dimensions, then animate
-  showScreen('show-screen');
-  setTimeout(()=>runShow(), 600);
+  setTimeout(()=>runShow(), 300);
 }
 
 function bookPromo(promoId){
@@ -1654,6 +1685,21 @@ function runShow(){
   const supportFee=supportBand?supportBand.feeVal:0;
   if(supportBand){ addAlert('🎵 '+supportBand.name+' opened the show.'); }
 
+  // Trait match bonus: shared traits between support and headliner boost attendance
+  let traitMatchBonus = 0;
+  if(supportBand){
+    const sharedTraits = band.traits.filter(t=>supportBand.traits.includes(t));
+    if(sharedTraits.length>0){
+      traitMatchBonus = sharedTraits.length * 8;
+      addAlert('🎯 '+supportBand.name+' and '+band.name+' share vibes ('+sharedTraits.join(', ')+') — crowd +'+traitMatchBonus+'!');
+    }
+    // Genre match bonus
+    if(band.genreKey === supportBand.genreKey){
+      traitMatchBonus += 10;
+      addAlert('🎶 Matching genres — the crowd was warmed up perfectly! +10 attendance.');
+    }
+  }
+
   // SFX nightly cost
   let sfxCost=0;
   Object.keys(G.sfxActive).forEach(id=>{ const item=SFX_GEAR[id]; if(item&&G.sfxActive[id]) sfxCost+=item.nightly; });
@@ -1672,7 +1718,7 @@ function runShow(){
   const cap=venue.capacity;
   const ticketPrice=10+G.rep;
   const drawFraction=0.7+Math.random()*0.4;
-  const baseAttendance=Math.round(band.fans*drawFraction*promoBoost)-backupPenalty;
+  const baseAttendance=Math.round(band.fans*drawFraction*promoBoost)-backupPenalty+traitMatchBonus;
   const attendance=Math.min(cap, Math.max(5, baseAttendance));
   const revenue=attendance*ticketPrice;
   const profit=revenue-bandFee-supportFee-sfxCost;
@@ -1692,6 +1738,25 @@ function runShow(){
     }
   });
   G.fans+=fanGain;
+
+  // Support band gains fame/fans from the show
+  if(supportBand){
+    const suppFanGain=Math.round(attendance*0.08);
+    supportBand.fans=(supportBand.fans||0)+suppFanGain;
+    const fillRate=attendance/cap;
+    if(fillRate>=0.8 && supportBand.fame===0){
+      supportBand.fame=1;
+      addAlert('📈 '+supportBand.name+' had a great night — they\'re rising! Fame: Local Act now.');
+    } else if(fillRate>=0.9 && supportBand.fame===1){
+      supportBand.fame=2;
+      addAlert('🌟 '+supportBand.name+' blew the crowd away as support — they\'re a Regional Act now!');
+    } else {
+      addAlert('👏 '+supportBand.name+' gained '+suppFanGain+' new fans from tonight\'s show.');
+    }
+    if(!G.contacts[supportBand.id]) G.contacts[supportBand.id]={tier:0,gigs:0};
+    G.contacts[supportBand.id].gigs=(G.contacts[supportBand.id].gigs||0)+1;
+    G.contacts[supportBand.id].tier=Math.min(3,(G.contacts[supportBand.id].tier||0)+1);
+  }
 
   // SFX combo check
   let specialReview=null;
@@ -1745,13 +1810,16 @@ function startShowAnimation(band, venue, attendance, cap, profit, onDone){
   const canvas=document.getElementById('stage');
   if(!canvas){ setTimeout(onDone,400); return; }
 
-  // Resize canvas to fill its container
-  // Force layout then read dimensions
-  canvas.style.width='100%'; canvas.style.height='100%';
-  canvas.width = canvas.clientWidth || canvas.offsetWidth || canvas.parentElement?.clientWidth || 700;
-  canvas.height = canvas.clientHeight || canvas.offsetHeight || canvas.parentElement?.clientHeight || 320;
-  if(canvas.width < 100) canvas.width = 700;
-  if(canvas.height < 100) canvas.height = 320;
+  // Use double-rAF so browser has painted show-screen before we read canvas size
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const rect=canvas.getBoundingClientRect();
+    canvas.width  = Math.max(200, rect.width  || 700);
+    canvas.height = Math.max(100, rect.height || 420);
+    _doShowAnimation(canvas, band, venue, attendance, cap, profit, onDone, activeGear);
+  }));
+}
+
+function _doShowAnimation(canvas, band, venue, attendance, cap, profit, onDone, activeGear){
   const ctx=canvas.getContext('2d');
   const W=canvas.width, H=canvas.height;
 
