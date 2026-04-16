@@ -787,6 +787,12 @@ const BANDS = [
     bio:"Slow. Heavy. Inevitable. Like getting old, but louder.",
     traits:['Uncompromising','Pyro Enthusiasts','Always Late'], fee:'££', feeVal:210,
     agent:'Nora Finch @ Riff Co.', fame:1, fans:48, rivals:['b07','b13'] },
+  { id:'b15', name:'TNT', genre:'Hard Rock', genreKey:'rock',
+    bio:"We bring the thunder. Literally. Our pyro tech is 'self-taught'. Three venues have asked us not to come back — we consider that a five-star review.",
+    traits:['Pyro Enthusiasts','Drama Queens','Always Late'], fee:'££', feeVal:200,
+    agent:'Self-managed', fame:1, fans:55, rivals:['b07'],
+    isTNT:true,
+    tntRisk:"TNT's pyro tech 'improvised' at the end of the set. Two flash pots detonated simultaneously, blowing out the stage monitors and leaving scorch marks on the ceiling. The crowd went wild. Your boss did not." },
   // ── BACKUP BANDS (always available, last-minute, problematic) ──
   { id:'bk1', name:'The Filthy Casuals', genre:'Pub Rock', genreKey:'rock',
     bio:"We'll play anywhere, anytime, for anyone. Don't ask questions. We won't either.",
@@ -939,7 +945,7 @@ function freshState() {
     headliner:null, support:null,
     pendingPromo:null,
     sfxOwned:{basic:true,spots:true}, sfxActive:{basic:true,spots:true},
-    achievements:[], contacts:{},
+    achievements:[], contacts:{}, discovered:{},
     enquiries:[], messages:[],
     dailyNews:{},
     alerts:[],
@@ -959,6 +965,7 @@ function _addAliases(g) {
     Object.defineProperty(g,'bands',{get(){return BANDS;},enumerable:false,configurable:true});
   if (!g.messages) g.messages = [];
   if (!g.contacts || Array.isArray(g.contacts)) g.contacts = {};
+  if (!g.discovered) g.discovered = {};
   return g;
 }
 
@@ -1288,16 +1295,47 @@ function enquireBand(bandId, slot){
     replyText = replyText.replace(`£${band.feeVal}`, `£${feeOffered}`);
     addAlert(`🤝 Loyalty perk: ${band.name} offered a ${Math.round(_tierDisc*100)}% discount (£${feeOffered}).`);
   }
+  // Phase 2: direct contact for self-managed bands
+  const isSelfManaged = band.agent === 'Self-managed';
+  const contactTier = (G.contacts[band.id]||{}).tier||0;
+  let finalReplyDay = replyDay;
+  let contactMethod = 'agent';
+  if(isSelfManaged){
+    finalReplyDay = G.dayOfWeek; // instant — they answer their own phone
+    contactMethod = 'direct';
+  } else if(contactTier >= 3){
+    finalReplyDay = Math.max(G.dayOfWeek, replyDay - 1); // fast-track
+    contactMethod = 'fast';
+  }
+
+  // Track discovery: first time player enquires this band
+  if(!G.discovered[band.id]){
+    G.discovered[band.id] = { week: G.week, day: G.dayOfWeek };
+  }
+
   G.enquiries.push({
     id:Date.now(), bandId, slot,
-    status:'pending', replyDay,
+    status:'pending', replyDay:finalReplyDay,
     feeOffered,
     replyText, negotiationStep:0,
   });
-  const _sentMsg = slot==='support'
-    ? `📨 Support enquiry sent to ${band.name}. Expect reply by ${DAYS[replyDay]}.`
-    : `📨 Enquiry sent to ${band.name}. Expect reply by ${DAYS[replyDay]}.`;
-  addAlert(_sentMsg, false);
+
+  // If self-managed: deliver reply immediately
+  if(isSelfManaged){
+    const enq = G.enquiries[G.enquiries.length-1];
+    enq.status = 'replied';
+    addAlert(`📞 ${band.name} answered directly — no agent needed. Check your Inbox!`);
+    shakeInbox();
+    const b=document.getElementById('inbox-badge'); if(b) b.style.display='block';
+    if(document.getElementById('panel-inbox')?.classList.contains('active')) renderInbox();
+  } else {
+    const _sentMsg = slot==='support'
+      ? `📨 Support enquiry sent to ${band.name}'s agent. Expect reply by ${DAYS[finalReplyDay]}.`
+      : contactMethod==='fast'
+        ? `📨 Enquiry sent to ${band.name} — they know you, expect a quick reply by ${DAYS[finalReplyDay]}.`
+        : `📨 Enquiry sent to ${band.name}. Expect reply by ${DAYS[finalReplyDay]}.`;
+    addAlert(_sentMsg, false);
+  }
   if(slot==='support') addAlert(`💡 Tip: matching genres between support and headliner gives a crowd bonus!`);
   saveGame(); renderBandCarousel(); renderEnquiries();
 }
@@ -1539,7 +1577,15 @@ function _drawCard(el) {
           <div class="band-traits" style="margin:0.6rem 0">${band.traits.map(t=>'<span class="trait-tag">'+t+'</span>').join('')}</div>
           ${hints.length?'<div class="combo-hints">'+hints.map(h=>'<span class="combo-hint-tag">✨ '+h+'</span>').join('')+'</div>':''}
           ${tier>0?'<div style="font-size:0.68rem;color:#507060;margin:0.3rem 0">Relationship: '+tierLabel(tier)+'</div>':''}
-          <div class="band-agent">${band.agent} · Fee: ${band.fee}</div>
+          <div class="band-agent">
+            ${band.agent==='Self-managed'
+              ? '<span style="color:#60c878">📞 Direct contact</span>'
+              : '🤝 '+band.agent}
+            · Fee: ${band.fee}
+            ${G.discovered&&G.discovered[band.id]
+              ? '<span style="font-size:0.6rem;color:#a06030;background:#1a0e00;border:1px solid #4a2a00;border-radius:4px;padding:1px 5px;margin-left:0.4rem">⭐ ORIGIN</span>'
+              : ''}
+          </div>
           <div class="carousel-actions">
             <button class="book-btn ${hasEnq?'enquired':''}" ${isHL||hasEnq?'disabled':''} onclick="enquireBand('${band.id}')">
               ${isHL?'✓ Headliner Confirmed':hasEnq?'📨 Enquiry Sent':'📨 Enquire as Headliner'}
@@ -1674,7 +1720,9 @@ function renderInbox() {
     } else if (enq.status === 'confirmed') {
       html += '<div class="msg-text" style="color:#50c878">Confirmed as headliner at £'+enq.feeOffered+'</div>';
     } else if (enq.status === 'pending') {
-      html += '<div class="msg-text" style="color:#6050a0">Waiting on their agent...</div>';
+      const pb = BANDS.find(b=>b.id===enq.bandId);
+      const pendingMsg = pb && pb.agent==='Self-managed' ? 'Ringing them directly...' : 'Waiting on their agent...';
+      html += '<div class="msg-text" style="color:#6050a0">' + pendingMsg + '</div>';
     } else if (enq.status === 'declined') {
       html += '<div class="msg-text" style="color:#e05060">Passed or walked.</div>';
     }
@@ -1697,8 +1745,11 @@ function renderContacts() {
     const c = G.contacts[id], band = BANDS.find(b => b.id === id);
     if (!band) return '';
     return '<div class="contact-entry fade-in">' +
-      '<div class="contact-name">' + band.name + ' <span class="relationship-tier tier-' + c.tier + '">' + tierLabel(c.tier) + '</span></div>' +
-      '<div class="contact-meta">' + band.genre + ' · Gigs: ' + c.gigs + ' · Fame: ' + fameLabel(band.fame) + '</div>' +
+      '<div class="contact-name">' + band.name + ' <span class="relationship-tier tier-' + c.tier + '">' + tierLabel(c.tier) + '</span>' +
+        (band.agent==='Self-managed' ? ' <span style="font-size:0.6rem;color:#60c878;background:#001a06;border:1px solid #1a4020;border-radius:4px;padding:1px 5px;margin-left:0.3rem">📞 Direct</span>' : '') +
+        ((G.discovered&&G.discovered[id]) ? ' <span style="font-size:0.6rem;color:#a06030;background:#1a0e00;border:1px solid #4a2a00;border-radius:4px;padding:1px 5px;margin-left:0.3rem">⭐ Origin</span>' : '') +
+      '</div>' +
+      '<div class="contact-meta">' + band.genre + ' · Gigs: ' + (c.gigs||0) + ' · Fame: ' + fameLabel(band.fame) + (G.discovered&&G.discovered[id]?' · Discovered Wk '+(G.discovered[id].week||'?'):'') + '</div>' +
       '<div class="contact-history">Best night: ' + (c.bestNight||'None yet') + (c.agentNote?'<br><em style="color:#5a4070">"'+c.agentNote+'"</em>':'') + '</div>' +
     '</div>';
   }).join('');
