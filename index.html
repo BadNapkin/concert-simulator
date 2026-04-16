@@ -285,6 +285,8 @@ canvas#stage { width: 100%; height: 100%; }
 .neg-choice.decline:hover { background:rgba(120,40,40,0.3); }
 
 /* ── MOBILE ─────────────────────────────────────────────────────────────────── */
+#plan-confirm-btn:disabled { opacity:0.4; cursor:not-allowed; }
+#plan-confirm-btn:hover:not(:disabled) { filter:brightness(1.1); }
 @media (max-width: 600px) {
   .start-title { font-size: 1.8rem; }
   .start-sub, .start-tagline { font-size: 0.75rem; }
@@ -423,6 +425,49 @@ canvas#stage { width: 100%; height: 100%; }
     <span class="status-item">REP:&nbsp;<span id="sb-rep">0</span></span>
     <span class="status-item">FANS:&nbsp;<span id="sb-fans">0</span></span>
     <button class="next-day-btn" id="next-day-btn" onclick="nextDay()">Next Day →</button>
+  </div>
+</div>
+
+<!-- PLANNING PAGE MODAL -->
+<div id="planning-modal" style="display:none;position:fixed;inset:0;background:rgba(5,2,20,0.92);z-index:999;overflow-y:auto;padding:1.5rem">
+  <div style="max-width:600px;margin:0 auto;background:#12082a;border:1px solid #2a1a50;border-radius:12px;padding:1.5rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <div>
+        <div style="font-size:0.7rem;color:#6050a0;text-transform:uppercase;letter-spacing:0.1em">Week <span id="plan-week"></span> · Friday</div>
+        <div style="font-size:1.3rem;font-weight:700;color:#c9b8ff">🎤 Show Planning</div>
+      </div>
+      <button onclick="closePlanning()" style="background:none;border:1px solid #3a2a60;color:#6050a0;padding:0.3rem 0.8rem;border-radius:6px;cursor:pointer;font-size:0.8rem">Skip →</button>
+    </div>
+
+    <!-- BAND SELECTION -->
+    <div style="margin-bottom:1.2rem">
+      <div style="font-size:0.75rem;color:#8070b0;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.6rem">🎸 Headline Act</div>
+      <div id="plan-bands">
+        <p style="color:#4a3060;font-size:0.8rem">No bands have responded yet. Advance a day and check back, or enquire via BandBook.</p>
+      </div>
+    </div>
+
+    <!-- SFX GEAR -->
+    <div style="margin-bottom:1.2rem">
+      <div style="font-size:0.75rem;color:#8070b0;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.6rem">🎛️ Production Gear</div>
+      <div id="plan-sfx" style="display:flex;flex-wrap:wrap;gap:0.5rem"></div>
+    </div>
+
+    <!-- PROMOTIONS -->
+    <div style="margin-bottom:1.2rem">
+      <div style="font-size:0.75rem;color:#8070b0;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.6rem">📣 Promotion</div>
+      <div style="display:flex;flex-wrap:wrap;gap:0.5rem" id="plan-promos"></div>
+    </div>
+
+    <!-- COST BREAKDOWN -->
+    <div style="background:#0a0520;border:1px solid #1a0a40;border-radius:8px;padding:1rem;margin-bottom:1.2rem">
+      <div style="font-size:0.75rem;color:#8070b0;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.7rem">💷 Estimated Costs</div>
+      <div id="plan-costs"></div>
+    </div>
+
+    <button onclick="confirmPlanning()" id="plan-confirm-btn" style="width:100%;padding:0.9rem;background:linear-gradient(135deg,#6030c0,#9060ff);border:none;border-radius:8px;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:0.05em">
+      ✅ Confirm Lineup — Go to Saturday
+    </button>
   </div>
 </div>
 
@@ -749,6 +794,21 @@ function nextDay(){
 
   if(G.dayOfWeek===5){
     addAlert('🎸 Show night is TOMORROW (Saturday). Make sure your lineup is confirmed!');
+    // deliver any last-minute replies before planning page
+    G.enquiries.forEach(enq=>{
+      if(enq.status==='pending'){
+        enq.status='replied';
+        const band=BANDS.find(b=>b.id===enq.bandId)||BANDS[enq.bandId];
+        if(!band) return;
+        const tmpl=rnd(ENQUIRY_REPLIES);
+        enq.replyText=tmpl.replace('{band}',band.name).replace('{fee}',enq.feeOffered);
+        addAlert(`📬 Reply from ${band.name}'s agent — check your planning page.`);
+      }
+    });
+    saveGame(); updateStatusBar(); renderOffice();
+    // open planning modal
+    setTimeout(()=>openPlanning(), 300);
+    return;
   }
   if(G.dayOfWeek===6){
     // Saturday = show night
@@ -761,7 +821,8 @@ function nextDay(){
   G.enquiries.forEach(enq=>{
     if(enq.status==='pending' && G.dayOfWeek>=enq.replyDay){
       enq.status='replied';
-      const band=BANDS[enq.bandId];
+      const band=BANDS.find(b=>b.id===enq.bandId)||BANDS[enq.bandId];
+      if(!band) return;
       const tmpl=rnd(ENQUIRY_REPLIES);
       enq.replyText=tmpl.replace('{band}',band.name).replace('{fee}',enq.feeOffered);
       addAlert(`📬 Reply from ${band.name}'s agent — check Enquiries tab.`);
@@ -786,7 +847,7 @@ function endWeek(){
   if(G.enquiries){
     G.enquiries.forEach(enq=>{
       if(enq.status==='pending'||enq.status==='replied'){
-        const band=BANDS.find(b=>b.id===enq.bandId);
+        const band=BANDS.find(b=>b.id===enq.bandId)||BANDS[enq.bandId];
         const name=band?band.name:'The band';
         if(!G.contacts[enq.bandId]) G.contacts[enq.bandId]={tier:0};
         G.contacts[enq.bandId].tier=Math.max(0,(G.contacts[enq.bandId].tier||0)-1);
@@ -825,7 +886,11 @@ function addAlert(text, urgent=false){
 }
 
 function enquireBand(bandId){
-  const band=BANDS[bandId];
+  const band=BANDS.find(b=>b.id===bandId);
+  if(!band){ addAlert('Band not found.'); return; }
+  if(G.enquiries.some(e=>e.bandId===bandId&&e.status!=='declined')){
+    addAlert('Already have an active enquiry for '+band.name+'.'); return;
+  }
   const replyDay=Math.min(G.dayOfWeek+1+Math.floor(Math.random()*2),4);
   G.enquiries.push({
     id:Date.now(), bandId,
@@ -1115,13 +1180,171 @@ function renderAlerts() {
   const el = document.getElementById('alerts-list');
   if (!el) return;
   if (!G.alerts||!G.alerts.length) { el.innerHTML = '<p style="color:#4a3060;font-size:0.8rem;padding:1rem">No alerts.</p>'; return; }
-  el.innerHTML = G.alerts.map(a =>
-    '<div class="alert-item' + (a.urgent?' urgent':'') + '">' +
-      '<div class="alert-date">' + a.date + '</div>' + a.text +
-    '</div>'
-  ).join('');
+  el.innerHTML = '<div style="text-align:right;padding:0.5rem 1.5rem 0">' +
+    '<button onclick="dismissAllAlerts()" style="background:none;border:1px solid #3a2a60;color:#6050a0;font-size:0.7rem;padding:0.25rem 0.7rem;border-radius:4px;cursor:pointer">Dismiss All</button>' +
+    '</div>' +
+    G.alerts.map((a,i) =>
+      '<div class="alert-item' + (a.urgent?' urgent':'') + '" style="display:flex;align-items:flex-start;gap:0.5rem">' +
+        '<div style="flex:1"><div class="alert-date">' + a.date + '</div>' + a.text + '</div>' +
+        '<button onclick="dismissAlert('+i+')" style="background:none;border:none;color:#3a2a60;font-size:1rem;cursor:pointer;line-height:1;padding:0 0.2rem;flex-shrink:0" title="Dismiss">×</button>' +
+      '</div>'
+    ).join('');
+}
+function dismissAlert(i){
+  if(!G.alerts) return;
+  G.alerts.splice(i,1);
+  if(!G.alerts.length){ const badge=document.getElementById('alerts-badge'); if(badge) badge.style.display='none'; }
+  saveGame(); renderAlerts();
+}
+function dismissAllAlerts(){
+  G.alerts=[];
+  const badge=document.getElementById('alerts-badge'); if(badge) badge.style.display='none';
+  saveGame(); renderAlerts();
 }
 
+
+// ── PLANNING PAGE ──────────────────────────────────────────────────────────
+const PROMOS = [
+  { id:'flyering',  label:'🗺️ Flyering',    cost:30,  repBonus:1, desc:'+1 REP, slight attendance boost' },
+  { id:'social',    label:'📱 Social Push',  cost:50,  repBonus:2, desc:'+2 REP, good attendance boost' },
+  { id:'presale',   label:'🎟️ Pre-Sale',     cost:20,  repBonus:0, desc:'Guaranteed floor attendance' },
+  { id:'press',     label:'📰 Press Release',cost:80,  repBonus:3, desc:'+3 REP, best attendance boost' },
+];
+
+if(!window._planPromo) window._planPromo = null;
+
+function openPlanning(){
+  document.getElementById('planning-modal').style.display='block';
+  document.getElementById('plan-week').textContent=G.week;
+  window._planPromo = null;
+  renderPlanBands();
+  renderPlanSFX();
+  renderPlanPromos();
+  renderPlanCosts();
+}
+
+function closePlanning(){
+  document.getElementById('planning-modal').style.display='none';
+}
+
+function confirmPlanning(){
+  closePlanning();
+  // apply promo
+  if(window._planPromo){
+    const promo=PROMOS.find(p=>p.id===window._planPromo);
+    if(promo && G.money>=promo.cost){
+      G.money-=promo.cost;
+      G.rep=Math.min(100,G.rep+promo.repBonus);
+      G.pendingPromo=promo.id;
+      addAlert('📣 '+promo.label+' booked for show night.');
+    }
+  }
+  saveGame(); updateStatusBar();
+}
+
+function renderPlanBands(){
+  const el=document.getElementById('plan-bands'); if(!el) return;
+  const available=G.enquiries.filter(e=>e.status==='replied'||e.status==='confirmed');
+  if(!available.length){
+    el.innerHTML='<p style="color:#4a3060;font-size:0.8rem">No bands have responded yet. Enquire via BandBook and advance a day.</p>';
+    return;
+  }
+  el.innerHTML=available.map(enq=>{
+    const band=BANDS.find(b=>b.id===enq.bandId)||BANDS[enq.bandId];
+    if(!band) return '';
+    const isSelected=G.headliner===BANDS.indexOf(band);
+    const isConfirmed=enq.status==='confirmed';
+    const canAfford=G.money>=enq.feeOffered;
+    return '<div onclick="selectPlanBand(\''+enq.id+'\')" style="cursor:'+(isConfirmed||canAfford?'pointer':'default')+';padding:0.8rem 1rem;margin-bottom:0.5rem;border-radius:8px;border:1px solid '+(isSelected?'#6030c0':'#2a1a50')+';background:'+(isSelected?'#1a0a40':'#0a0520')+';display:flex;justify-content:space-between;align-items:center">' +
+      '<div><div style="color:#c9b8ff;font-weight:600">'+band.name+'</div>' +
+      '<div style="font-size:0.72rem;color:#6050a0">'+band.genre+' · '+fameLabel(band.fame)+'</div>' +
+      (isConfirmed?'<div style="font-size:0.68rem;color:#4caf50">✓ Confirmed</div>':'<div style="font-size:0.68rem;color:#ff9040">⚡ Awaiting final confirmation</div>')+
+      '</div>' +
+      '<div style="text-align:right"><div style="color:'+(canAfford?'#c9b8ff':'#e05060');+';font-size:0.9rem">£'+enq.feeOffered+'</div>' +
+      (!canAfford?'<div style="font-size:0.65rem;color:#e05060">Can\'t afford</div>':'')+
+      (isSelected?'<div style="font-size:0.7rem;color:#60c878">✓ Selected</div>':'')+
+      '</div></div>';
+  }).join('');
+}
+
+function selectPlanBand(enquiryId){
+  const enq=G.enquiries.find(e=>e.id===enquiryId); if(!enq) return;
+  const band=BANDS.find(b=>b.id===enq.bandId)||BANDS[enq.bandId]; if(!band) return;
+  if(G.money<enq.feeOffered){ addAlert('Not enough cash to book '+band.name+'.'); return; }
+  // confirm enquiry if still replied
+  if(enq.status==='replied'){ enq.status='confirmed'; }
+  G.headliner=BANDS.indexOf(band);
+  G.money-=enq.feeOffered;
+  addAlert('✅ '+band.name+' confirmed as headliner at £'+enq.feeOffered+'!');
+  saveGame(); updateStatusBar(); renderPlanBands(); renderPlanCosts();
+}
+
+function renderPlanSFX(){
+  const el=document.getElementById('plan-sfx'); if(!el) return;
+  const owned=Object.keys(G.sfxOwned||{}).filter(id=>G.sfxOwned[id]);
+  if(!owned.length){ el.innerHTML='<p style="color:#4a3060;font-size:0.75rem">No gear owned yet. Buy SFX from the Gear tab.</p>'; return; }
+  el.innerHTML=owned.map(id=>{
+    const gear=SFX_GEAR[id]; if(!gear) return '';
+    const active=!!(G.sfxActive&&G.sfxActive[id]);
+    return '<div onclick="planToggleSFX(\''+id+'\')" style="cursor:pointer;padding:0.4rem 0.8rem;border-radius:20px;border:1px solid '+(active?'#6030c0':'#2a1a50')+';background:'+(active?'#1a0a40':'#0a0520')+';font-size:0.75rem;color:'+(active?'#c9b8ff':'#6050a0')+'">' +
+      gear.icon+' '+gear.name+' <span style="color:#6050a0">£'+gear.nightly+'/show</span>' +
+      (active?' <span style="color:#60c878">● ON</span>':'')+
+      '</div>';
+  }).join('');
+}
+
+function planToggleSFX(id){
+  toggleSFX(id);
+  renderPlanSFX(); renderPlanCosts();
+}
+
+function renderPlanPromos(){
+  const el=document.getElementById('plan-promos'); if(!el) return;
+  el.innerHTML=PROMOS.map(p=>{
+    const sel=window._planPromo===p.id;
+    const canAfford=G.money>=p.cost;
+    return '<div onclick="'+(canAfford?'selectPromo(\''+p.id+'\')':'')+'" style="cursor:'+(canAfford?'pointer':'default')+';padding:0.5rem 0.8rem;border-radius:8px;border:1px solid '+(sel?'#6030c0':'#2a1a50')+';background:'+(sel?'#1a0a40':'#0a0520')+';margin-bottom:0.4rem;width:100%">' +
+      '<div style="display:flex;justify-content:space-between"><span style="color:'+(canAfford?'#c9b8ff':'#4a3060')+';font-size:0.8rem">'+p.label+'</span><span style="color:'+(canAfford?'#e0c060':'#4a3060')+';font-size:0.8rem">£'+p.cost+'</span></div>' +
+      '<div style="font-size:0.68rem;color:#6050a0">'+p.desc+'</div>'+
+      (sel?'<div style="font-size:0.65rem;color:#60c878">✓ Selected</div>':'')+
+      '</div>';
+  }).join('');
+}
+
+function selectPromo(id){
+  window._planPromo = (window._planPromo===id) ? null : id;
+  renderPlanPromos(); renderPlanCosts();
+}
+
+function renderPlanCosts(){
+  const el=document.getElementById('plan-costs'); if(!el) return;
+  const band=G.headliner!==null?BANDS[G.headliner]:null;
+  const enq=band?G.enquiries.find(e=>(e.bandId===band.id||e.bandId===G.headliner)&&e.status==='confirmed'):null;
+  const bandFee=enq?enq.feeOffered:(band?band.feeVal:0);
+  let sfxCost=0;
+  Object.keys(G.sfxActive||{}).forEach(id=>{const g=SFX_GEAR[id];if(g&&G.sfxActive[id])sfxCost+=g.nightly;});
+  const promo=window._planPromo?PROMOS.find(p=>p.id===window._planPromo):null;
+  const promoCost=promo?promo.cost:0;
+  const total=bandFee+sfxCost+promoCost;
+  const venue=VENUE_TIERS[G.venueTier];
+  const estTickets=band?Math.min(venue.capacity,Math.round(band.fans*0.8)):0;
+  const estRevenue=estTickets*(10+G.rep);
+  const estProfit=estRevenue-total;
+  const row=(label,val,col)=>'<div style="display:flex;justify-content:space-between;margin-bottom:0.35rem"><span style="color:#6050a0;font-size:0.8rem">'+label+'</span><span style="color:'+(col||'#c9b8ff')+';font-size:0.8rem">'+val+'</span></div>';
+  el.innerHTML=
+    row('Headliner Fee', band?'-£'+bandFee:'—', '#e05060')+
+    row('SFX Nightly', sfxCost?'-£'+sfxCost:'—', '#e05060')+
+    row('Promotion', promoCost?'-£'+promoCost:'—', '#e05060')+
+    '<div style="border-top:1px solid #2a1a50;margin:0.5rem 0"></div>'+
+    row('Total Costs', '£'+total, '#e05060')+
+    row('Est. Ticket Revenue', band?'~£'+estRevenue:'—', '#50c878')+
+    '<div style="border-top:1px solid #2a1a50;margin:0.5rem 0"></div>'+
+    row('Est. Profit', band?'~£'+estProfit:(G.money>=total?'Affordable':'⚠ Over budget'), estProfit>0?'#50c878':'#e05060')+
+    row('Your Cash', '£'+Math.round(G.money), G.money>=total?'#c9b8ff':'#e05060');
+  // disable confirm if no headliner
+  const btn=document.getElementById('plan-confirm-btn');
+  if(btn) btn.disabled=!band;
+}
 
 // ── SHOW FLOW ──────────────────────────────────────────────────────────────
 function runShow(){
