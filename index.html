@@ -1047,7 +1047,7 @@ function enquireBand(bandId, slot){
   });
   addAlert(`📨 Support enquiry sent to ${band.name}. Expect reply by ${DAYS[replyDay]}.`, false);
   if(slot==='support') addAlert(`💡 Tip: matching genres between support and headliner gives a crowd bonus!`);
-  saveGame(); renderBandCarousel(); switchTab('inbox');
+  saveGame(); renderBandCarousel(); renderEnquiries();
 }
 
 function renderEnquiries(){
@@ -1115,8 +1115,7 @@ function handleNegotiation(enquiryId, choiceIndex){
     enq.status='declined';
     addAlert(`📋 Passed on ${band.name}. Enquiry closed.`);
   }
-  saveGame(); renderEnquiries(); updateStatusBar(); renderOffice();
-  switchPanel('office', document.querySelector('.nav-btn[data-panel="office"]'));
+  saveGame(); renderEnquiries(); renderPlanSupport(); updateStatusBar(); renderOffice();
 }
 
 // ── OFFICE / SCENE FEED ────────────────────────────────────────────────────
@@ -1250,7 +1249,7 @@ function _drawCard(el) {
   const bandIdx = BANDS.indexOf(band); const isHL = G.headliner === bandIdx;
   const isSup = G.support === band.id;
   const canAfford = G.money >= band.feeVal;
-          const hasEnq = G.enquiries && G.enquiries.some(e=>e.bandId===band.id && e.slot!=='support' && e.status!=='declined' && e.status!=='confirmed');
+          const hasEnq = G.enquiries && G.enquiries.some(e=>e.bandId===band.id && (e.slot==='headline'||!e.slot) && e.status!=='declined' && e.status!=='confirmed');
   const hasSuppEnq = G.enquiries && G.enquiries.some(e=>e.bandId===band.id && e.slot==='support' && e.status!=='declined' && e.status!=='confirmed');
   const tier = G.contacts[band.id] ? G.contacts[band.id].tier : 0;
   const GENRE_EMOJI = { punk:'🎸', rock:'🎸', folk:'🪕', electronic:'🎛️', pop:'🎤', metal:'🤘', default:'🎵' };
@@ -1536,7 +1535,7 @@ function bookPromo(promoId){
 function renderPlanBands(){
   const el=document.getElementById('plan-bands'); if(!el) return;
   // Only show headliner enquiries (slot !== 'support') that have replied or confirmed
-  const available=G.enquiries.filter(e=>(e.status==='replied'||e.status==='confirmed') && e.slot!=='support');
+  const available=G.enquiries.filter(e=>(e.status==='replied'||e.status==='confirmed') && (e.slot==='headline'||!e.slot));
   const hasHeadliner=G.headliner!==null;
   const backups=BANDS.filter(b=>b.isBackup);
   let html='';
@@ -1813,15 +1812,16 @@ function startShowAnimation(band, venue, attendance, cap, profit, supportBand, o
   const canvas=document.getElementById('stage');
   if(!canvas){ setTimeout(onDone,400); return; }
 
-  // Use setTimeout(100ms) after showScreen so browser fully paints show-screen
-  // before we read canvas dimensions — fixes week-1 black screen where
-  // show-screen has never been rendered before.
-  setTimeout(()=>{
-    const rect=canvas.getBoundingClientRect();
-    canvas.width  = Math.max(200, rect.width  || 700);
-    canvas.height = Math.max(100, rect.height || 420);
+  // Force canvas to known good dimensions immediately using offsetParent,
+  // then refine after a paint cycle. This fixes week-1 where show-screen
+  // is displayed for the first time and getBoundingClientRect returns 0.
+  canvas.width = 700; canvas.height = 420; // safe defaults first
+  void canvas.offsetWidth; // force reflow
+  requestAnimationFrame(()=>{
+    const rect = canvas.getBoundingClientRect();
+    if(rect.width > 10){ canvas.width = rect.width; canvas.height = Math.max(100, rect.height); }
     _doShowAnimation(canvas, band, venue, attendance, cap, profit, onDone, activeGear, supportBand);
-  }, 100);
+  });
 }
 
 function _doShowAnimation(canvas, band, venue, attendance, cap, profit, onDone, activeGear, supportBand){
