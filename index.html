@@ -321,9 +321,48 @@ canvas#stage { width: 100%; height: 100%; }
   <div class="start-title">Concert Simulator</div>
   <div class="start-sub">Talent Booker — The Dive Bar</div>
   <div class="start-tagline">"Develop the acts. Build the scene. Leave a legacy."<br>Every great venue started with one good night.</div>
-  <div style="display:flex;gap:1rem;">
+  <div style="display:flex;gap:1rem;margin-bottom:1.2rem">
     <button class="btn btn-primary" onclick="initGame(true)">Open the Doors</button>
     <button class="btn" id="continue-btn" style="display:none" onclick="initGame(false)">↩ Continue</button>
+  </div>
+  <button onclick="document.getElementById('howto-modal').style.display='flex'" style="background:none;border:none;color:#6050a0;font-size:0.78rem;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;text-decoration:underline">? How to Play</button>
+</div>
+
+<!-- HOW TO PLAY MODAL -->
+<div id="howto-modal" style="display:none;position:fixed;inset:0;background:rgba(5,2,20,0.95);z-index:9999;align-items:center;justify-content:center;padding:1.5rem">
+  <div style="max-width:520px;width:100%;background:#12082a;border:1px solid #2a1a50;border-radius:12px;padding:1.8rem;overflow-y:auto;max-height:90vh">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">
+      <div style="font-size:1.3rem;color:#c9b8ff;font-weight:700">🎸 How to Play</div>
+      <button onclick="document.getElementById('howto-modal').style.display='none'" style="background:none;border:1px solid #3a2a60;color:#6050a0;padding:0.3rem 0.8rem;border-radius:6px;cursor:pointer;font-size:0.9rem">✕</button>
+    </div>
+    <div style="font-size:0.82rem;color:#9080b0;line-height:1.8">
+      <div style="color:#c9b8ff;font-size:0.9rem;margin-bottom:0.3rem">🎯 Your Goal</div>
+      <p style="margin-bottom:1rem">You're a talent booker at a dive bar. Put on great shows each week, grow your reputation, and eventually upgrade your venue.</p>
+
+      <div style="color:#c9b8ff;font-size:0.9rem;margin-bottom:0.3rem">📅 The Week</div>
+      <p style="margin-bottom:0.5rem">Each week runs <strong style="color:#e0d0f8">Monday → Saturday</strong>. Press <em>Next Day →</em> to advance.</p>
+      <ul style="list-style:none;padding:0;margin-bottom:1rem">
+        <li style="padding:0.3rem 0;border-bottom:1px solid #1a1028">📱 <strong style="color:#e0d0f8">BandBook</strong> — Browse acts and send enquiries. They reply within 1–2 days.</li>
+        <li style="padding:0.3rem 0;border-bottom:1px solid #1a1028">📬 <strong style="color:#e0d0f8">Inbox</strong> — When a band replies, their offer appears here with negotiation options.</li>
+        <li style="padding:0.3rem 0;border-bottom:1px solid #1a1028">🏠 <strong style="color:#e0d0f8">Office</strong> — See the week schedule and pick a mid-week promotion to boost attendance.</li>
+        <li style="padding:0.3rem 0;border-bottom:1px solid #1a1028">🎛️ <strong style="color:#e0d0f8">SFX Gear</strong> — Buy and activate production gear to enhance your shows.</li>
+        <li style="padding:0.3rem 0">🎤 <strong style="color:#e0d0f8">Friday</strong> — A planning screen pops up. Confirm your headliner, add a support act, and lock in gear.</li>
+      </ul>
+
+      <div style="color:#c9b8ff;font-size:0.9rem;margin-bottom:0.3rem">💬 Negotiation</div>
+      <p style="margin-bottom:1rem">When a band replies, open <strong style="color:#e0d0f8">Inbox (📬)</strong> and choose: <em>Accept</em> (standard fee), <em>Negotiate</em> (risk a lower fee), <em>Guest List</em> (pay extra, gain REP), or <em>Pass</em>.</p>
+
+      <div style="color:#c9b8ff;font-size:0.9rem;margin-bottom:0.3rem">🎸 Show Night (Saturday)</div>
+      <p style="margin-bottom:1rem">The show runs automatically. Your profit = ticket sales minus band fees and gear costs. Win fans, gain REP, and unlock better acts.</p>
+
+      <div style="color:#c9b8ff;font-size:0.9rem;margin-bottom:0.3rem">⚠️ Watch Out</div>
+      <ul style="list-style:none;padding:0;margin-bottom:0">
+        <li style="padding:0.25rem 0">💸 If you run out of money, it's game over.</li>
+        <li style="padding:0.25rem 0">🎲 Backup bands are cheap but risky — they might cause chaos.</li>
+        <li style="padding:0.25rem 0">📣 Promotions booked mid-week boost attendance on show night.</li>
+      </ul>
+    </div>
+    <button onclick="document.getElementById('howto-modal').style.display='none'" style="margin-top:1.4rem;width:100%;padding:0.8rem;background:linear-gradient(135deg,#6030c0,#9060ff);border:none;border-radius:8px;color:#fff;font-size:0.9rem;font-weight:700;cursor:pointer;letter-spacing:0.05em">Let's Go! 🎸</button>
   </div>
 </div>
 
@@ -344,6 +383,9 @@ canvas#stage { width: 100%; height: 100%; }
     </div>
     <div class="nav-btn" data-panel="contacts" onclick="switchPanel('contacts',this)">
       <span>👥</span><span class="tooltip">CONTACTS</span>
+    </div>
+    <div class="nav-btn" data-panel="inbox" onclick="switchPanel('inbox',this)" style="position:relative">
+      <span>📬</span><span class="tooltip">INBOX</span><span id="inbox-badge" style="display:none;position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#e0a030;"></span>
     </div>
     <div class="nav-btn" data-panel="alerts" onclick="switchPanel('alerts',this)" style="position:relative">
       <span>🔔</span><span class="tooltip">ALERTS</span><span id="alerts-badge" style="display:none;position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#ff4466;"></span>
@@ -418,6 +460,15 @@ canvas#stage { width: 100%; height: 100%; }
         <div class="panel-heading">Alerts</div>
       </div>
       <div style="overflow-y:auto;flex:1;padding:1rem 1.5rem" id="alerts-list"></div>
+    </div>
+
+    <!-- INBOX PANEL -->
+    <div class="panel" id="panel-inbox">
+      <div class="panel-header">
+        <div class="panel-title">Band Negotiations</div>
+        <div class="panel-heading">📬 Inbox</div>
+      </div>
+      <div style="overflow-y:auto;flex:1;padding:1rem 1.5rem" id="inbox-list"></div>
     </div>
   </div>
 
@@ -794,6 +845,7 @@ function switchPanel(id, btnEl){
   if(id==='achievements') renderAchievements();
   if(id==='contacts')     renderContacts();
   if(id==='alerts')       renderAlerts();
+  if(id==='inbox')        { renderInbox(); const b=document.getElementById('inbox-badge'); if(b) b.style.display='none'; }
 }
 function switchTab(tab){
   document.querySelectorAll('.bb-tab').forEach(t=>t.classList.remove('active'));
@@ -830,9 +882,10 @@ function nextDay(){
         if(!band) return;
         const tmpl=rnd(ENQUIRY_REPLIES);
         enq.replyText=tmpl.replace('{band}',band.name).replace('{fee}',enq.feeOffered);
-        addAlert(`📬 Reply from ${band.name}'s agent — check your planning page.`);
+        addAlert(`📬 Reply from ${band.name}'s agent — check your Inbox (📬).`);
       }
     });
+    const b=document.getElementById('inbox-badge'); if(b) b.style.display='block';
     saveGame(); updateStatusBar(); renderOffice();
     // open planning modal
     setTimeout(()=>openPlanning(), 300);
@@ -853,7 +906,8 @@ function nextDay(){
       if(!band) return;
       const tmpl=rnd(ENQUIRY_REPLIES);
       enq.replyText=tmpl.replace('{band}',band.name).replace('{fee}',enq.feeOffered);
-      addAlert(`📬 Reply from ${band.name}'s agent — check Enquiries tab.`);
+      addAlert(`📬 Reply from ${band.name}'s agent — check your Inbox (📬).`);
+      const b=document.getElementById('inbox-badge'); if(b) b.style.display='block';
     }
   });
 
@@ -968,21 +1022,23 @@ function handleNegotiation(enquiryId, choiceIndex){
   const enq=G.enquiries.find(e=>e.id===enquiryId);
   if(!enq||enq.status!=='replied') return;
   const opt=NEGOTIATION_OPTS[choiceIndex];
-  const band=BANDS[enq.bandId];
+  const band=BANDS.find(b=>b.id===enq.bandId);
+  if(!band) return;
+  const bandIdx=BANDS.indexOf(band);
   if(opt.effect==='standard'){
-    enq.status='confirmed'; G.headliner=enq.bandId;
+    enq.status='confirmed'; G.headliner=bandIdx;
     addAlert(`✅ ${band.name} confirmed as headliner at £${enq.feeOffered}.`);
   } else if(opt.effect==='negotiate'){
     const reduced=Math.round(enq.feeOffered*0.85);
     if(Math.random()>0.4){
-      enq.feeOffered=reduced; enq.status='confirmed'; G.headliner=enq.bandId;
+      enq.feeOffered=reduced; enq.status='confirmed'; G.headliner=bandIdx;
       addAlert(`✅ Negotiated! ${band.name} confirmed at £${reduced}.`);
     } else {
       enq.status='declined';
       addAlert(`❌ ${band.name}'s agent rejected the lowball. They walked.`);
     }
   } else if(opt.effect==='bonus'){
-    enq.status='confirmed'; G.headliner=enq.bandId;
+    enq.status='confirmed'; G.headliner=bandIdx;
     G.rep=Math.min(100,G.rep+2);
     addAlert(`✅ ${band.name} confirmed! Guest list sweetener earned +2 REP.`);
   } else if(opt.effect==='decline'){
@@ -990,6 +1046,7 @@ function handleNegotiation(enquiryId, choiceIndex){
     addAlert(`📋 Passed on ${band.name}. Enquiry closed.`);
   }
   saveGame(); renderEnquiries(); updateStatusBar(); renderOffice();
+  switchPanel('office', document.querySelector('.nav-btn[data-panel="office"]'));
 }
 
 // ── OFFICE / SCHEDULE ──────────────────────────────────────────────────────
