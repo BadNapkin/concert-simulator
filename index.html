@@ -307,6 +307,31 @@ canvas#stage { width: 100%; height: 100%; }
   .newspaper { padding: 1rem; }
   canvas#stage { height: 200px !important; }
 }
+/* ── INBOX SHAKE ── */
+@keyframes nav-shake {
+  0%,100%{ transform:translateX(0); }
+  15%    { transform:translateX(-4px) rotate(-3deg); }
+  30%    { transform:translateX(4px)  rotate(3deg); }
+  45%    { transform:translateX(-3px) rotate(-2deg); }
+  60%    { transform:translateX(3px)  rotate(2deg); }
+  75%    { transform:translateX(-1px); }
+}
+.nav-btn.shaking { animation: nav-shake 0.55s ease; }
+
+/* ── BAND PROGRESSION TIER TOOLTIP ── */
+.prog-tier-badge {
+  display:inline-block; font-size:0.65rem; color:#c9b8ff;
+  background:#1a0a3a; border:1px solid #4a2a80; border-radius:4px;
+  padding:1px 6px; cursor:help; position:relative;
+}
+.prog-tier-badge .tier-tip {
+  display:none; position:absolute; bottom:130%; left:50%; transform:translateX(-50%);
+  background:#110d20; border:1px solid #5a3a90; border-radius:8px;
+  padding:0.5rem 0.8rem; font-size:0.7rem; color:#c0b0e0; white-space:nowrap;
+  z-index:200; pointer-events:none; line-height:1.6;
+}
+.prog-tier-badge:hover .tier-tip { display:block; }
+
 /* ── ALERT POPUP OVERLAY ── */
 #alert-popup-overlay {
   display: none; position: fixed; inset: 0; z-index: 9999;
@@ -493,7 +518,7 @@ canvas#stage { width: 100%; height: 100%; }
     <span class="status-item">VENUE:&nbsp;<span id="sb-venue">The Dive Bar</span></span>
     <span class="status-item">CASH:&nbsp;<span id="sb-money">£500</span></span>
     <span class="status-item">REP:&nbsp;<span id="sb-rep">0</span></span>
-    <span class="status-item">FANS:&nbsp;<span id="sb-fans">0</span></span>
+    <span class="status-item">REGULARS:&nbsp;<span id="sb-fans">0</span></span>
     <button class="next-day-btn" id="next-day-btn" onclick="nextDay()">Next Day →</button>
   </div>
 </div>
@@ -921,7 +946,7 @@ function updateStatusBar(){
   setText('sb-venue', v?v.name:'—');
   setText('sb-money',`£${G.money}`);
   setText('sb-rep',  `${G.rep} REP`);
-  setText('sb-fans', `${G.fans} FANS`);
+  setText('sb-fans', `${G.fans} REGULARS`);
 }
 
 // ── NEXT DAY ───────────────────────────────────────────────────────────────
@@ -941,6 +966,7 @@ function nextDay(){
         const tmpl=rnd(replyPool);
         enq.replyText=tmpl.replace('{band}',band.name).replace('{fee}',enq.feeOffered);
         addAlert(`📬 Reply from ${band.name}'s agent — check your Inbox (📬).`);
+        shakeInbox();
       }
     });
     const b=document.getElementById('inbox-badge'); if(b) b.style.display='block';
@@ -968,6 +994,7 @@ function nextDay(){
       const tmpl=rnd(replyPool);
       enq.replyText=tmpl.replace('{band}',band.name).replace('{fee}',enq.feeOffered);
       addAlert(`📬 Reply from ${band.name}'s agent — check your Inbox (📬).`);
+      shakeInbox();
       const b=document.getElementById('inbox-badge'); if(b) b.style.display='block';
     }
   });
@@ -1025,9 +1052,20 @@ function bookBand(bandId, slot) {
 // ── ALERT POPUP QUEUE ──────────────────────────────────────────────────────
 let _alertQueue = [];
 let _alertPopupOpen = false;
+let _currentAlertPrefix = '';
+
+// Derive a mutable "type prefix" from alert text (first word/emoji chunk)
+function _alertPrefix(text){
+  const m = text.match(/^([\p{Emoji_Presentation}\p{Emoji}\uFE0F\s]*(?:\w+\s?){0,3})/u);
+  return m ? m[0].trim().slice(0,40) : text.slice(0,40);
+}
 
 function addAlert(text, urgent=false){
   if(!G.alerts) G.alerts=[];
+  if(!G.mutedAlertPrefixes) G.mutedAlertPrefixes=[];
+  // Check mute list — skip popup (but still log to alerts panel)
+  const prefix = _alertPrefix(text);
+  const muted = G.mutedAlertPrefixes.some(p => text.startsWith(p));
   const day = (typeof DAYS!=='undefined'&&G.dayOfWeek!==undefined) ? DAYS[G.dayOfWeek] : '';
   const date = 'Wk '+G.week+' '+day;
   G.alerts.unshift({text, urgent, date});
@@ -1035,8 +1073,8 @@ function addAlert(text, urgent=false){
   renderAlerts();
   const badge = document.getElementById('alerts-badge');
   if(badge){ badge.style.display='inline-block'; }
-  // Queue for popup display
-  _alertQueue.push({text, urgent, date});
+  if(muted) return; // don't popup muted types
+  _alertQueue.push({text, urgent, date, prefix});
   if(!_alertPopupOpen) _showNextAlertPopup();
 }
 
@@ -1044,6 +1082,7 @@ function _showNextAlertPopup(){
   if(!_alertQueue.length){ _alertPopupOpen=false; return; }
   _alertPopupOpen = true;
   const a = _alertQueue.shift();
+  _currentAlertPrefix = a.prefix;
   const overlay = document.getElementById('alert-popup-overlay');
   const box = document.getElementById('alert-popup-box');
   const icon = document.getElementById('alert-popup-icon');
@@ -1051,7 +1090,6 @@ function _showNextAlertPopup(){
   const textEl = document.getElementById('alert-popup-text');
   const moreEl = document.getElementById('alert-popup-more');
   if(!overlay) return;
-  // Pick icon from first emoji in text, or default
   const emojiMatch = a.text.match(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/u);
   icon.textContent = emojiMatch ? emojiMatch[0] : (a.urgent ? '⚠️' : '🔔');
   dateEl.textContent = a.date;
@@ -1066,8 +1104,25 @@ function dismissAlertPopup(){
   const overlay = document.getElementById('alert-popup-overlay');
   if(overlay) overlay.classList.remove('active');
   _alertPopupOpen = false;
-  // Small delay so rapid alerts don't feel jarring
   if(_alertQueue.length) setTimeout(_showNextAlertPopup, 180);
+}
+
+function shakeInbox(){
+  const btn = document.querySelector('.nav-btn[data-panel="inbox"]');
+  if(!btn) return;
+  btn.classList.remove('shaking');
+  void btn.offsetWidth; // reflow to restart animation
+  btn.classList.add('shaking');
+  btn.addEventListener('animationend', ()=> btn.classList.remove('shaking'), {once:true});
+}
+
+function muteAlertType(){
+  if(!G.mutedAlertPrefixes) G.mutedAlertPrefixes=[];
+  if(_currentAlertPrefix && !G.mutedAlertPrefixes.includes(_currentAlertPrefix)){
+    G.mutedAlertPrefixes.push(_currentAlertPrefix);
+    saveGame();
+  }
+  dismissAlertPopup();
 }
 
 function enquireBand(bandId, slot){
@@ -1099,13 +1154,25 @@ function enquireBand(bandId, slot){
   } else {
     replyText=`"Support slot works for us! £${band.feeVal} and we're in."`;
   }
+  // Apply loyalty tier fee discount
+  const _tierGigs = (G.contacts[band.id]||{}).gigs||0;
+  const _tierIdx  = Math.min(5, Math.floor(_tierGigs/2));
+  const _tierDisc = [0, 0, 0.05, 0.10, 0.15, 0.20][_tierIdx];
+  const feeOffered = Math.round(band.feeVal * (1 - _tierDisc));
+  if(_tierDisc > 0){
+    replyText = replyText.replace(`£${band.feeVal}`, `£${feeOffered}`);
+    addAlert(`🤝 Loyalty perk: ${band.name} offered a ${Math.round(_tierDisc*100)}% discount (£${feeOffered}).`);
+  }
   G.enquiries.push({
     id:Date.now(), bandId, slot,
     status:'pending', replyDay,
-    feeOffered:band.feeVal,
+    feeOffered,
     replyText, negotiationStep:0,
   });
-  addAlert(`📨 Support enquiry sent to ${band.name}. Expect reply by ${DAYS[replyDay]}.`, false);
+  const _sentMsg = slot==='support'
+    ? `📨 Support enquiry sent to ${band.name}. Expect reply by ${DAYS[replyDay]}.`
+    : `📨 Enquiry sent to ${band.name}. Expect reply by ${DAYS[replyDay]}.`;
+  addAlert(_sentMsg, false);
   if(slot==='support') addAlert(`💡 Tip: matching genres between support and headliner gives a crowd bonus!`);
   saveGame(); renderBandCarousel(); renderEnquiries();
 }
@@ -1272,7 +1339,7 @@ function renderOffice(){
       </div>
       <div style="flex:1;min-width:80px;background:#0a0618;border-radius:6px;padding:0.6rem 0.8rem;text-align:center">
         <div style="font-size:1.1rem;color:#e0a030;font-weight:700">${G.fans}</div>
-        <div style="font-size:0.62rem;color:#3a3060;text-transform:uppercase;letter-spacing:0.1em;margin-top:0.2rem">Fans</div>
+        <div style="font-size:0.62rem;color:#3a3060;text-transform:uppercase;letter-spacing:0.1em;margin-top:0.2rem">Regulars</div>
       </div>
     </div>
   </div>`;
@@ -2127,14 +2194,17 @@ function renderPostShow({band,venue,attendance,cap,revenue,bandFee,supportFee,sf
   // Band progression
   const contact = G.contacts[band.id]||{gigs:0,tier:0};
   const gigs = contact.gigs||0;
-  const tierNames = ['Unknown Act','Local Favourite','Scene Staple','Regional Draw','Cult Status','Legendary'];
+  const tierNames    = ['Unknown Act','Local Favourite','Scene Staple','Regional Draw','Cult Status','Legendary'];
+  const tierBonuses  = ['No perks yet','Agent replies faster','5% fee discount','10% fee discount + priority reply','15% fee discount + rep bonus','20% fee discount + guaranteed booking'];
   const tierIdx = Math.min(5, Math.floor(gigs/2));
-  const tierNext = Math.min(5, tierIdx+1);
   const tierPct = Math.min(100, ((gigs % 2)/2)*100);
-  setText('ps-band-tier', tierNames[tierIdx]);
+  const tierBadgeEl = document.getElementById('ps-band-tier');
+  if(tierBadgeEl){
+    tierBadgeEl.innerHTML = `<span class="prog-tier-badge">${tierNames[tierIdx]}<span class="tier-tip">🎯 Tier ${tierIdx+1}/6<br>${tierBonuses[tierIdx]}${tierIdx<5?'<br><span style="color:#5a4080">Next: '+tierBonuses[tierIdx+1]+'</span>':''}</span></span>`;
+  }
   const pb = document.getElementById('ps-prog-bar');
   if(pb) setTimeout(()=>pb.style.width=tierPct+'%', 200);
-  setText('ps-prog-label', tierIdx<5 ? gigs+' gig'+(gigs!==1?'s':'')+' together · next tier at '+(Math.ceil(gigs/2)*2)+' gigs' : '🏆 Legendary status unlocked!');
+  setText('ps-prog-label', tierIdx<5 ? gigs+' gig'+(gigs!==1?'s':'')+' together · next tier at '+(Math.ceil(gigs/2)*2)+' gigs' : '🏆 Legendary — guaranteed bookings + 20% fee discount!');
 
   // Social feed
   const feed = document.getElementById('ps-social-feed');
@@ -2261,7 +2331,10 @@ setTimeout(initStartScreen, 200);
     <div id="alert-popup-date"></div>
     <div id="alert-popup-text"></div>
     <div id="alert-popup-more"></div>
-    <button id="alert-popup-ok" onclick="dismissAlertPopup()">OK</button>
+    <div style="display:flex;gap:0.7rem;justify-content:center;flex-wrap:wrap">
+      <button id="alert-popup-ok" onclick="dismissAlertPopup()">OK</button>
+      <button onclick="muteAlertType()" style="background:transparent;border:1px solid #3a2a60;color:#5a4a80;padding:0.55rem 1.2rem;font-family:inherit;font-size:0.75rem;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;border-radius:6px;transition:all 0.2s" onmouseover="this.style.color='#9070c0'" onmouseout="this.style.color='#5a4a80'">🔕 Don't notify</button>
+    </div>
   </div>
 </div>
 </body>
