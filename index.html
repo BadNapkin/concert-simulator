@@ -1116,6 +1116,20 @@ function shakeInbox(){
   btn.addEventListener('animationend', ()=> btn.classList.remove('shaking'), {once:true});
 }
 
+function takeAlertAction(){
+  dismissAlertPopup();
+  const text = document.getElementById('alert-popup-text')?.textContent || '';
+  // Route to relevant panel based on alert content
+  let panel = 'alerts';
+  if(/inbox|reply|agent|enquiry/i.test(text)) panel = 'inbox';
+  else if(/headliner|support|planning|confirmed|lineup/i.test(text)) panel = 'office';
+  else if(/achievement|unlocked/i.test(text)) panel = 'achievements';
+  else if(/gear|sfx|smoke|laser|pyro|uv/i.test(text)) panel = 'sfx';
+  else if(/rep|fan|cash|venue/i.test(text)) panel = 'office';
+  const btn = document.querySelector(`.nav-btn[data-panel="${panel}"]`);
+  switchPanel(panel, btn);
+}
+
 function muteAlertType(){
   if(!G.mutedAlertPrefixes) G.mutedAlertPrefixes=[];
   if(_currentAlertPrefix && !G.mutedAlertPrefixes.includes(_currentAlertPrefix)){
@@ -2331,9 +2345,10 @@ setTimeout(initStartScreen, 200);
     <div id="alert-popup-date"></div>
     <div id="alert-popup-text"></div>
     <div id="alert-popup-more"></div>
+    <button onclick="muteAlertType()" title="Mute this type of alert" style="position:absolute;top:10px;right:12px;background:none;border:none;color:#3a2a60;font-size:1.1rem;cursor:pointer;line-height:1;padding:2px" onmouseover="this.style.color='#9070c0'" onmouseout="this.style.color='#3a2a60'">🔕</button>
     <div style="display:flex;gap:0.7rem;justify-content:center;flex-wrap:wrap">
       <button id="alert-popup-ok" onclick="dismissAlertPopup()">OK</button>
-      <button onclick="muteAlertType()" style="background:transparent;border:1px solid #3a2a60;color:#5a4a80;padding:0.55rem 1.2rem;font-family:inherit;font-size:0.75rem;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;border-radius:6px;transition:all 0.2s" onmouseover="this.style.color='#9070c0'" onmouseout="this.style.color='#5a4a80'">🔕 Don't notify</button>
+      <button onclick="takeAlertAction()" style="background:transparent;border:1px solid #3a2a60;color:#7060a0;padding:0.55rem 1.2rem;font-family:inherit;font-size:0.75rem;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;border-radius:6px;transition:all 0.2s" onmouseover="this.style.color='#c9b8ff'" onmouseout="this.style.color='#7060a0'">→ Take me there</button>
     </div>
   </div>
 </div>
