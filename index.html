@@ -579,7 +579,7 @@ canvas#stage { width: 100%; height: 100%; }
     <span class="status-item">VENUE:&nbsp;<span id="sb-venue">The Dive Bar</span></span>
     <span class="status-item">BOSS:&nbsp;<span id="sb-boss">50%</span></span>
     <span class="status-item">REP:&nbsp;<span id="sb-rep">0</span></span>
-    <span class="status-item">BUDGET:&nbsp;<span id="sb-budget">4/4 🎟️</span></span>
+    <span class="status-item">BUDGET:&nbsp;<span id="sb-budget">6/6 🎟️</span></span>
     <button class="next-day-btn" id="next-day-btn" onclick="nextDay()">Next Day →</button>
   </div>
 </div>
@@ -940,7 +940,7 @@ const SUPPORT_ENQUIRY_REPLIES = [
 ];
 const NEGOTIATION_OPTS = [
   { label: 'Accept standard fee', effect: 'standard' },
-  { label: 'Negotiate down 15% (relationship risk)', effect: 'negotiate' },
+  { label: 'Push back — ask for a better deal (relationship risk)', effect: 'negotiate' },
   { label: 'Offer guest list + standard fee (relationship +1)', effect: 'bonus' },
   { label: 'Pass — not right now', effect: 'decline' },
 ];
@@ -948,11 +948,16 @@ const NEGOTIATION_OPTS = [
 
 // ── STATE ──────────────────────────────────────────────────────────────────
 let G = {};  // populated by initGame()
-// Token cost for a band (1=£, 2=££, 3=£££)
+// Token cost for a band (1–4 tokens based on fee tier + fame)
 function bandTokenCost(band){
   if(!band) return 0;
   const f = band.fee||'£';
-  return f==='£££'?3:f==='££'?2:1;
+  const fame = band.fame||0;
+  // Base from fee tier
+  let cost = f==='£££'?3:f==='££'?2:1;
+  // Fame 3+ (headliner-tier) costs +1 extra
+  if(fame>=3) cost+=1;
+  return Math.min(4, cost);
 }
 function tokensLeft(){ return (G.weeklyBudget||4)-(G.tokensSpent||0); }
 
@@ -964,7 +969,7 @@ function freshState() {
     pendingPromo:null,
     sfxOwned:{basic:true,spots:true}, sfxActive:{basic:true,spots:true},
     achievements:[], contacts:{}, discovered:{},
-    weeklyBudget:4, tokensSpent:0,
+    weeklyBudget:6, tokensSpent:0,
     enquiries:[], messages:[],
     dailyNews:{},
     alerts:[],
@@ -985,7 +990,7 @@ function _addAliases(g) {
   if (!g.messages) g.messages = [];
   if (!g.contacts || Array.isArray(g.contacts)) g.contacts = {};
   if (!g.discovered) g.discovered = {};
-  if (g.weeklyBudget===undefined) g.weeklyBudget=4;
+  if (g.weeklyBudget===undefined) g.weeklyBudget=6;
   if (g.tokensSpent===undefined) g.tokensSpent=0;
   return g;
 }
@@ -1177,7 +1182,7 @@ function endWeek(){
   G.week++; G.dayOfWeek=0;
   G.headliner=null; G.support=null; G.pendingPromo=null;
   // Reset weekly budget (scales with venue tier)
-  G.weeklyBudget = [4,4,5,6][G.venueTier] || 4;
+  G.weeklyBudget = [6,7,8,10][G.venueTier] || 6;
   G.tokensSpent = 0;
   saveGame(); updateStatusBar(); renderOffice();
 }
@@ -1394,9 +1399,11 @@ function renderEnquiries(){
       ? '<span style="font-size:0.65rem;color:#5080a0;background:#0a1a30;border:1px solid #2a3a60;border-radius:4px;padding:1px 5px;margin-left:0.4rem">SUPPORT</span>'
       : '<span style="font-size:0.65rem;color:#8060a0;background:#1a0a30;border:1px solid #3a2a60;border-radius:4px;padding:1px 5px;margin-left:0.4rem">HEADLINER</span>';
     return `<div class="msg-entry">
-      <strong style="color:#c9b8ff">${band.name}</strong>${slotLabel}
-      <span style="color:#6050a0;font-size:0.72rem;margin-left:0.5rem">${band.genre}</span>
-      <span style="float:right">${bandTokenCost(BANDS.find(b=>b.id===enq.bandId)||{})} 🎟️</span>
+      <div style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap">
+        <strong style="color:#c9b8ff">${band.name}</strong>${slotLabel}
+        <span style="color:#6050a0;font-size:0.72rem">${band.genre}</span>
+        <span style="margin-left:auto;background:#1a0a38;border:1px solid #3a2060;border-radius:10px;padding:0.15rem 0.55rem;font-size:0.72rem;color:#c9b8ff;white-space:nowrap">${bandTokenCost(BANDS.find(b=>b.id===enq.bandId)||{})} 🎟️</span>
+      </div>
       <div style="margin-top:0.4rem">${badge}</div>
       ${actions}
     </div>`;
@@ -1752,7 +1759,7 @@ function renderInbox() {
     html += '<div class="msg-item' + (enq.status==='replied'?' msg-urgent':'') + '">' +
       '<div class="msg-from">' + band.name + ' <span style="font-size:0.6rem;color:#5a4080">ENQUIRY</span>' +
         '<span style="float:right;font-size:0.7rem;color:'+statusCol+'">'+statusLabel+'</span></div>' +
-      '<div class="msg-date">' + bandTokenCost(BANDS.find(b=>b.id===enq.bandId)||{fee:'£'}) + ' 🎟️ budget tokens</div>';
+      '<div class="msg-date" style="display:inline-block;background:#1a0a38;border:1px solid #3a2060;border-radius:10px;padding:0.15rem 0.55rem;font-size:0.72rem;color:#c9b8ff">' + bandTokenCost(BANDS.find(b=>b.id===enq.bandId)||{fee:'£'}) + ' 🎟️</div>';
     if (enq.status === 'replied' && enq.replyText) {
       html += '<div class="msg-text" style="font-style:italic;color:#a090d0;margin:0.4rem 0">"' + enq.replyText + '"</div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.5rem">' +
@@ -3004,7 +3011,7 @@ const TUTORIAL_STEPS = [
   {
     title: '🎸 Welcome to Concert Simulator',
     body: `You're the new promoter at <strong>The Dive Bar</strong>. Your job: book bands, run shows, grow your rep, and upgrade to bigger venues.\n\nEach week runs Monday → Sunday. Shows happen on <strong>Saturday night</strong>.`,
-    hint: '💡 You start with 4 weekly budget tokens and a tiny venue. Every decision counts.'
+    hint: '💡 You start with 6 weekly budget tokens and a tiny venue. Spend wisely — bigger acts cost more.'
   },
   {
     title: '📋 The Office — your home base',
