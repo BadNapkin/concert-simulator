@@ -705,7 +705,8 @@ canvas#stage { width: 100%; height: 100%; }
     </div>
 
     <!-- Boss reaction card -->
-    <div id="ps-crowd-section" style="display:none"></div>
+    <div id="ps-show-log" style="display:none"></div>
+  <div id="ps-crowd-section" style="display:none"></div>
   <div id="ps-boss-card" style="background:#0e0820;border:1px solid #1a0840;border-radius:12px;padding:0.8rem 1.2rem;margin-bottom:1.5rem">
       <div style="font-size:0.75rem;color:#7060a0;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">👔 Boss Reaction</div>
       <div id="ps-boss-detail" style="font-size:0.85rem;color:#9080b8;line-height:1.6"></div>
@@ -1792,42 +1793,76 @@ const CROWD_ARCHETYPES = [
       'Three separate crowd surfers, one security guard who gave up halfway through.',
       'The mosh pit had its own ecosystem. Scientists should study it.',
     ],
-    bossBonus:3, bossGenres:['metal','punk'] },
+    bossBonus:3, bossGenres:['metal','punk'],
+    // Moshers: bathroom queues from suspicious key activity
+    sideEffect(band, bossDelta){
+      const lines = [
+        'The bathroom queue was forty minutes long. No one was washing their hands.',
+        'Security found a suspicious amount of key scratches on the cubicle doors. You chose not to investigate.',
+        'The gents smelled like the inside of a tent at a festival. Facilities are asking questions.',
+        'The toilet attendant handed in their notice. No explanation given.',
+      ];
+      const line = lines[Math.floor(Math.random()*lines.length)];
+      G._showLog.push({text:'🚻 '+line, urgent:false});
+      return bossDelta - 3; // boss not thrilled about state of facilities
+    }
+  },
   { id:'ravers',    label:'💃 Ravers',     genreKeys:['electronic'],
     flavour:[
       'By midnight the floor was a single organism. Beautiful, slightly terrifying.',
       'The smoke machine ran dry. The ravers made their own atmosphere.',
       'Four people had a spiritual experience near the speaker stack. Two are still there.',
     ],
-    bossBonus:4, bossGenres:['electronic'] },
+    bossBonus:4, bossGenres:['electronic'],
+    // Ravers: sober but intensely friendly — bar sales down, vibe up
+    sideEffect(band, bossDelta){
+      const lines = [
+        'Bar sales were down 40%. Everyone was on water and profound eye contact.',
+        'The bar staff reported that three separate ravers hugged them unprompted. They seemed genuinely moved.',
+        'Hydration stations ran out by 11pm. Everyone just seemed... really happy about it.',
+        'A raver started a conversation with the coat check about the nature of time. They were still talking at 2am.',
+      ];
+      const line = lines[Math.floor(Math.random()*lines.length)];
+      G._showLog.push({text:'💧 '+line, urgent:false});
+      return bossDelta + 2; // crowd happiness offsets bar loss for most bosses
+    }
+  },
   { id:'hipsters',  label:'🧣 Hipsters',  genreKeys:['folk','shoegaze','indie'],
     flavour:[
-      'Half the crowd had already seen them "before they were good". Apparently.',
+      "Half the crowd had already seen them 'before they were good'. Apparently.",
       'Everyone nodded appreciatively and wrote about it later.',
       'Intense eye contact from the front row. Uncomfortable but somehow respectful.',
     ],
-    bossBonus:2, bossGenres:['folk','shoegaze'] },
+    bossBonus:2, bossGenres:['folk','shoegaze'],
+    sideEffect(band, bossDelta){ return bossDelta; }
+  },
   { id:'locals',    label:'🏘️ Locals',    genreKeys:['rock','pop','folk'],
     flavour:[
-      'The bar staff knew half the audience by name. This is what it\'s supposed to feel like.',
+      'The bar staff knew half the audience by name. This is what it's supposed to feel like.',
       'Three generations in the room. Grandad near the back. He was there first.',
-      'Someone\'s dad got a bit too into it. Everyone pretended not to notice.',
+      'Someone's dad got a bit too into it. Everyone pretended not to notice.',
     ],
-    bossBonus:5, bossGenres:['rock','pop','folk'] },
+    bossBonus:5, bossGenres:['rock','pop','folk'],
+    sideEffect(band, bossDelta){ return bossDelta; }
+  },
   { id:'stoners',   label:'🌿 Stoners',   genreKeys:['folk','rock','shoegaze'],
     flavour:[
       'The set could have been 20 minutes longer. No one would have checked.',
       'Entire front row sat down halfway through. On purpose. Vibes only.',
       'The band played a 12-minute outro. The crowd was fully on board.',
     ],
-    bossBonus:1, bossGenres:['folk','rock'] },
+    bossBonus:1, bossGenres:['folk','rock'],
+    sideEffect(band, bossDelta){ return bossDelta; }
+  },
   { id:'industry',  label:'💼 Industry',  genreKeys:['pop','electronic','indie'],
     flavour:[
       'Three people in the back spent the whole set taking notes. No one knows who they were.',
       'Someone from a label was spotted near the stage. Rumours are already circulating.',
       'A journalist left after three songs. Either very good or very bad.',
     ],
-    bossBonus:6, bossGenres:['pop','electronic'] },
+    bossBonus:6, bossGenres:['pop','electronic'],
+    sideEffect(band, bossDelta){ return bossDelta; }
+  },
 ];
 
 function getCrowdArchetype(band){
@@ -2138,6 +2173,19 @@ function runShow(){
   const band=BANDS[G.headliner];
   const venue=VENUE_TIERS[G.venueTier];
 
+  // Buffer show-night alerts — display on newspaper page, not as popups
+  G._showLog = [];
+  const _origAddAlert = window.addAlert;
+  window.addAlert = function(text, urgent=false){
+    G._showLog.push({text, urgent});
+    // Still log to G.alerts for the alerts panel, but suppress popup
+    if(!G.alerts) G.alerts=[];
+    const day = (typeof DAYS!=='undefined'&&G.dayOfWeek!==undefined) ? DAYS[G.dayOfWeek] : '';
+    G.alerts.unshift({text, urgent, date:'Wk '+G.week+' '+day});
+    if(G.alerts.length>50) G.alerts.length=50;
+    renderAlerts();
+  };
+
   // Use negotiated fee if available, otherwise band's standard fee
   const enq=G.enquiries.find(e=>e.bandId===band.id&&e.status==='confirmed');
   // Support act
@@ -2389,11 +2437,14 @@ function runShow(){
   const vt = VENUE_TIERS[G.venueTier] || VENUE_TIERS[0];
   let bossDelta = fillRate>=0.8 ? 10 : fillRate>=0.5 ? 3 : -8;
   bossDelta += _totalBossDelta;
-  // Crowd archetype boss bonus (boss likes certain crowd types at their venue)
+  // Crowd archetype boss bonus + side effects
   const _crowd2 = G._lastCrowd;
   const _crowdDef = _crowd2 ? CROWD_ARCHETYPES.find(a=>a.id===_crowd2.id) : null;
-  if(_crowdDef && _crowdDef.bossGenres && _crowdDef.bossGenres.includes(band.genreKey)){
-    bossDelta += _crowdDef.bossBonus;
+  if(_crowdDef){
+    if(_crowdDef.bossGenres && _crowdDef.bossGenres.includes(band.genreKey)){
+      bossDelta += _crowdDef.bossBonus;
+    }
+    if(_crowdDef.sideEffect) bossDelta = _crowdDef.sideEffect(band, bossDelta);
   }
   // Boss trait reactions
   const _bandTraits = band.traits || [];
@@ -2419,6 +2470,46 @@ function runShow(){
   // Boss trait reaction alerts
   (vt.bossLikes||[]).forEach(t=>{ if(_bandTraits.includes(t)) addAlert('👔 '+vt.bossName+' loved the '+t+' vibes tonight. +5 satisfaction.'); });
   (vt.bossDislikes||[]).forEach(t=>{ if(_bandTraits.includes(t)) addAlert('😤 '+vt.bossName+' was not happy about the '+t+' antics. -8 satisfaction.', true); });
+
+  // Boss personality reaction to crowd type
+  const _bossPersonality = vt.bossPersonality||'pragmatic';
+  const _crowdId = G._lastCrowd ? G._lastCrowd.id : null;
+  const _bossReactions = {
+    pragmatic: {
+      moshers:  "Dave counted the bar receipts twice. The numbers don't lie — rough crowd, good night.",
+      ravers:   "Dave stared at the water line on the bar sales sheet for a long time. Said nothing.",
+      hipsters: "Dave doesn't get it, but the room was full and nobody glassed anyone.",
+      locals:   "Dave knew half of them. Bought a round for the front row. Good lad.",
+      stoners:  "Dave says they're 'mellow'. Dave likes mellow. Easier to clean up after.",
+      industry: "Dave's not sure why someone in a blazer was writing in a notebook all night. Seemed fine.",
+    },
+    idealistic: {
+      moshers:  "Fiona said the pit 'expressed a raw communal energy'. She meant it.",
+      ravers:   "Fiona called it transcendent. She was moved. She had a glass of water herself.",
+      hipsters: "Fiona curated a playlist based on the vibe. Nobody asked. She shared it anyway.",
+      locals:   "Fiona teared up a little. 'This is what the arts centre is FOR,' she said.",
+      stoners:  "Fiona felt the room's energy was 'slow and intentional'. She wrote it in her report.",
+      industry: "Fiona hopes they were journalists. 'The story needs telling,' she said.",
+    },
+    corporate: {
+      moshers:  "Marcus noted the pit created a 'liability exposure'. He still called it a win.",
+      ravers:   "Marcus flagged the bar revenue gap in Monday's report. Also flagged the vibe.",
+      hipsters: "Marcus doesn't know what a shoegaze is but the demographic looked right.",
+      locals:   "Marcus calls them 'repeat customers'. He means it as a compliment.",
+      stoners:  "Marcus is 'cautiously optimistic' about the per-head dwell time figures.",
+      industry: "Marcus shook three hands he didn't recognise and gave out two business cards.",
+    },
+    chaotic: {
+      moshers:  "No reaction from Marcus. Just nodding. That man has seen things.",
+      ravers:   "Someone left a note saying the ravers formed a drum circle in the car park at 1am. Marcus: 'Noted.'",
+      hipsters: "A hipster tried to talk to Marcus about influences. Marcus stared. They left.",
+      locals:   "Marcus bought the bar out of Guinness. Called it 'community engagement'.",
+      stoners:  "The smell reached Marcus's office. He opened a window. Said nothing.",
+      industry: "Marcus collected every business card. He has plans.",
+    },
+  };
+  const _bossLine = (_bossReactions[_bossPersonality]||_bossReactions.pragmatic)[_crowdId||'locals'];
+  if(_bossLine) addAlert('👔 '+vt.bossName+': "'+_bossLine+'"');
 
   // Apply rep delta from personality events
   G.rep = Math.min(100, Math.max(0, G.rep + _totalRepDelta));
@@ -2458,6 +2549,8 @@ function runShow(){
 
   // Show animation then post-show screen
   startShowAnimation(band, venue, finalAttendance, cap, bossDelta, supportBand, ()=>{
+    // Restore normal alert system
+    window.addAlert = _origAddAlert;
     showScreen('postshow-screen');
     renderPostShow({band,venue,attendance:finalAttendance,cap,repGain,bossDelta,review,promo});
     if(G.bossSatisfaction<=0){ G.gameOver=true; }
@@ -2816,6 +2909,23 @@ function renderPostShow({band,venue,attendance,cap,repGain,bossDelta,review,prom
       <div style="font-size:0.8rem;color:#8070a0;font-style:italic">"${crowdData.flavour}"</div>
     </div>`;
     crowdEl.style.display='block';
+  }
+
+  // Show log — newspaper incident report
+  const logEl = document.getElementById('ps-show-log');
+  const showLog = G._showLog || [];
+  if(logEl && showLog.length){
+    logEl.innerHTML = `
+      <div style="background:#080812;border:1px solid #1a1428;border-radius:8px;padding:1rem 1.2rem;margin-bottom:0.8rem">
+        <div style="font-size:0.65rem;color:#5040a0;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.7rem;border-bottom:1px solid #1a1030;padding-bottom:0.5rem">📋 Show Night Report</div>
+        ${showLog.map(e=>`
+          <div style="display:flex;gap:0.5rem;align-items:flex-start;padding:0.35rem 0;border-bottom:1px solid #0f0e1a">
+            <span style="font-size:0.75rem;color:${e.urgent?'#e05060':'#a090d0'};line-height:1.5;flex:1">${e.text}</span>
+          </div>`).join('')}
+      </div>`;
+    logEl.style.display='block';
+  } else if(logEl){
+    logEl.style.display='none';
   }
 }
 
