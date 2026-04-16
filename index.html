@@ -1787,7 +1787,7 @@ function runShow(){
   if(G.history.length>=5) unlockAchievement('five_shows');
 
   // Show animation then post-show screen
-  startShowAnimation(band, venue, attendance, cap, profit, ()=>{
+  startShowAnimation(band, venue, attendance, cap, profit, supportBand, ()=>{
     showScreen('postshow-screen');
     renderPostShow({band,venue,attendance,cap,revenue,bandFee,supportFee,sfxCost,profit,repGain,fanGain,review,promo});
     if(G.money<=0){ G.gameOver=true; }
@@ -1795,7 +1795,7 @@ function runShow(){
   }); // end startShowAnimation callback
 }
 
-function startShowAnimation(band, venue, attendance, cap, profit, onDone){
+function startShowAnimation(band, venue, attendance, cap, profit, supportBand, onDone){
   showScreen('show-screen');
   const el=document.getElementById('show-band-name'); if(el) el.textContent=band.name;
   const gl=document.getElementById('show-genre-label'); if(gl) gl.textContent=band.genre+' · '+venue.name;
@@ -1810,16 +1810,29 @@ function startShowAnimation(band, venue, attendance, cap, profit, onDone){
   const canvas=document.getElementById('stage');
   if(!canvas){ setTimeout(onDone,400); return; }
 
-  // Use double-rAF so browser has painted show-screen before we read canvas size
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  // Triple-rAF + 50ms fallback: guarantees browser has painted show-screen
+  // before reading canvas dimensions (fixes week-1 black screen)
+  requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{
     const rect=canvas.getBoundingClientRect();
-    canvas.width  = Math.max(200, rect.width  || 700);
-    canvas.height = Math.max(100, rect.height || 420);
-    _doShowAnimation(canvas, band, venue, attendance, cap, profit, onDone, activeGear);
-  }));
+    const w=rect.width>10 ? rect.width : 700;
+    const h=rect.height>10 ? rect.height : 420;
+    canvas.width  = w;
+    canvas.height = h;
+    if(canvas.width<10 || canvas.height<10){
+      // last resort: wait 80ms then try once more
+      setTimeout(()=>{
+        const r2=canvas.getBoundingClientRect();
+        canvas.width  = Math.max(200, r2.width  || 700);
+        canvas.height = Math.max(100, r2.height || 420);
+        _doShowAnimation(canvas, band, venue, attendance, cap, profit, onDone, activeGear, supportBand);
+      }, 80);
+    } else {
+      _doShowAnimation(canvas, band, venue, attendance, cap, profit, onDone, activeGear, supportBand);
+    }
+  })));
 }
 
-function _doShowAnimation(canvas, band, venue, attendance, cap, profit, onDone, activeGear){
+function _doShowAnimation(canvas, band, venue, attendance, cap, profit, onDone, activeGear, supportBand){
   const ctx=canvas.getContext('2d');
   const W=canvas.width, H=canvas.height;
 
@@ -1835,7 +1848,8 @@ function _doShowAnimation(canvas, band, venue, attendance, cap, profit, onDone, 
   // Progress + moments
   const prog=document.getElementById('show-progress');
   const eventsEl=document.getElementById('show-events');
-  const moments=['🚪 Doors open — crowd filing in...','🎤 Support act gets things going...','🔥 Headliner hits the stage!','⚡ The crowd erupts!','🎶 Encore — no one wants to leave...'];
+  const suppName=supportBand?supportBand.name:'Support act';
+  const moments=['🚪 Doors open — crowd filing in...','🎤 '+suppName+' get things going...','🔥 '+band.name+' hit the stage!','⚡ The crowd erupts!','🎶 Encore — no one wants to leave...'];
   let frame=0, totalFrames=240, momentIdx=0;
   if(prog) prog.style.width='0%';
   if(eventsEl) eventsEl.textContent=moments[0];
