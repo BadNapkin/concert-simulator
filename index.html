@@ -462,7 +462,7 @@ canvas#stage { width: 100%; height: 100%; }
       <p style="margin-bottom:1rem">When a band replies, open <strong style="color:#e0d0f8">Inbox (📬)</strong> and choose: <em>Accept</em> (standard fee), <em>Negotiate</em> (risk a lower fee), <em>Guest List</em> (pay extra, gain REP), or <em>Pass</em>.</p>
 
       <div style="color:#c9b8ff;font-size:0.9rem;margin-bottom:0.3rem">🎸 Show Night (Saturday)</div>
-      <p style="margin-bottom:1rem">The show runs automatically. Your profit = ticket sales minus band fees and gear costs. Win fans, gain REP, and unlock better acts.</p>
+      <p style="margin-bottom:1rem">The show runs automatically. Spend your weekly budget tokens wisely — bigger bands cost more. Win fans, grow your REP, and unlock bigger venues.</p>
 
       <div style="color:#c9b8ff;font-size:0.9rem;margin-bottom:0.3rem">⚠️ Watch Out</div>
       <ul style="list-style:none;padding:0;margin-bottom:0">
@@ -579,6 +579,7 @@ canvas#stage { width: 100%; height: 100%; }
     <span class="status-item">VENUE:&nbsp;<span id="sb-venue">The Dive Bar</span></span>
     <span class="status-item">BOSS:&nbsp;<span id="sb-boss">50%</span></span>
     <span class="status-item">REP:&nbsp;<span id="sb-rep">0</span></span>
+    <span class="status-item">BUDGET:&nbsp;<span id="sb-budget">4/4 🎟️</span></span>
     <button class="next-day-btn" id="next-day-btn" onclick="nextDay()">Next Day →</button>
   </div>
 </div>
@@ -853,11 +854,11 @@ const VENUE_TIERS = [
 ];
 
 const ACHIEVEMENTS = [
-  { id:'first_show',   name:'Opening Night',       icon:'🎤', desc:'Run your first show.',                                    reward:'+£50 bonus',                        unlocked:false, week:null },
+  { id:'first_show',   name:'Opening Night',       icon:'🎤', desc:'Run your first show.',                                    reward:'Reputation boost',                        unlocked:false, week:null },
   { id:'sold_out',     name:'Sold Out',             icon:'🎟️', desc:'Fill the venue to capacity.',                             reward:'Reputation boost',                   unlocked:false, week:null },
   { id:'broke_act',    name:'Talent Scout',         icon:'🔍', desc:'Book a band before they blow up (score 85+ with fame 0).', reward:'Access to unsigned acts',            unlocked:false, week:null },
   { id:'legendary',   name:'Industry Legend',      icon:'👑', desc:'Reach Legendary Partners status with any band.',          reward:'Guaranteed sell-outs with that act', unlocked:false, week:null },
-  { id:'five_shows',  name:'Grind',                icon:'📅', desc:'Run 5 shows.',                                            reward:'Staff loyalty: -£10 cost/show',      unlocked:false, week:null },
+  { id:'five_shows',  name:'Grind',                icon:'📅', desc:'Run 5 shows.',                                            reward:'Staff work harder for you',      unlocked:false, week:null },
   { id:'upgrade1',    name:'Moving Up',            icon:'🏗️', desc:'Upgrade to The Loft or beyond.',                          reward:'Access to bigger-name acts',          unlocked:false, week:null },
   { id:'combo_smoke_shoegaze', name:'Shoegaze Sanctuary', icon:'🌫️', desc:'Smoke + Shoegaze: the definitive combo.',           reward:'Shoegaze acts seek you out',          unlocked:false, week:null },
   { id:'combo_pyro_metal',     name:'The Inferno',         icon:'🤘', desc:'Pyro + Metal: maximum carnage.',                   reward:'Metal acts waive 10% fee',            unlocked:false, week:null },
@@ -924,18 +925,18 @@ const FAME_NEWS = [
   "{band} released a surprise EP. Critics are raving.",
 ];
 const ENQUIRY_REPLIES = [
-  "Thanks for reaching out. {band} are interested — fee is £{fee}. Let us know if that works.",
-  "Hey, we got your message. {band} have a slot free that week. Standard fee: £{fee}.",
-  "Appreciated the enquiry. {band} would consider it at £{fee} — they're selective about rooms.",
-  "Good timing. {band} just had a cancellation. They can do it for £{fee}.",
-  "We've passed your enquiry to {band}. They're keen. Fee: £{fee}. Awaiting your confirmation.",
+  "Thanks for reaching out. {band} are interested — they're a {fee_tier} act. Let us know if that works.",
+  "Hey, we got your message. {band} have a slot free that week. They're a {fee_tier} act.",
+  "Appreciated the enquiry. {band} would consider it — they're selective about rooms.",
+  "Good timing. {band} just had a cancellation. They're keen.",
+  "We've passed your enquiry to {band}. They're keen. Awaiting your confirmation.",
 ];
 const SUPPORT_ENQUIRY_REPLIES = [
-  "Support slot? Fine, we'll do it. {band} can open for £{fee}. Don't make a big deal of it.",
-  "We checked the diary — {band} are free that night. Support works. £{fee} and we're done.",
-  "Look, {band} don't usually do support, but the room sounds decent. £{fee}, take it or leave it.",
-  "Our client {band} will consider opening the night. Standard support fee: £{fee}.",
-  "Honestly? {band} could use the exposure. They'll do it for £{fee}. Keep that between us.",
+  "Support slot? Fine, we'll do it. {band} can open. Don't make a big deal of it.",
+  "We checked the diary — {band} are free that night. Support works.",
+  "Look, {band} don't usually do support, but the room sounds decent. Take it or leave it.",
+  "Our client {band} will consider opening the night.",
+  "Honestly? {band} could use the exposure. Keep that between us.",
 ];
 const NEGOTIATION_OPTS = [
   { label: 'Accept standard fee', effect: 'standard' },
@@ -947,6 +948,14 @@ const NEGOTIATION_OPTS = [
 
 // ── STATE ──────────────────────────────────────────────────────────────────
 let G = {};  // populated by initGame()
+// Token cost for a band (1=£, 2=££, 3=£££)
+function bandTokenCost(band){
+  if(!band) return 0;
+  const f = band.fee||'£';
+  return f==='£££'?3:f==='££'?2:1;
+}
+function tokensLeft(){ return (G.weeklyBudget||4)-(G.tokensSpent||0); }
+
 function freshState() {
   const s = {
     week:1, dayOfWeek:0, rep:0, bossSatisfaction:50,
@@ -955,6 +964,7 @@ function freshState() {
     pendingPromo:null,
     sfxOwned:{basic:true,spots:true}, sfxActive:{basic:true,spots:true},
     achievements:[], contacts:{}, discovered:{},
+    weeklyBudget:4, tokensSpent:0,
     enquiries:[], messages:[],
     dailyNews:{},
     alerts:[],
@@ -975,6 +985,8 @@ function _addAliases(g) {
   if (!g.messages) g.messages = [];
   if (!g.contacts || Array.isArray(g.contacts)) g.contacts = {};
   if (!g.discovered) g.discovered = {};
+  if (g.weeklyBudget===undefined) g.weeklyBudget=4;
+  if (g.tokensSpent===undefined) g.tokensSpent=0;
   return g;
 }
 
@@ -1050,6 +1062,12 @@ function updateStatusBar(){
   if(bossEl){
     const bs=G.bossSatisfaction||50;
     bossEl.style.color = bs>=60?'#60c878':bs>=30?'#e0a030':'#e05050';
+  }
+  const tLeft=tokensLeft(); const tTotal=G.weeklyBudget||4;
+  const budgetEl=document.getElementById('sb-budget');
+  if(budgetEl){
+    budgetEl.textContent=tLeft+'/'+tTotal+' 🎟️';
+    budgetEl.style.color=tLeft<=0?'#e05060':tLeft===1?'#e0a030':'#60c878';
   }
 }
 
@@ -1158,6 +1176,9 @@ function endWeek(){
 
   G.week++; G.dayOfWeek=0;
   G.headliner=null; G.support=null; G.pendingPromo=null;
+  // Reset weekly budget (scales with venue tier)
+  G.weeklyBudget = [4,4,5,6][G.venueTier] || 4;
+  G.tokensSpent = 0;
   saveGame(); updateStatusBar(); renderOffice();
 }
 
@@ -1288,11 +1309,11 @@ function enquireBand(bandId, slot){
   const replyDay=Math.min(G.dayOfWeek+1+Math.floor(Math.random()*2),4);
   let replyText='';
   if(slot==='headline'){
-    replyText=`"${band.name} would be happy to headline. We're looking at £${band.feeVal} for the night."`;
+    replyText=`"${band.name} would be happy to headline. They're a ${band.fee} act in terms of budget."`; 
   } else if(supportHesitant){
-    replyText=`"Support slot? Look, we're a bit beyond that, but... we'll do it for £${band.feeVal}. Don't tell anyone."`;
+    replyText=`"Support slot? Look, we're a bit beyond that, but... we'll do it. Don't tell anyone."`;
   } else {
-    replyText=`"Support slot works for us! £${band.feeVal} and we're in."`;
+    replyText=`"Support slot works for us! We're in."`;
   }
   // Apply loyalty tier fee discount
   const _tierGigs = (G.contacts[band.id]||{}).gigs||0;
@@ -1301,7 +1322,7 @@ function enquireBand(bandId, slot){
   const feeOffered = Math.round(band.feeVal * (1 - _tierDisc));
   if(_tierDisc > 0){
     replyText = replyText.replace(`£${band.feeVal}`, `£${feeOffered}`);
-    addAlert(`🤝 Loyalty perk: ${band.name} offered a ${Math.round(_tierDisc*100)}% discount (£${feeOffered}).`);
+    addAlert(`🤝 Loyalty perk: ${band.name} gave you a ${Math.round(_tierDisc*100)}% budget discount — costs 1 less token.`);
   }
   // Phase 2: direct contact for self-managed bands
   const isSelfManaged = band.agent === 'Self-managed';
@@ -1365,7 +1386,7 @@ function renderEnquiries(){
         ${NEGOTIATION_OPTS.map((o,i)=>`<button class="neg-choice" onclick="handleNegotiation(${enq.id},${i})">${o.label}</button>`).join('')}
       </div>`;
     } else if(enq.status==='confirmed'){
-      badge=`<span class="enquiry-btn" style="background:#0d2e0d;color:#4caf50;border-color:#2a6a2a">✓ Confirmed — £${enq.feeOffered}</span>`;
+      badge=`<span class="enquiry-btn" style="background:#0d2e0d;color:#4caf50;border-color:#2a6a2a">✓ Confirmed</span>`;
     } else if(enq.status==='declined'){
       badge=`<span class="enquiry-btn" style="background:#2e0d0d;color:#cf6679;border-color:#6a2a2a">✗ Declined</span>`;
     }
@@ -1375,7 +1396,7 @@ function renderEnquiries(){
     return `<div class="msg-entry">
       <strong style="color:#c9b8ff">${band.name}</strong>${slotLabel}
       <span style="color:#6050a0;font-size:0.72rem;margin-left:0.5rem">${band.genre}</span>
-      <span style="float:right">£${enq.feeOffered}</span>
+      <span style="float:right">${bandTokenCost(BANDS.find(b=>b.id===enq.bandId)||{})} 🎟️</span>
       <div style="margin-top:0.4rem">${badge}</div>
       ${actions}
     </div>`;
@@ -1392,14 +1413,25 @@ function handleNegotiation(enquiryId, choiceIndex){
   const isSupport = enq.slot === 'support';
   if(opt.effect==='standard'){
     enq.status='confirmed';
-    if(isSupport){ G.support=band.id; addAlert(`✅ ${band.name} confirmed as support act at £${enq.feeOffered}.`); }
-    else { G.headliner=bandIdx; addAlert(`✅ ${band.name} confirmed as headliner at £${enq.feeOffered}.`); }
+    if(isSupport){
+      const _cost=bandTokenCost(band);
+      if(tokensLeft()<_cost){ addAlert('⚠️ Not enough budget tokens to confirm '+band.name+'. ('+tokensLeft()+'/'+_cost+' needed)', true); return; }
+      G.tokensSpent=(G.tokensSpent||0)+_cost;
+      G.support=band.id; addAlert(`✅ ${band.name} confirmed as support act. (-${_cost} 🎟️)`);
+    } else {
+      const _cost=bandTokenCost(band);
+      if(tokensLeft()<_cost){ addAlert('⚠️ Not enough budget tokens to confirm '+band.name+'. ('+tokensLeft()+'/'+_cost+' needed)', true); return; }
+      G.tokensSpent=(G.tokensSpent||0)+_cost;
+      G.headliner=bandIdx; addAlert(`✅ ${band.name} confirmed as headliner. (-${_cost} 🎟️)`);
+    }
   } else if(opt.effect==='negotiate'){
     const reduced=Math.round(enq.feeOffered*0.85);
     if(Math.random()>0.4){
       enq.feeOffered=reduced; enq.status='confirmed';
-      if(isSupport){ G.support=band.id; addAlert(`✅ Negotiated! ${band.name} supporting at £${reduced}.`); }
-      else { G.headliner=bandIdx; addAlert(`✅ Negotiated! ${band.name} confirmed at £${reduced}.`); }
+      const _ncost=bandTokenCost(band);
+      G.tokensSpent=(G.tokensSpent||0)+_ncost;
+      if(isSupport){ G.support=band.id; addAlert(`✅ Negotiated! ${band.name} supporting. (-${_ncost} 🎟️)`); }
+      else { G.headliner=bandIdx; addAlert(`✅ Negotiated! ${band.name} confirmed. (-${_ncost} 🎟️)`); }
     } else {
       enq.status='declined';
       addAlert(`❌ ${band.name}'s agent rejected the lowball. They walked.`);
@@ -1407,8 +1439,10 @@ function handleNegotiation(enquiryId, choiceIndex){
   } else if(opt.effect==='bonus'){
     enq.status='confirmed';
     G.rep=Math.min(100,G.rep+2);
-    if(isSupport){ G.support=band.id; addAlert(`✅ ${band.name} supporting! Guest list sweetener earned +2 REP.`); }
-    else { G.headliner=bandIdx; addAlert(`✅ ${band.name} confirmed! Guest list sweetener earned +2 REP.`); }
+    const _gcost=bandTokenCost(band);
+    G.tokensSpent=(G.tokensSpent||0)+_gcost;
+    if(isSupport){ G.support=band.id; addAlert(`✅ ${band.name} supporting! Guest list deal done. (-${_gcost} 🎟️) +2 REP.`); }
+    else { G.headliner=bandIdx; addAlert(`✅ ${band.name} confirmed! Guest list deal done. (-${_gcost} 🎟️) +2 REP.`); }
   } else if(opt.effect==='decline'){
     enq.status='declined';
     addAlert(`📋 Passed on ${band.name}. Enquiry closed.`);
@@ -1441,7 +1475,7 @@ function renderOffice(){
     </div>
     ${headliner
       ? `<div style="color:#c9b8ff;font-size:1rem;font-weight:600">${headliner.name}</div>
-         <div style="color:#6050a0;font-size:0.72rem;margin-top:0.2rem">${headliner.genre} · £${(G.enquiries.find(e=>e.bandId===headliner.id&&e.status==='confirmed')||{feeOffered:headliner.feeVal}).feeOffered} fee</div>
+         <div style="color:#6050a0;font-size:0.72rem;margin-top:0.2rem">${headliner.genre} · ${bandTokenCost(headliner)} 🎟️</div>
          ${supportBand?`<div style="font-size:0.72rem;color:#504070;margin-top:0.3rem">Support: ${supportBand.name}</div>`:''}`
       : `<div style="color:#3a3060;font-style:italic;font-size:0.82rem">No headliner booked yet — enquire via BandBook 📱</div>`
     }
@@ -1718,7 +1752,7 @@ function renderInbox() {
     html += '<div class="msg-item' + (enq.status==='replied'?' msg-urgent':'') + '">' +
       '<div class="msg-from">' + band.name + ' <span style="font-size:0.6rem;color:#5a4080">ENQUIRY</span>' +
         '<span style="float:right;font-size:0.7rem;color:'+statusCol+'">'+statusLabel+'</span></div>' +
-      '<div class="msg-date">Fee: £' + enq.feeOffered + '</div>';
+      '<div class="msg-date">' + bandTokenCost(BANDS.find(b=>b.id===enq.bandId)||{fee:'£'}) + ' 🎟️ budget tokens</div>';
     if (enq.status === 'replied' && enq.replyText) {
       html += '<div class="msg-text" style="font-style:italic;color:#a090d0;margin:0.4rem 0">"' + enq.replyText + '"</div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.5rem">' +
@@ -1726,7 +1760,7 @@ function renderInbox() {
           '<button onclick="handleNegotiation('+enq.id+','+i+')" style="font-size:0.72rem;padding:0.3rem 0.7rem;background:#1a0a40;border:1px solid #3a2a60;color:#c9b8ff;border-radius:6px;cursor:pointer">'+o.label+'</button>'
         ).join('') + '</div>';
     } else if (enq.status === 'confirmed') {
-      html += '<div class="msg-text" style="color:#50c878">Confirmed as headliner at £'+enq.feeOffered+'</div>';
+      html += '<div class="msg-text" style="color:#50c878">Confirmed as headliner ✅</div>';
     } else if (enq.status === 'pending') {
       const pb = BANDS.find(b=>b.id===enq.bandId);
       const pendingMsg = pb && pb.agent==='Self-managed' ? 'Ringing them directly...' : 'Waiting on their agent...';
@@ -1916,7 +1950,7 @@ function renderPlanSupport(){
   if(supportBand){
     const enq=G.enquiries?G.enquiries.find(e=>e.bandId===supportBand.id&&e.slot==='support'&&e.status==='confirmed'):null;
     const fee=enq?enq.feeOffered:supportBand.feeVal;
-    el.innerHTML='<span style="color:#60c8a0">✓ '+supportBand.name+'</span> <span style="color:#5a5080;font-size:0.75rem">· £'+fee+' · '+supportBand.genre+'</span>';
+    el.innerHTML='<span style="color:#60c8a0">✓ '+supportBand.name+'</span> <span style="color:#5a5080;font-size:0.75rem">· '+bandTokenCost(supportBand)+' 🎟️ · '+supportBand.genre+'</span>';
   } else {
     el.innerHTML='<span style="color:#4a3060">None confirmed — enquire via Band Book earlier in the week.</span>';
   }
@@ -1973,7 +2007,7 @@ function renderPlanBands(){
         '<div style="font-size:0.72rem;color:#6050a0">'+band.genre+' · '+fameLabel(band.fame)+'</div>' +
         (isConfirmed?'<div style="font-size:0.68rem;color:#4caf50">✓ Negotiated & confirmed</div>':'<div style="font-size:0.68rem;color:#ff9040">⚡ Replied — click to book</div>')+
         '</div>' +
-        '<div style="text-align:right"><div style="color:#c9b8ff;font-size:0.9rem">'+enq.feeOffered+' fans est.</div>' +
+        '<div style="text-align:right"><div style="color:#c9b8ff;font-size:0.9rem">'+bandTokenCost(BANDS.find(b=>b.id===enq.bandId)||{})+' 🎟️</div>' +
         (isSelected?'<div style="font-size:0.7rem;color:#60c878">✓ HEADLINER</div>':'')+
         '</div></div>';
     }).join('');
@@ -2004,7 +2038,7 @@ function selectPlanBand(enquiryId){
   const band=BANDS.find(b=>b.id===enq.bandId)||BANDS[enq.bandId]; if(!band) return;
   if(enq.status==='replied'){ enq.status='confirmed'; }
   G.headliner=BANDS.indexOf(band);
-  addAlert('✅ '+band.name+' locked in as headliner at £'+enq.feeOffered+'. Fee paid on show night.');
+  addAlert('✅ '+band.name+' locked in as headliner. (-'+bandTokenCost(band)+' 🎟️)');
   saveGame(); updateStatusBar(); renderPlanBands(); renderPlanCosts();
 }
 
@@ -2064,11 +2098,14 @@ function renderPlanCosts(){
   const estFill=venue.capacity?Math.round((estTickets/venue.capacity)*100):0;
   const row=(label,val,col)=>'<div style="display:flex;justify-content:space-between;margin-bottom:0.35rem"><span style="color:#6050a0;font-size:0.8rem">'+label+'</span><span style="color:'+(col||'#c9b8ff')+';font-size:0.8rem">'+val+'</span></div>';
   const supportBand=G.support?BANDS.find(b=>b.id===G.support):null;
+  const tSpent=(G.tokensSpent||0); const tTotal=(G.weeklyBudget||4); const tLeft=tTotal-tSpent;
+  const tColor=tLeft<=0?'#e05060':tLeft===1?'#e0a030':'#60c878';
   el.innerHTML=
-    row('Headliner', band?band.name:'None booked', band?'#c9b8ff':'#4a3060')+
-    row('Support Act', supportBand?supportBand.name:'None', '#8060b0')+
-    row('Promotion', promo?promo.label:'None', '#8060b0')+
+    row('Headliner', band?band.name+' ('+bandTokenCost(band)+' 🎟️)':'None booked', band?'#c9b8ff':'#4a3060')+
+    row('Support Act', supportBand?supportBand.name+' ('+bandTokenCost(supportBand)+' 🎟️)':'None', '#8060b0')+
+    row('Promo', promo?promo.label+' (1 🎟️)':'None', '#8060b0')+
     '<div style="border-top:1px solid #2a1a50;margin:0.5rem 0"></div>'+
+    row('Weekly Budget', tLeft+' / '+tTotal+' 🎟️ left', tColor)+
     row('Est. Fill Rate', band?'~'+estFill+'%':'—', estFill>=80?'#50c878':estFill>=50?'#e0a030':'#e05060')+
     row('Boss Satisfaction', (G.bossSatisfaction||50)+'%', (G.bossSatisfaction||50)>=50?'#50c878':'#e05060');
   // disable confirm if no headliner
@@ -2128,7 +2165,7 @@ function checkRivalryAndRun(){
   let choicesHTML = `
     <button class="rivalry-choice" onclick="resolveRivalry('drop_support','${dropLine.replace(/'/g,"\\'")}')">
       <strong>💸 Pay off ${support.name} — send them home</strong>
-      -£50 buyout · ${headliner.name} headlines alone · ${scene.consequence}
+      Pay off · ${headliner.name} headlines alone · ${scene.consequence}
     </button>
     <button class="rivalry-choice" onclick="resolveRivalry('no_support','${noSuppLine.replace(/'/g,"\\'")}')">
       <strong>🚪 No support tonight — just send ${support.name} away</strong>
@@ -2138,7 +2175,7 @@ function checkRivalryAndRun(){
     choicesHTML += `
     <button class="rivalry-choice" onclick="resolveRivalry('replace','${backup.id}')">
       <strong>📞 Emergency replacement — call ${backup.name}</strong>
-      Last-minute £${backup.feeVal} fee · crowd gets a support act · ${backup.name} owes you one
+      Last-minute booking · crowd gets a support act · ${backup.name} owes you one
     </button>`;
   }
   document.getElementById('rivalry-choices').innerHTML = choicesHTML;
@@ -2427,7 +2464,7 @@ function runShow(){
   }
 
   if(_traits.includes('Acoustic Purists') && Object.keys(G.sfxActive||{}).filter(id=>id!=='basic'&&G.sfxActive[id]).length > 0){
-    _personalityEvents.push({icon:'🎸', text:`${band.name} were unhappy with all the gear on stage. "We don't need gimmicks," the singer said into a microphone connected to a £200 reverb unit.`, attendanceDelta:-5, cashDelta:0, repDelta:-1});
+    _personalityEvents.push({icon:'🎸', text:`${band.name} were unhappy with all the gear on stage. "We don't need gimmicks," the singer said into a microphone connected to a very expensive reverb unit.`, attendanceDelta:-5, cashDelta:0, repDelta:-1});
   }
 
   // Apply all personality event deltas
@@ -2967,7 +3004,7 @@ const TUTORIAL_STEPS = [
   {
     title: '🎸 Welcome to Concert Simulator',
     body: `You're the new promoter at <strong>The Dive Bar</strong>. Your job: book bands, run shows, grow your rep, and upgrade to bigger venues.\n\nEach week runs Monday → Sunday. Shows happen on <strong>Saturday night</strong>.`,
-    hint: '💡 You start with £500 cash and a tiny venue. Every decision counts.'
+    hint: '💡 You start with 4 weekly budget tokens and a tiny venue. Every decision counts.'
   },
   {
     title: '📋 The Office — your home base',
