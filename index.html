@@ -332,6 +332,27 @@ canvas#stage { width: 100%; height: 100%; }
 }
 .prog-tier-badge:hover .tier-tip { display:block; }
 
+/* ── RIVALRY CRISIS MODAL ── */
+#rivalry-overlay {
+  display:none; position:fixed; inset:0; z-index:9998;
+  background:rgba(0,0,0,0.82); align-items:center; justify-content:center;
+}
+#rivalry-overlay.active { display:flex; }
+#rivalry-box {
+  background:#130818; border:1px solid #8a1a2a; border-radius:14px;
+  padding:2rem 2.2rem 1.8rem; max-width:460px; width:92%;
+  box-shadow:0 0 60px rgba(200,40,80,0.4); text-align:center; position:relative;
+}
+#rivalry-title { font-size:1.5rem; color:#ff4466; margin-bottom:0.4rem; }
+#rivalry-subtitle { font-size:0.72rem; color:#6a3a50; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:1rem; }
+#rivalry-flavour { color:#c0a0b8; font-size:0.92rem; line-height:1.7; font-style:italic; margin-bottom:1.4rem; border-left:2px solid #5a1a2a; padding-left:1rem; text-align:left; }
+#rivalry-bands { display:flex; gap:1rem; justify-content:center; margin-bottom:1.4rem; }
+.rivalry-band-pill { background:#200a18; border:1px solid #5a1a30; border-radius:8px; padding:0.5rem 1rem; font-size:0.8rem; color:#e0b0c0; }
+#rivalry-choices { display:flex; flex-direction:column; gap:0.6rem; }
+.rivalry-choice { background:rgba(80,20,40,0.3); border:1px solid #5a1a30; color:#c090a0; padding:0.7rem 1.2rem; font-family:inherit; font-size:0.8rem; text-align:left; cursor:pointer; border-radius:8px; transition:all 0.2s; line-height:1.5; }
+.rivalry-choice:hover { border-color:#c03060; color:#ffd0e0; background:rgba(120,20,50,0.4); }
+.rivalry-choice strong { color:#ff8090; display:block; margin-bottom:0.2rem; }
+
 /* ── ALERT POPUP OVERLAY ── */
 #alert-popup-overlay {
   display: none; position: fixed; inset: 0; z-index: 9999;
@@ -679,59 +700,59 @@ const BANDS = [
   { id:'b01', name:'The Hollow Saints', genre:'Post-Punk', genreKey:'punk',
     bio:"Four-piece. We've been told we're 'difficult'. We prefer 'uncompromising'. Touring the north this autumn.",
     traits:['Road Warriors','Underground Cred','Pyro Enthusiasts'], fee:'££', feeVal:180,
-    agent:'Liz Carrow @ Ironclad', fame:1, fans:40 },
+    agent:'Liz Carrow @ Ironclad', fame:1, fans:40, rivals:['b05','b08'] },
   { id:'b02', name:'Coral Vestiges', genre:'Indie Folk', genreKey:'folk',
     bio:"Fingerpicking and field recordings. We play quiet rooms and ask that you do too. Last EP featured in The Wire.",
     traits:['Acoustic Purists','Industry Darlings','Punctual'], fee:'££', feeVal:150,
-    agent:'Theo Marsh @ Quiet Storm', fame:1, fans:35 },
+    agent:'Theo Marsh @ Quiet Storm', fame:1, fans:35, rivals:['b06','b13'] },
   { id:'b03', name:'NIGHTMARKET', genre:'Synthwave', genreKey:'electronic',
     bio:"Neon. Nostalgia. Drum machines. We've played every warehouse in this city — now we want a stage with a roof.",
     traits:['Face Paint','Merch Machine','Party Animals'], fee:'£££', feeVal:250,
-    agent:'Dana Cole @ Static Frequency', fame:2, fans:80 },
+    agent:'Dana Cole @ Static Frequency', fame:2, fans:80, rivals:['b11'] },
   { id:'b04', name:'Gravel & Glass', genre:'Blues Rock', genreKey:'rock',
     bio:"We've been doing this since before you were born, son. Ask your parents.",
     traits:['Road Warriors','Punctual','Crowd Surfers'], fee:'££', feeVal:160,
-    agent:'Jim Rowe @ Blacktop', fame:1, fans:50 },
+    agent:'Jim Rowe @ Blacktop', fame:1, fans:50, rivals:['b10'] },
   { id:'b05', name:'Seraph System', genre:'Noise Rock', genreKey:'punk',
     bio:"Loud. Confrontational. Probably not for everyone — which is the point.",
     traits:['Drama Queens','Uncompromising','Always Late'], fee:'£', feeVal:80,
-    agent:'Self-managed', fame:0, fans:12 },
+    agent:'Self-managed', fame:0, fans:12, rivals:['b01','b12'] },
   { id:'b06', name:'Milk & Fever', genre:'Dream Pop', genreKey:'pop',
     bio:"We make the kind of music you put on when you can't sleep. Hazy. Layered. True.",
     traits:['Rising Stars','Method Actors','Label Pressure'], fee:'££', feeVal:200,
-    agent:'Cass Reid @ Bloom', fame:1, fans:60 },
+    agent:'Cass Reid @ Bloom', fame:1, fans:60, rivals:['b02','b09'] },
   { id:'b07', name:'Iron Gospel', genre:'Metal', genreKey:'metal',
     bio:"We don't do half measures. Pyro, volume, and conviction. Book us or don't.",
     traits:['Pyro Enthusiasts','Crowd Surfers','Drama Queens'], fee:'£££', feeVal:280,
-    agent:'Rick Voss @ Hammer', fame:2, fans:90 },
+    agent:'Rick Voss @ Hammer', fame:2, fans:90, rivals:['b14'] },
   { id:'b08', name:'The Picket Line', genre:'Garage Punk', genreKey:'punk',
     bio:"Political. Loud. Cheap. Playing every toilet venue in the country. Proudly.",
     traits:['Local Heroes','Underground Cred','Always Late'], fee:'£', feeVal:60,
-    agent:'Self-managed', fame:0, fans:20 },
+    agent:'Self-managed', fame:0, fans:20, rivals:['b01','b04'] },
   { id:'b09', name:'Vesper & The Static', genre:'Shoegaze', genreKey:'shoegaze',
     bio:"We play with our backs to the audience. The sound faces them instead.",
     traits:['Smoke Lovers','Method Actors','Acoustic Purists'], fee:'££', feeVal:170,
-    agent:'Petra Holt @ Drift', fame:1, fans:45 },
+    agent:'Petra Holt @ Drift', fame:1, fans:45, rivals:['b06','b11'] },
   { id:'b10', name:'Glass Meridian', genre:'Post-Rock', genreKey:'rock',
     bio:"Forty-minute sets. No breaks. No words. Just the arc.",
     traits:['Road Warriors','Uncompromising','Crowd Surfers'], fee:'££', feeVal:190,
-    agent:'Owen Bale @ Long Play', fame:1, fans:55 },
+    agent:'Owen Bale @ Long Play', fame:1, fans:55, rivals:['b04'] },
   { id:'b11', name:'CRUXX', genre:'Industrial', genreKey:'electronic',
     bio:"We've been banned from three venues. This is our recommendation.",
     traits:['Face Paint','Drama Queens','Pyro Enthusiasts'], fee:'£££', feeVal:240,
-    agent:'Self-managed', fame:2, fans:70 },
+    agent:'Self-managed', fame:2, fans:70, rivals:['b03','b09'] },
   { id:'b12', name:'The Almanac', genre:'Americana', genreKey:'folk',
     bio:"Steel guitar. Lap steel. Honest songs about dishonest times.",
     traits:['Punctual','Local Heroes','Acoustic Purists'], fee:'£', feeVal:100,
-    agent:'Sal Morrow @ Porch Records', fame:0, fans:25 },
+    agent:'Sal Morrow @ Porch Records', fame:0, fans:25, rivals:['b05'] },
   { id:'b13', name:'Hyperreal', genre:'House', genreKey:'electronic',
     bio:"4/4 until dawn. The crowd either gets it or they leave. Most stay.",
     traits:['Party Animals','Merch Machine','Face Paint'], fee:'£££', feeVal:260,
-    agent:'Kay Osei @ Peak Hour', fame:2, fans:85 },
+    agent:'Kay Osei @ Peak Hour', fame:2, fans:85, rivals:['b02','b07'] },
   { id:'b14', name:'Dead Signal', genre:'Doom Metal', genreKey:'metal',
     bio:"Slow. Heavy. Inevitable. Like getting old, but louder.",
     traits:['Uncompromising','Pyro Enthusiasts','Always Late'], fee:'££', feeVal:210,
-    agent:'Nora Finch @ Riff Co.', fame:1, fans:48 },
+    agent:'Nora Finch @ Riff Co.', fame:1, fans:48, rivals:['b07','b13'] },
   // ── BACKUP BANDS (always available, last-minute, problematic) ──
   { id:'bk1', name:'The Filthy Casuals', genre:'Pub Rock', genreKey:'rock',
     bio:"We'll play anywhere, anytime, for anyone. Don't ask questions. We won't either.",
@@ -979,7 +1000,7 @@ function nextDay(){
   }
   if(G.dayOfWeek===6){
     // Saturday = show night
-    if(G.headliner!==null){ runShow(); return; }
+    if(G.headliner!==null){ checkRivalryAndRun(); return; }
     else{ addAlert('📅 Saturday passed — no headliner confirmed. Week lost.'); endWeek(); return; }
   }
   if(G.dayOfWeek>6){ endWeek(); return; }
@@ -1826,6 +1847,107 @@ function renderPlanCosts(){
   if(btn) btn.disabled=!band;
 }
 
+// ── BAND RIVALRY SYSTEM ────────────────────────────────────────────────────
+const RIVALRY_SCENES = [
+  { scene: (h,s) => `${s.name}'s guitarist spotted ${h.name}'s vocalist in the car park and immediately turned around. ${h.agent} is now on the phone demanding the support act be removed "before someone gets glassed."`,
+    consequence: 'Headliner threatening walkout.' },
+  { scene: (h,s) => `${s.name} arrived at soundcheck and found ${h.name} using their backline without asking. Words were exchanged. A mic stand went over. Security is involved.`,
+    consequence: 'Soundcheck collapsed. Doors in 30 minutes.' },
+  { scene: (h,s) => `${h.name}'s singer posted a story calling ${s.name} "talentless industry plants" three hours ago. ${s.name} just saw it. They are currently in your office.`,
+    consequence: 'Social media drama. Crowd is watching.' },
+  { scene: (h,s) => `${s.name} and ${h.name} share a manager from two years ago — it ended badly, legally. Both bands recognised each other in the green room and the atmosphere is now arctic.`,
+    consequence: 'Neither band will go on stage while the other is here.' },
+  { scene: (h,s) => `${h.name}'s drummer once dated ${s.name}'s bassist. "Once" being generous — they broke up this morning. Both are here. This is your problem now.`,
+    consequence: 'Personal crisis backstage. Show at risk.' },
+  { scene: (h,s) => `${s.name} has been badmouthing ${h.name} on every podcast for six months. ${h.name} didn't know ${s.name} were on the bill tonight. They do now.`,
+    consequence: 'Headliner furious. Demanding answers.' },
+];
+
+const RIVALRY_DROP_SUPPORT_LINES = [
+  (h,s) => `You pull ${s.name}'s manager aside and explain the situation. They're not happy — but they take the buyout and leave quietly. ${h.name} goes on. The crowd never know.`,
+  (h,s) => `${s.name} are escorted out through the back. Their agent will be in touch. ${h.name} do a longer set to cover the gap — turns out they had the songs.`,
+  (h,s) => `${s.name} accept the situation with surprising grace. "We'll remember this," their singer says, not entirely as a threat. Maybe.`,
+];
+const RIVALRY_NO_SUPPORT_LINES = [
+  (h,s) => `Both bands refuse to share the building. ${s.name} leave first, eventually. The crowd doesn't notice there's no support — they came for ${h.name}.`,
+  (h,s) => `You make the call: no support tonight. ${s.name} are sent home. The promoter in you dies a little. The realist in you moves on.`,
+];
+
+let _rivalryCallback = null;
+
+function checkRivalryAndRun(){
+  if(!G.support){ runShow(); return; }
+  const headliner = BANDS[G.headliner];
+  const support = BANDS.find(b=>b.id===G.support);
+  if(!headliner||!support){ runShow(); return; }
+  const isRival = (headliner.rivals||[]).includes(support.id) || (support.rivals||[]).includes(headliner.id);
+  if(!isRival){ runShow(); return; }
+
+  // Trigger rivalry crisis!
+  const scene = RIVALRY_SCENES[Math.floor(Math.random()*RIVALRY_SCENES.length)];
+  const overlay = document.getElementById('rivalry-overlay');
+  document.getElementById('rivalry-bands').innerHTML =
+    `<div class="rivalry-band-pill">🎤 ${headliner.name}</div><div style="color:#5a1a30;font-size:1rem">⚔️</div><div class="rivalry-band-pill">🎸 ${support.name}</div>`;
+  document.getElementById('rivalry-flavour').textContent = scene.scene(headliner, support);
+
+  // Build choices
+  const dropLine = RIVALRY_DROP_SUPPORT_LINES[Math.floor(Math.random()*RIVALRY_DROP_SUPPORT_LINES.length)](headliner, support);
+  const noSuppLine = RIVALRY_NO_SUPPORT_LINES[Math.floor(Math.random()*RIVALRY_NO_SUPPORT_LINES.length)](headliner, support);
+  const backups = BANDS.filter(b=>b.isBackup && b.id!==support.id);
+  const backup = backups[Math.floor(Math.random()*backups.length)];
+
+  let choicesHTML = `
+    <button class="rivalry-choice" onclick="resolveRivalry('drop_support','${dropLine.replace(/'/g,"\\'")}')">
+      <strong>💸 Pay off ${support.name} — send them home</strong>
+      -£50 buyout · ${headliner.name} headlines alone · ${scene.consequence}
+    </button>
+    <button class="rivalry-choice" onclick="resolveRivalry('no_support','${noSuppLine.replace(/'/g,"\\'")}')">
+      <strong>🚪 No support tonight — just send ${support.name} away</strong>
+      No buyout · smaller crowd energy · cleaner drama
+    </button>`;
+  if(backup){
+    choicesHTML += `
+    <button class="rivalry-choice" onclick="resolveRivalry('replace','${backup.id}')">
+      <strong>📞 Emergency replacement — call ${backup.name}</strong>
+      Last-minute £${backup.feeVal} fee · crowd gets a support act · ${backup.name} owes you one
+    </button>`;
+  }
+  document.getElementById('rivalry-choices').innerHTML = choicesHTML;
+  overlay.classList.add('active');
+  // Rep hit for being caught in a rivalry situation
+  G.rep = Math.max(0, G.rep - 1);
+  addAlert(`⚔️ Backstage crisis! ${headliner.name} vs ${support.name} — you need to make a call.`, true);
+}
+
+function resolveRivalry(choice, detail){
+  const overlay = document.getElementById('rivalry-overlay');
+  overlay.classList.remove('active');
+  const headliner = BANDS[G.headliner];
+  const oldSupport = BANDS.find(b=>b.id===G.support);
+
+  if(choice==='drop_support'){
+    G.money = Math.max(0, G.money - 50);
+    G.support = null;
+    addAlert(`💸 ${oldSupport?oldSupport.name:'Support'} paid off and sent home. -£50. ${headliner.name} headlines solo.`);
+    addAlert(detail);
+  } else if(choice==='no_support'){
+    G.support = null;
+    addAlert(`🚪 No support tonight. ${headliner.name} plays alone.`);
+    addAlert(detail);
+  } else if(choice==='replace'){
+    const backup = BANDS.find(b=>b.id===detail);
+    if(backup){
+      G.support = backup.id;
+      G.money = Math.max(0, G.money - backup.feeVal);
+      addAlert(`📞 ${backup.name} rushed in as emergency support. £${backup.feeVal} paid. Good luck.`);
+      if(backup.backupRisk) addAlert(`⚠️ Risk: "${backup.backupRisk}"`);
+    }
+  }
+  saveGame(); updateStatusBar();
+  // Small delay then run the show
+  setTimeout(runShow, 400);
+}
+
 // ── SHOW FLOW ──────────────────────────────────────────────────────────────
 function runShow(){
   if(G.headliner===null){ addAlert('No headliner confirmed!'); return; }
@@ -2338,6 +2460,17 @@ window.addEventListener('DOMContentLoaded', initStartScreen);
 // Belt-and-suspenders: also run after a short delay in case of slow parse
 setTimeout(initStartScreen, 200);
 </script>
+<!-- Rivalry Crisis Modal -->
+<div id="rivalry-overlay">
+  <div id="rivalry-box">
+    <div id="rivalry-title">⚔️ Backstage Crisis</div>
+    <div id="rivalry-subtitle">Show Night · Headliner vs Support</div>
+    <div id="rivalry-bands"></div>
+    <div id="rivalry-flavour"></div>
+    <div id="rivalry-choices"></div>
+  </div>
+</div>
+
 <!-- Alert Popup Overlay -->
 <div id="alert-popup-overlay">
   <div id="alert-popup-box">
