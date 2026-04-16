@@ -1114,8 +1114,8 @@ function renderOffice(){
       <span style="font-size:0.65rem;color:#7050a0;text-transform:uppercase;letter-spacing:0.12em">Promote the Show</span>
       ${G.pendingPromo?`<span style="margin-left:auto;font-size:0.65rem;color:#60c878">✓ Active</span>`:''}
     </div>
-    ${G.dayOfWeek>=6
-      ? `<div style="color:#3a2a50;font-size:0.75rem;font-style:italic">Doors are open — promotions locked.</div>`
+    ${G.dayOfWeek>=5
+      ? `<div style="color:#3a2a50;font-size:0.75rem;font-style:italic">${G.dayOfWeek>=6?'Doors are open':'It\'s Friday — '} promotion deadline passed.</div>`
       : `<div style="display:flex;flex-direction:column;gap:0.4rem">`+
         PROMOS.map(p=>{
           const sel=G.pendingPromo===p.id;
@@ -1478,11 +1478,13 @@ function confirmPlanning(){
   // Advance to Saturday and fire the show immediately
   G.dayOfWeek=6;
   saveGame(); updateStatusBar();
-  setTimeout(()=>runShow(), 400);
+  // Week 1 needs extra delay: show-screen canvas has never been rendered before
+  const delay = G.week===1 ? 800 : 400;
+  setTimeout(()=>runShow(), delay);
 }
 
 function bookPromo(promoId){
-  if(G.dayOfWeek>=6){ addAlert('Too late to book promotion — show is tonight!'); return; }
+  if(G.dayOfWeek>=5){ addAlert('📣 Promotion deadline has passed — book promos before Friday.'); return; }
   const promo=PROMOS.find(p=>p.id===promoId); if(!promo) return;
   if(G.money<promo.cost){ addAlert('Not enough cash for '+promo.label+'.'); return; }
   G.pendingPromo=G.pendingPromo===promoId?null:promoId;
@@ -1669,7 +1671,16 @@ function runShow(){
   if(G.money<0) G.money=0;
   const repGain=Math.max(1,Math.round((attendance/cap)*6));
   const fanGain=Math.round(attendance*0.25);
+  const repBefore=G.rep;
   G.rep=Math.min(100,G.rep+repGain);
+  // Check if new press tier unlocked
+  const PRESS_UNLOCK_THRESHOLDS=[5,15,25,40,55,70,85];
+  const PRESS_UNLOCK_NAMES=['City Scene Blog','Northern Noise','Underground Weekly','NME Online','Pitchfork UK','Rolling Stone (Intl)','The Guardian Music'];
+  PRESS_UNLOCK_THRESHOLDS.forEach((threshold,i)=>{
+    if(repBefore<threshold && G.rep>=threshold){
+      addAlert('📰 New press outlet unlocked: '+PRESS_UNLOCK_NAMES[i]+'! Your reviews are going further.');
+    }
+  });
   G.fans+=fanGain;
 
   // SFX combo check
@@ -1909,11 +1920,39 @@ function renderPostShow({band,venue,attendance,cap,revenue,bandFee,supportFee,sf
   setText('ps-support-fee', supportFee ? '-£'+supportFee : 'None');
   setText('ps-sfx', sfxCost ? '-£'+sfxCost : 'None');
 
-  // Press
+  // Press — tiered by rep/fame
   const hl = fill(rnd(profit>50?REVIEWS_GOOD:profit>0?REVIEWS_MID:REVIEWS_BAD));
   setText('ps-headline', hl);
-  setText('ps-source', '📰 Local Gig Guide · Week '+G.week);
   setText('ps-review', review);
+
+  // Progressive outlets unlock by rep
+  const PRESS_TIERS = [
+    { minRep:0,  icon:'📰', name:'The Local Rag',         type:'weekly freesheet',   reach:'Local' },
+    { minRep:5,  icon:'📰', name:'City Scene Blog',        type:'online music blog',  reach:'Local' },
+    { minRep:15, icon:'🗞️', name:'Northern Noise',         type:'regional zine',      reach:'Regional' },
+    { minRep:25, icon:'🗞️', name:'Underground Weekly',     type:'indie music weekly', reach:'Regional' },
+    { minRep:40, icon:'📻', name:'NME Online',             type:'national music site', reach:'National' },
+    { minRep:55, icon:'📻', name:'Pitchfork UK',           type:'national tastemaker', reach:'National' },
+    { minRep:70, icon:'🌍', name:'Rolling Stone (Intl)',   type:'international press', reach:'International' },
+    { minRep:85, icon:'🌍', name:'The Guardian Music',     type:'international broadsheet', reach:'International' },
+  ];
+  // Pick the highest tier the player has unlocked, with chance of one tier higher
+  const unlocked = PRESS_TIERS.filter(t=>G.rep>=t.minRep);
+  const tier = unlocked[Math.min(unlocked.length-1, unlocked.length-1+(Math.random()>0.7?1:0))] || PRESS_TIERS[0];
+  const starStr = '★'.repeat(stars)+'☆'.repeat(5-stars);
+  setText('ps-source', tier.icon+' '+tier.name+' · '+tier.reach+' · Week '+G.week);
+
+  // Render the press card with stars baked in
+  const pressCard = document.getElementById('ps-newspaper');
+  if(pressCard){
+    pressCard.style.borderColor = tier.reach==='International'?'#c0a030':tier.reach==='National'?'#6040c0':tier.reach==='Regional'?'#304060':'#1e1e30';
+  }
+  // Add reach badge next to source
+  const srcEl = document.getElementById('ps-source');
+  if(srcEl){
+    const reachCol = {Local:'#506080',Regional:'#507080',National:'#6040b0',International:'#b08020'};
+    srcEl.innerHTML = tier.icon+' <strong style="color:#c9b8ff">'+tier.name+'</strong> <span style="color:'+reachCol[tier.reach]+';font-size:0.65rem;margin-left:0.3rem">'+tier.reach.toUpperCase()+'</span> · Week '+G.week;
+  }
 
   // Band progression
   const contact = G.contacts[band.id]||{gigs:0,tier:0};
