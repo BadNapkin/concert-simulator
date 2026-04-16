@@ -393,17 +393,16 @@ canvas#stage { width: 100%; height: 100%; }
   </div>
 
   <div class="main-content">
-    <!-- OFFICE PANEL -->
+    <!-- OFFICE PANEL — Scene Feed -->
     <div class="panel active" id="panel-office">
-      <div class="panel-header">
-        <div class="panel-title">Home Base</div>
-        <div class="panel-heading" id="office-venue-name">The Dive Bar</div>
+      <div class="panel-header" style="padding:1rem 1.5rem 0.8rem;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="panel-title">Local Scene</div>
+          <div class="panel-heading" id="office-venue-name" style="font-size:1.1rem">The Dive Bar</div>
+        </div>
+        <div id="office-week-pill" style="font-size:0.68rem;color:#8070a0;background:#0e0e18;border:1px solid #2a1a50;border-radius:12px;padding:0.25rem 0.7rem;letter-spacing:0.1em"></div>
       </div>
-      <div class="schedule-slots" id="schedule-slots"></div>
-      <div style="padding:0.8rem 1.5rem 0;border-top:1px solid #1a0a40">
-        <div style="font-size:0.7rem;color:#6050a0;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.6rem">📣 Promote Saturday's Show</div>
-        <div id="office-promos" style="display:flex;flex-wrap:wrap;gap:0.5rem;padding-bottom:0.8rem"></div>
-      </div>
+      <div style="flex:1;overflow-y:auto;padding:0.8rem 1.2rem 1rem" id="scene-feed"></div>
     </div>
 
     <!-- BANDBOOK PANEL -->
@@ -1043,50 +1042,117 @@ function handleNegotiation(enquiryId, choiceIndex){
   switchPanel('office', document.querySelector('.nav-btn[data-panel="office"]'));
 }
 
-// ── OFFICE / SCHEDULE ──────────────────────────────────────────────────────
+// ── OFFICE / SCENE FEED ────────────────────────────────────────────────────
 function renderOffice(){
-  const el=document.getElementById('schedule-slots'); if(!el) return;
+  const feed=document.getElementById('scene-feed'); if(!feed) return;
+  const venue=VENUE_TIERS[G.venueTier];
+
+  // Week pill
+  const pill=document.getElementById('office-week-pill');
+  if(pill) pill.textContent='WK '+G.week+' · '+DAYS[G.dayOfWeek];
+  const vname=document.getElementById('office-venue-name');
+  if(vname) vname.textContent=venue.name;
+
   let html='';
+
+  // ── CARD 1: THIS WEEK'S SHOW ──
+  const headliner=G.headliner!==null?BANDS[G.headliner]:null;
+  const supportBand=G.support?BANDS.find(b=>b.id===G.support):null;
+  const daysLeft=6-G.dayOfWeek;
+  html+=`<div style="background:#0e0e18;border:1px solid #1e1e30;border-radius:8px;padding:1rem 1.2rem;margin-bottom:0.8rem">
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.6rem">
+      <span style="font-size:1rem">🎸</span>
+      <span style="font-size:0.65rem;color:#6050a0;text-transform:uppercase;letter-spacing:0.12em">Saturday's Show</span>
+      <span style="margin-left:auto;font-size:0.65rem;color:#3a3060">${daysLeft>0?daysLeft+' day'+(daysLeft!==1?'s':'')+' away':'Tonight!'}</span>
+    </div>
+    ${headliner
+      ? `<div style="color:#c9b8ff;font-size:1rem;font-weight:600">${headliner.name}</div>
+         <div style="color:#6050a0;font-size:0.72rem;margin-top:0.2rem">${headliner.genre} · £${(G.enquiries.find(e=>e.bandId===headliner.id&&e.status==='confirmed')||{feeOffered:headliner.feeVal}).feeOffered} fee</div>
+         ${supportBand?`<div style="font-size:0.72rem;color:#504070;margin-top:0.3rem">Support: ${supportBand.name}</div>`:''}`
+      : `<div style="color:#3a3060;font-style:italic;font-size:0.82rem">No headliner booked yet — enquire via BandBook 📱</div>`
+    }
+  </div>`;
+
+  // ── CARD 2: PROMOTIONS ──
+  html+=`<div style="background:#0a0820;border:1px solid #2a1a40;border-radius:8px;padding:1rem 1.2rem;margin-bottom:0.8rem">
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.7rem">
+      <span style="font-size:0.9rem">📣</span>
+      <span style="font-size:0.65rem;color:#7050a0;text-transform:uppercase;letter-spacing:0.12em">Promote the Show</span>
+      ${G.pendingPromo?`<span style="margin-left:auto;font-size:0.65rem;color:#60c878">✓ Active</span>`:''}
+    </div>
+    ${G.dayOfWeek>=6
+      ? `<div style="color:#3a2a50;font-size:0.75rem;font-style:italic">Doors are open — promotions locked.</div>`
+      : `<div style="display:flex;flex-direction:column;gap:0.4rem">`+
+        PROMOS.map(p=>{
+          const sel=G.pendingPromo===p.id;
+          const canAfford=G.money>=p.cost;
+          return `<div onclick="bookPromo('${p.id}')" style="cursor:${canAfford?'pointer':'default'};display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.8rem;border-radius:6px;border:1px solid ${sel?'#6030c0':'#1e1030'};background:${sel?'#180a38':'#0a0618'}">
+            <div>
+              <span style="color:${canAfford?'#c9b8ff':'#3a2a60'};font-size:0.8rem">${p.label}</span>
+              <span style="color:#4a3a70;font-size:0.68rem;margin-left:0.4rem">${p.desc}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:0.5rem">
+              <span style="color:${canAfford?'#c0a040':'#3a2a50'};font-size:0.78rem">£${p.cost}</span>
+              ${sel?'<span style="color:#60c878;font-size:0.65rem">✓</span>':(!canAfford?'<span style="color:#6a2a2a;font-size:0.65rem">low funds</span>':'')}
+            </div>
+          </div>`;
+        }).join('')+`</div>`
+    }
+  </div>`;
+
+  // ── CARD 3: WEEK SCHEDULE / NEWS FEED ──
+  html+=`<div style="background:#0e0e18;border:1px solid #1e1e30;border-radius:8px;padding:1rem 1.2rem;margin-bottom:0.8rem">
+    <div style="font-size:0.65rem;color:#6050a0;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.7rem">📅 This Week</div>`;
   for(let d=0;d<=6;d++){
     const isCur=d===G.dayOfWeek;
+    const isPast=d<G.dayOfWeek;
     const isSat=d===6;
     const key=`${G.week}-${d}`;
     const news=(G.dailyNews&&G.dailyNews[key])||[];
-    let content='';
-    if(isSat){
-      content= G.headliner!==null
-        ? `<strong style="color:#c9b8ff">🎸 ${BANDS[G.headliner].name}</strong><br><span style="color:#6050a0;font-size:0.72rem">Show Night — confirmed</span>`
-        : `<span style="color:#6050a0">No headliner booked yet</span>`;
-    } else if(news.length){
-      content=news.map(n=>`<div class="slot-news">📰 ${n}</div>`).join('');
-    } else if(d<G.dayOfWeek){
-      content=`<span style="color:#2a2040;font-size:0.72rem">—</span>`;
-    } else {
-      content=`<span style="color:#3a3050;font-size:0.72rem">Quiet day</span>`;
-    }
-    html+=`<div class="schedule-slot${isCur?' slot-day-current':''}${isSat?' slot-saturday':''}">
-      <div class="slot-label">${DAYS[d]}</div>
-      <div class="slot-content">${content}</div>
+    html+=`<div style="display:flex;gap:0.7rem;align-items:flex-start;padding:0.35rem 0;border-bottom:1px solid #13132a;${d===6?'border:none':''}">
+      <div style="width:28px;font-size:0.65rem;color:${isCur?'#c9b8ff':isPast?'#2a2040':'#5a4080'};letter-spacing:0.08em;flex-shrink:0;padding-top:0.1rem">${DAYS[d].slice(0,3).toUpperCase()}</div>
+      <div style="flex:1;font-size:0.75rem">
+        ${isCur?`<span style="color:#9060e0">▶ Today</span> `:''}
+        ${isSat?(headliner?`<span style="color:#c9b8ff">🎸 ${headliner.name}</span>`:`<span style="color:#3a2060;font-style:italic">No show booked</span>`)
+          :news.length?news.map(n=>`<span style="color:#806090">📰 ${n}</span>`).join(' ')
+          :isPast?`<span style="color:#1e1830">—</span>`
+          :`<span style="color:#2a2040;font-style:italic">Quiet</span>`}
+      </div>
     </div>`;
   }
-  el.innerHTML=html;
+  html+=`</div>`;
 
-  // Render mid-week promotions in office
-  const promoEl=document.getElementById('office-promos');
-  if(promoEl){
-    if(G.dayOfWeek>=6){ promoEl.innerHTML='<span style="color:#4a3060;font-size:0.75rem">Show night — too late to promote.</span>'; }
-    else {
-      promoEl.innerHTML=PROMOS.map(p=>{
-        const sel=G.pendingPromo===p.id;
-        const canAfford=G.money>=p.cost;
-        return '<div onclick="bookPromo(\''+p.id+'\')" style="cursor:'+(canAfford?'pointer':'default')+';padding:0.4rem 0.8rem;border-radius:8px;border:1px solid '+(sel?'#6030c0':'#2a1a50')+';background:'+(sel?'#1a0a40':'#0a0520')+';font-size:0.75rem">' +
-          '<span style="color:'+(canAfford?'#c9b8ff':'#4a3060')+'">'+p.label+'</span> ' +
-          '<span style="color:'+(canAfford?'#e0c060':'#3a2a50')+'">£'+p.cost+'</span>' +
-          (sel?' <span style="color:#60c878;font-size:0.65rem">✓ Booked</span>':'')+
-          '</div>';
-      }).join('');
-    }
+  // ── CARD 4: FINANCIALS ──
+  html+=`<div style="background:#0e0e18;border:1px solid #1e1e30;border-radius:8px;padding:1rem 1.2rem;margin-bottom:0.8rem">
+    <div style="font-size:0.65rem;color:#6050a0;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.7rem">💷 Finances</div>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap">
+      <div style="flex:1;min-width:80px;background:#0a0618;border-radius:6px;padding:0.6rem 0.8rem;text-align:center">
+        <div style="font-size:1.1rem;color:#60c878;font-weight:700">£${G.money}</div>
+        <div style="font-size:0.62rem;color:#3a3060;text-transform:uppercase;letter-spacing:0.1em;margin-top:0.2rem">Cash</div>
+      </div>
+      <div style="flex:1;min-width:80px;background:#0a0618;border-radius:6px;padding:0.6rem 0.8rem;text-align:center">
+        <div style="font-size:1.1rem;color:#b090ff;font-weight:700">${G.rep}</div>
+        <div style="font-size:0.62rem;color:#3a3060;text-transform:uppercase;letter-spacing:0.1em;margin-top:0.2rem">Rep</div>
+      </div>
+      <div style="flex:1;min-width:80px;background:#0a0618;border-radius:6px;padding:0.6rem 0.8rem;text-align:center">
+        <div style="font-size:1.1rem;color:#e0a030;font-weight:700">${G.fans}</div>
+        <div style="font-size:0.62rem;color:#3a3060;text-transform:uppercase;letter-spacing:0.1em;margin-top:0.2rem">Fans</div>
+      </div>
+    </div>
+  </div>`;
+
+  // ── CARD 5: RECENT HISTORY ──
+  if(G.history&&G.history.length){
+    const last=G.history[G.history.length-1];
+    html+=`<div style="background:#0e0e18;border:1px solid #1e1e30;border-radius:8px;padding:1rem 1.2rem;margin-bottom:0.8rem">
+      <div style="font-size:0.65rem;color:#6050a0;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.6rem">📖 Last Show</div>
+      <div style="color:#c9b8ff;font-size:0.85rem;font-weight:600">${last.band}</div>
+      <div style="color:#6050a0;font-size:0.72rem;margin:0.2rem 0">${last.attendance}/${last.capacity} attendance · ${last.profit>=0?'+':''}£${last.profit}</div>
+      <div style="color:#807090;font-size:0.75rem;font-style:italic;margin-top:0.4rem;line-height:1.5">"${last.review}"</div>
+    </div>`;
   }
+
+  feed.innerHTML=html;
 }
 
 // ── BAND CAROUSEL ──────────────────────────────────────────────────────────
