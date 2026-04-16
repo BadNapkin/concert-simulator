@@ -13,8 +13,8 @@ body { background: #0a0a0f; color: #e8e0d0; font-family: 'Georgia', serif; overf
 .screen.active { display: flex; }
 
 /* ── START SCREEN ── */
-#start-screen { background: radial-gradient(ellipse at 50% 60%, #1a0a2e 0%, #0a0a0f 70%); }
-.start-glow { position: absolute; width: 600px; height: 600px; background: radial-gradient(circle, rgba(120,60,200,0.15) 0%, transparent 70%); top: 50%; left: 50%; transform: translate(-50%,-50%); pointer-events: none; }
+#start-screen { background: radial-gradient(ellipse at 50% 60%, #1a0a2e 0%, #0a0a0f 70%); overflow-y: auto; justify-content: flex-start; padding: 2rem 1.5rem; }
+.start-glow { position: fixed; width: 600px; height: 600px; background: radial-gradient(circle, rgba(120,60,200,0.15) 0%, transparent 70%); top: 50%; left: 50%; transform: translate(-50%,-50%); pointer-events: none; z-index: 0; }
 .start-title { font-size: 3.2rem; letter-spacing: 0.3em; text-transform: uppercase; color: #fff; text-shadow: 0 0 40px rgba(180,100,255,0.8), 0 0 80px rgba(180,100,255,0.3); margin-bottom: 0.3rem; }
 .start-sub { font-size: 0.85rem; letter-spacing: 0.25em; color: #8070a0; text-transform: uppercase; margin-bottom: 3rem; }
 .start-tagline { font-size: 1.05rem; color: #c0b0d8; font-style: italic; margin-bottom: 2.5rem; text-align: center; max-width: 420px; line-height: 1.7; }
@@ -315,6 +315,7 @@ canvas#stage { width: 100%; height: 100%; }
   .carousel-card { padding: 0 0.5rem; }
   .band-card-inner { padding: 1rem; }
   .postshow-inner { padding: 1rem; }
+  #postshow-screen { padding-top: 56px !important; }
   .newspaper { padding: 1rem; }
   canvas#stage { height: 200px !important; }
 }
@@ -438,6 +439,7 @@ canvas#stage { width: 100%; height: 100%; }
 <!-- START SCREEN -->
 <div class="screen active" id="start-screen">
   <div class="start-glow"></div>
+  <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;width:100%;text-align:center;padding:1rem 0">
   <div class="start-title">Concert Simulator</div>
   <div class="start-sub">Talent Booker — The Dive Bar</div>
   <div class="start-tagline">"Develop the acts. Build the scene. Leave a legacy."<br>Every great venue started with one good night.</div>
@@ -448,6 +450,7 @@ canvas#stage { width: 100%; height: 100%; }
   <button onclick="document.getElementById('howto-modal').style.display='flex'" style="background:none;border:none;color:#6050a0;font-size:0.78rem;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;text-decoration:underline">? How to Play</button>
 </div>
 
+  </div>
 <!-- HOW TO PLAY MODAL -->
 <div id="howto-modal" style="display:none;position:fixed;inset:0;background:rgba(5,2,20,0.95);z-index:9999;align-items:center;justify-content:center;padding:1.5rem">
   <div style="max-width:520px;width:100%;background:#12082a;border:1px solid #2a1a50;border-radius:12px;padding:1.8rem;overflow-y:auto;max-height:90vh">
@@ -660,7 +663,7 @@ canvas#stage { width: 100%; height: 100%; }
 
 <!-- POST-SHOW SCREEN -->
 <div class="screen" id="postshow-screen" style="background:#07070f;overflow-y:auto;padding:0">
-  <div style="max-width:620px;margin:0 auto;padding:2rem 1.2rem 3rem">
+  <div style="max-width:620px;margin:0 auto;padding:2rem 1.2rem 6rem">
 
     <!-- Header -->
     <div style="text-align:center;margin-bottom:1.5rem">
@@ -1037,7 +1040,7 @@ function syncSFXToTier(){
 function setText(id,v){ const e=document.getElementById(id); if(e) e.textContent=v; }
 function rnd(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 function fameLabel(f){ return ['Underground','Rising','Established','Headliner'][f]||'Unknown'; }
-function tierLabel(t){ return ['New','Familiar','Regular','Friend','Legend'][t]||'New'; }
+function tierLabel(t){ return ['New Act','Familiar Face','Regular','Trusted Act','Inner Circle'][t]||'New Act'; }
 const DAYS=['MON','TUE','WED','THU','FRI','SAT','SUN'];
 
 // ── ROUTING ────────────────────────────────────────────────────────────────
@@ -1612,6 +1615,12 @@ function renderBandCarousel() {
   _drawCard(el);
 }
 
+function _relHtml(tier){
+  if(tier<=0) return '';
+  const label=tierLabel(tier);
+  const perk=tier>=4?' <span style="color:#508060;font-size:0.62rem">(inner circle)</span>':tier>=3?' <span style="color:#3a7050;font-size:0.62rem">(priority booking)</span>':tier>=2?' <span style="color:#4a6050;font-size:0.62rem">(traits emerging)</span>':'';
+  return '<div style="font-size:0.68rem;margin:0.3rem 0"><span style="color:#507060">Relationship: </span><span style="color:#60c878">'+label+'</span>'+perk+'</div>';
+}
 function _drawCard(el) {
   const band = _cb[_ci];
   const total = _cb.length;
@@ -1662,7 +1671,7 @@ function _drawCard(el) {
               return revealed.map(t=>'<span class="trait-tag">'+t+'</span>').join('');
             })()}
           </div>
-          ${tier>0?'<div style="font-size:0.68rem;color:#507060;margin:0.3rem 0">Relationship: '+tierLabel(tier)+'</div>':''}
+          ${_relHtml(tier)}
           <div class="band-agent">
             ${band.agent==='Self-managed'
               ? '<span style="color:#60c878">📞 Direct contact</span>'
@@ -2676,6 +2685,25 @@ function runShow(){
   if(!G.contacts[band.id]) G.contacts[band.id]={tier:0,gigs:0,bestNight:'None yet'};
   G.contacts[band.id].gigs=(G.contacts[band.id].gigs||0)+1;
   if(!G.contacts[band.id].bestNight||finalAttendance>cap*0.8) G.contacts[band.id].bestNight='Wk '+G.week;
+  // Tier thresholds: 0=new, 1=1gig, 2=3gigs, 3=6gigs, 4=10gigs
+  const _gigCount=G.contacts[band.id].gigs;
+  const _oldTier=G.contacts[band.id].tier||0;
+  const _newTier=_gigCount>=10?4:_gigCount>=6?3:_gigCount>=3?2:_gigCount>=1?1:0;
+  if(_newTier>_oldTier){
+    G.contacts[band.id].tier=_newTier;
+    G._showLog.push({text:'🤝 Relationship with '+band.name+' levelled up: '+tierLabel(_newTier)+'!',urgent:false});
+    // Reveal a trait at tier 2 and 4
+    if(_newTier===2||_newTier===4){
+      if(!G.revealedTraits) G.revealedTraits={};
+      if(!G.revealedTraits[band.id]) G.revealedTraits[band.id]=[];
+      const _unrev=(band.traits||[]).filter(t=>!G.revealedTraits[band.id].includes(t));
+      if(_unrev.length>0){
+        const _pick=_unrev[Math.floor(Math.random()*_unrev.length)];
+        G.revealedTraits[band.id].push(_pick);
+        G._showLog.push({text:'🔍 You know '+band.name+' well enough now to notice: '+_pick+'.',urgent:false});
+      }
+    }
+  }
 
   // Achievements
   if(finalAttendance>=cap) unlockAchievement('sold_out');
