@@ -376,6 +376,46 @@ canvas#stage { width: 100%; height: 100%; }
   border-radius: 6px; transition: all 0.2s;
 }
 #alert-popup-ok:hover { border-color: rgba(180,100,255,0.9); color: #fff; box-shadow: 0 0 16px rgba(180,100,255,0.3); }
+
+/* ── TUTORIAL ── */
+#tutorial-overlay {
+  display:none; position:fixed; inset:0; z-index:3000;
+  background:rgba(10,5,20,0.85); align-items:center; justify-content:center;
+}
+#tutorial-overlay.active { display:flex; }
+#tutorial-box {
+  background:#0e0818; border:1px solid #4a2a70; border-radius:14px;
+  padding:2rem 2.2rem; max-width:420px; width:90%; position:relative;
+  box-shadow:0 0 40px rgba(120,60,200,0.25);
+}
+#tutorial-step-label {
+  font-size:0.65rem; letter-spacing:0.2em; color:#6a4a90; text-transform:uppercase;
+  margin-bottom:0.6rem;
+}
+#tutorial-title { font-size:1.2rem; color:#d0b0ff; margin-bottom:0.8rem; }
+#tutorial-body { font-size:0.85rem; color:#a090b8; line-height:1.7; margin-bottom:1.4rem; }
+#tutorial-body strong { color:#c9b8ff; }
+#tutorial-body em { color:#ff9090; font-style:normal; }
+.tutorial-hint {
+  background:rgba(60,30,90,0.4); border:1px solid #3a2060;
+  border-radius:8px; padding:0.6rem 0.9rem; font-size:0.78rem;
+  color:#8070a8; margin-bottom:1.2rem; line-height:1.6;
+}
+#tutorial-nav { display:flex; gap:0.7rem; justify-content:flex-end; align-items:center; }
+#tutorial-skip { background:none; border:none; color:#4a3a60; font-size:0.75rem;
+  cursor:pointer; letter-spacing:0.1em; padding:0; margin-right:auto; }
+#tutorial-skip:hover { color:#8070a8; }
+#tutorial-prev { background:transparent; border:1px solid #3a2060; color:#6a4a90;
+  padding:0.5rem 1rem; font-family:inherit; font-size:0.78rem; letter-spacing:0.12em;
+  text-transform:uppercase; cursor:pointer; border-radius:6px; transition:all 0.2s; }
+#tutorial-prev:hover { border-color:#7050a0; color:#b090e0; }
+#tutorial-next { background:rgba(90,40,140,0.5); border:1px solid #7050a0; color:#d0b0ff;
+  padding:0.5rem 1.2rem; font-family:inherit; font-size:0.78rem; letter-spacing:0.12em;
+  text-transform:uppercase; cursor:pointer; border-radius:6px; transition:all 0.2s; }
+#tutorial-next:hover { background:rgba(120,60,180,0.6); border-color:#c090ff; color:#fff; }
+#tutorial-dots { display:flex; gap:5px; margin-right:auto; }
+.t-dot { width:6px; height:6px; border-radius:50%; background:#2a1840; transition:background 0.2s; }
+.t-dot.active { background:#9060d0; }
 </style>
 </head>
 <body>
@@ -895,6 +935,7 @@ function freshState() {
     alerts:[],
     history:[],
     gameOver:false,
+    tutorialDone:false,
   };
   return _addAliases(s);
 }
@@ -2426,6 +2467,87 @@ function continueAfterShow(){
 }
 
 // ── INIT ───────────────────────────────────────────────────────────────────
+// ── TUTORIAL ────────────────────────────────────────────────────────────────
+const TUTORIAL_STEPS = [
+  {
+    title: '🎸 Welcome to Concert Simulator',
+    body: `You're the new promoter at <strong>The Dive Bar</strong>. Your job: book bands, run shows, grow your rep, and upgrade to bigger venues.\n\nEach week runs Monday → Sunday. Shows happen on <strong>Saturday night</strong>.`,
+    hint: '💡 You start with £500 cash and a tiny venue. Every decision counts.'
+  },
+  {
+    title: '📋 The Office — your home base',
+    body: `The <strong>Office</strong> panel (where you are now) shows your weekly schedule and lineup.\n\nUse the <strong>day tracker</strong> to advance time — each click moves you one day forward. On <em>Friday</em>, the booking window closes. On <em>Saturday</em>, the show runs.`,
+    hint: '💡 Advance days with the "Next Day →" button in the Office panel.'
+  },
+  {
+    title: '🎤 Book Your First Band',
+    body: `Head to <strong>Band Book</strong> in the nav bar. Browse available acts and hit <strong>Enquire</strong> on any band.\n\nThey'll reply within a day or two with a fee. Accept, negotiate, or decline — it's your call.`,
+    hint: '💡 Start with lower-fame bands — they\'re cheaper and easier to fill seats for.'
+  },
+  {
+    title: '📬 Inbox — manage your deals',
+    body: `When a band responds, you'll see a <strong>red badge</strong> on the Inbox button and it'll shake to get your attention.\n\nAccept the deal to lock them in as your <strong>Headliner</strong>. You can also book a <strong>Support Act</strong> to boost attendance.`,
+    hint: '💡 Watch out — some bands are rivals. You\'ll find out on show night! ⚔️'
+  },
+  {
+    title: '📣 Promote & Run the Show',
+    body: `Before Friday, buy <strong>promotions</strong> in the Office to drive up attendance. The bigger the promo budget, the bigger the crowd.\n\nOn <strong>Saturday</strong> the show runs automatically — you'll see your takings, review, and rep change.\n\nGood luck, promoter. 🎶`,
+    hint: '💡 Check the Alerts panel after each show for feedback and achievements.'
+  }
+];
+
+let _tutorialStep = 0;
+
+function openTutorial(){
+  _tutorialStep = 0;
+  _renderTutorialStep();
+  document.getElementById('tutorial-overlay').classList.add('active');
+}
+
+function closeTutorial(){
+  document.getElementById('tutorial-overlay').classList.remove('active');
+  if(G) { G.tutorialDone = true; saveGame(); }
+}
+
+function tutorialStep(dir){
+  _tutorialStep = Math.max(0, Math.min(TUTORIAL_STEPS.length - 1, _tutorialStep + dir));
+  _renderTutorialStep();
+  if(_tutorialStep === TUTORIAL_STEPS.length - 1){
+    document.getElementById('tutorial-next').textContent = "Let's go! 🎸";
+    document.getElementById('tutorial-next').onclick = closeTutorial;
+  } else {
+    document.getElementById('tutorial-next').textContent = 'Next →';
+    document.getElementById('tutorial-next').onclick = () => tutorialStep(1);
+  }
+}
+
+function _renderTutorialStep(){
+  const s = TUTORIAL_STEPS[_tutorialStep];
+  const total = TUTORIAL_STEPS.length;
+  document.getElementById('t-step-cur').textContent = _tutorialStep + 1;
+  document.getElementById('t-step-tot').textContent = total;
+  document.getElementById('tutorial-title').textContent = s.title;
+  // body supports \n for line breaks
+  document.getElementById('tutorial-body').innerHTML = s.body.replace(/\n/g,'<br>');
+  document.getElementById('tutorial-hint').textContent = s.hint;
+  document.getElementById('tutorial-prev').style.visibility = _tutorialStep === 0 ? 'hidden' : 'visible';
+  // dots
+  const dots = document.getElementById('tutorial-dots');
+  dots.innerHTML = '';
+  for(let i=0;i<total;i++){
+    const d = document.createElement('div');
+    d.className = 't-dot' + (i===_tutorialStep?' active':'');
+    dots.appendChild(d);
+  }
+  if(_tutorialStep === total-1){
+    document.getElementById('tutorial-next').textContent = "Let's go! 🎸";
+    document.getElementById('tutorial-next').onclick = closeTutorial;
+  } else {
+    document.getElementById('tutorial-next').textContent = 'Next →';
+    document.getElementById('tutorial-next').onclick = () => tutorialStep(1);
+  }
+}
+
 function initGame(fresh){
   try {
     if(!fresh && hasSave()){
@@ -2442,6 +2564,8 @@ function initGame(fresh){
     const firstNav = document.querySelector('.nav-btn[data-panel="office"]')
                   || document.querySelector('.nav-btn[onclick*="office"]');
     switchPanel('office', firstNav);
+    // Show tutorial on first-ever fresh game
+    if(fresh && !G.tutorialDone){ setTimeout(openTutorial, 400); }
   } catch(e) {
     console.error('initGame error:', e);
     alert('ERROR starting game: ' + e.message + '\n\nTry clearing browser storage and reloading.');
@@ -2460,6 +2584,22 @@ window.addEventListener('DOMContentLoaded', initStartScreen);
 // Belt-and-suspenders: also run after a short delay in case of slow parse
 setTimeout(initStartScreen, 200);
 </script>
+<!-- Tutorial Overlay -->
+<div id="tutorial-overlay">
+  <div id="tutorial-box">
+    <div id="tutorial-step-label">Step <span id="t-step-cur">1</span> of <span id="t-step-tot">5</span></div>
+    <div id="tutorial-title"></div>
+    <div id="tutorial-body"></div>
+    <div class="tutorial-hint" id="tutorial-hint"></div>
+    <div id="tutorial-nav">
+      <button id="tutorial-skip" onclick="closeTutorial()">Skip tutorial</button>
+      <div id="tutorial-dots"></div>
+      <button id="tutorial-prev" onclick="tutorialStep(-1)">← Back</button>
+      <button id="tutorial-next" onclick="tutorialStep(1)">Next →</button>
+    </div>
+  </div>
+</div>
+
 <!-- Rivalry Crisis Modal -->
 <div id="rivalry-overlay">
   <div id="rivalry-box">
