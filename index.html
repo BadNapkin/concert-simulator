@@ -1613,11 +1613,25 @@ function _drawCard(el) {
   const GENRE_EMOJI = { punk:'🎸', rock:'🎸', folk:'🪕', electronic:'🎛️', pop:'🎤', metal:'🤘', default:'🎵' };
   const emoji = GENRE_EMOJI[band.genreKey] || GENRE_EMOJI.default;
   const hints = [];
-  COMBOS.forEach(combo => {
-    if (G.sfxOwned[combo.sfx] && combo.match(band)) {
-      hints.push(SFX_GEAR[combo.sfx].icon + ' ' + SFX_GEAR[combo.sfx].name + ' synergy!');
-    }
-  });
+  // Soft vibe hints — only if gear owned AND at least one show run (history exists)
+  // Deliberately vague: no trait names, just atmosphere
+  const VAGUE_HINTS = {
+    basic:  'Seems comfortable under standard lights.',
+    spots:  'Looks good in warm lighting.',
+    smoke:  'Might suit a hazy atmosphere.',
+    uv:     'Could pop under the right coloured rig.',
+    laser:  'Feels like a big-stage act.',
+    pyro:   'Radiates a certain explosive energy.',
+  };
+  const hasShows = (G.history||[]).length > 0;
+  if(hasShows){
+    COMBOS.forEach(combo => {
+      if (G.sfxOwned[combo.sfx] && combo.match(band)) {
+        const hint = VAGUE_HINTS[combo.sfx];
+        if(hint && !hints.includes(hint)) hints.push(SFX_GEAR[combo.sfx].icon + ' ' + hint);
+      }
+    });
+  }
   el.innerHTML = `
     <div class="carousel-outer">
       <div class="carousel-wrap">
