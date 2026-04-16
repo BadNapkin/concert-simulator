@@ -705,7 +705,8 @@ canvas#stage { width: 100%; height: 100%; }
     </div>
 
     <!-- Boss reaction card -->
-    <div id="ps-boss-card" style="background:#0e0820;border:1px solid #1a0840;border-radius:12px;padding:0.8rem 1.2rem;margin-bottom:1.5rem">
+    <div id="ps-crowd-section" style="display:none"></div>
+  <div id="ps-boss-card" style="background:#0e0820;border:1px solid #1a0840;border-radius:12px;padding:0.8rem 1.2rem;margin-bottom:1.5rem">
       <div style="font-size:0.75rem;color:#7060a0;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">👔 Boss Reaction</div>
       <div id="ps-boss-detail" style="font-size:0.85rem;color:#9080b8;line-height:1.6"></div>
     </div>
@@ -1783,6 +1784,60 @@ function dismissAllAlerts(){
 }
 
 
+// ── CROWD ARCHETYPES ───────────────────────────────────────────────────────
+const CROWD_ARCHETYPES = [
+  { id:'moshers',   label:'🤘 Moshers',   genreKeys:['punk','metal'],
+    flavour:[
+      'The pit opened before the first chord. Someone lost a shoe. No one looked for it.',
+      'Three separate crowd surfers, one security guard who gave up halfway through.',
+      'The mosh pit had its own ecosystem. Scientists should study it.',
+    ],
+    bossBonus:3, bossGenres:['metal','punk'] },
+  { id:'ravers',    label:'💃 Ravers',     genreKeys:['electronic'],
+    flavour:[
+      'By midnight the floor was a single organism. Beautiful, slightly terrifying.',
+      'The smoke machine ran dry. The ravers made their own atmosphere.',
+      'Four people had a spiritual experience near the speaker stack. Two are still there.',
+    ],
+    bossBonus:4, bossGenres:['electronic'] },
+  { id:'hipsters',  label:'🧣 Hipsters',  genreKeys:['folk','shoegaze','indie'],
+    flavour:[
+      'Half the crowd had already seen them "before they were good". Apparently.',
+      'Everyone nodded appreciatively and wrote about it later.',
+      'Intense eye contact from the front row. Uncomfortable but somehow respectful.',
+    ],
+    bossBonus:2, bossGenres:['folk','shoegaze'] },
+  { id:'locals',    label:'🏘️ Locals',    genreKeys:['rock','pop','folk'],
+    flavour:[
+      'The bar staff knew half the audience by name. This is what it\'s supposed to feel like.',
+      'Three generations in the room. Grandad near the back. He was there first.',
+      'Someone\'s dad got a bit too into it. Everyone pretended not to notice.',
+    ],
+    bossBonus:5, bossGenres:['rock','pop','folk'] },
+  { id:'stoners',   label:'🌿 Stoners',   genreKeys:['folk','rock','shoegaze'],
+    flavour:[
+      'The set could have been 20 minutes longer. No one would have checked.',
+      'Entire front row sat down halfway through. On purpose. Vibes only.',
+      'The band played a 12-minute outro. The crowd was fully on board.',
+    ],
+    bossBonus:1, bossGenres:['folk','rock'] },
+  { id:'industry',  label:'💼 Industry',  genreKeys:['pop','electronic','indie'],
+    flavour:[
+      'Three people in the back spent the whole set taking notes. No one knows who they were.',
+      'Someone from a label was spotted near the stage. Rumours are already circulating.',
+      'A journalist left after three songs. Either very good or very bad.',
+    ],
+    bossBonus:6, bossGenres:['pop','electronic'] },
+];
+
+function getCrowdArchetype(band){
+  // Pick dominant archetype based on genre, with some randomness
+  const matches = CROWD_ARCHETYPES.filter(a => a.genreKeys.includes(band.genreKey));
+  if(!matches.length) return CROWD_ARCHETYPES[Math.floor(Math.random()*CROWD_ARCHETYPES.length)];
+  return matches[Math.floor(Math.random()*matches.length)];
+}
+
+
 // ── PLANNING PAGE ──────────────────────────────────────────────────────────
 const PROMOS = [
   { id:'flyering',  label:'🗺️ Flyering',    repBonus:1, desc:'+1 REP, slight attendance boost' },
@@ -2123,6 +2178,12 @@ function runShow(){
   const repGain=Math.max(1,Math.round((attendance/cap)*6));
   const repBefore=G.rep;
   G.rep=Math.min(100,G.rep+repGain);
+
+  // ── CROWD ARCHETYPE ──
+  const _crowd = getCrowdArchetype(band);
+  const _crowdFlavour = _crowd.flavour[Math.floor(Math.random()*_crowd.flavour.length)];
+  // Store for post-show display
+  G._lastCrowd = { id:_crowd.id, label:_crowd.label, flavour:_crowdFlavour };
   // Check if new press tier unlocked
   const PRESS_UNLOCK_THRESHOLDS=[5,15,25,40,55,70,85];
   const PRESS_UNLOCK_NAMES=['Loudly Does It','The Turning Rock','Kerranged!','NMEh','Forklifted','Bowlin’ Tone Magazine','The Guard, Iain'];
@@ -2133,9 +2194,9 @@ function runShow(){
   });
   // Support band gains fame/fans from the show
   if(supportBand){
-    const suppFanGain=Math.round(finalAttendance*0.08);
+    const suppFanGain=Math.round(attendance*0.08);
     supportBand.fans=(supportBand.fans||0)+suppFanGain;
-    const fillRate=finalAttendance/cap;
+    const fillRate=attendance/cap;
     if(fillRate>=0.8 && supportBand.fame===0){
       supportBand.fame=1;
       addAlert('📈 '+supportBand.name+' had a great night — they\'re rising! Fame: Local Act now.');
@@ -2328,10 +2389,31 @@ function runShow(){
   const vt = VENUE_TIERS[G.venueTier] || VENUE_TIERS[0];
   let bossDelta = fillRate>=0.8 ? 10 : fillRate>=0.5 ? 3 : -8;
   bossDelta += _totalBossDelta;
+  // Crowd archetype boss bonus (boss likes certain crowd types at their venue)
+  const _crowd2 = G._lastCrowd;
+  const _crowdDef = _crowd2 ? CROWD_ARCHETYPES.find(a=>a.id===_crowd2.id) : null;
+  if(_crowdDef && _crowdDef.bossGenres && _crowdDef.bossGenres.includes(band.genreKey)){
+    bossDelta += _crowdDef.bossBonus;
+  }
   // Boss trait reactions
   const _bandTraits = band.traits || [];
   (vt.bossLikes||[]).forEach(t=>{ if(_bandTraits.includes(t)) bossDelta+=5; });
   (vt.bossDislikes||[]).forEach(t=>{ if(_bandTraits.includes(t)) bossDelta-=8; });
+  // ── TNT CHAOS EVENT ──
+  if(band.isTNT){
+    const destroyTarget = (G.sfxOwned&&G.sfxOwned.pyro) ? 'pyro' : (G.sfxOwned&&G.sfxOwned.laser) ? 'laser' : null;
+    if(destroyTarget){
+      const gear = SFX_GEAR[destroyTarget];
+      G.sfxOwned[destroyTarget] = false;
+      G.sfxActive[destroyTarget] = false;
+      bossDelta -= 15;
+      addAlert(`💥 TNT's pyro tech went rogue — ${gear.name} destroyed! Your boss is furious. (-15 Boss Satisfaction)`, true);
+    } else {
+      // No gear to blow up — they just generally cause chaos
+      bossDelta -= 5;
+      addAlert(`💥 TNT caused chaos anyway. Something is definitely broken. (-5 Boss Satisfaction)`, true);
+    }
+  }
   G.bossSatisfaction = Math.min(100, Math.max(0, (G.bossSatisfaction||50) + bossDelta));
 
   // Boss trait reaction alerts
@@ -2724,6 +2806,17 @@ function renderPostShow({band,venue,attendance,cap,repGain,bossDelta,review,prom
   // boss reaction detail
   const bossReactEl = document.getElementById('ps-boss-react');
   if(bossReactEl){ const bd=bossDelta||0; bossReactEl.textContent=(bd>=0?'+':'')+bd+'%'; bossReactEl.style.color=bd>=0?'#50c878':'#e05060'; }
+  // Crowd archetype display
+  const crowdData = G._lastCrowd;
+  const crowdEl = document.getElementById('ps-crowd-section');
+  if(crowdEl && crowdData){
+    crowdEl.innerHTML = `<div style="background:#0a0a1a;border:1px solid #1a1a30;border-radius:8px;padding:1rem 1.2rem;margin-bottom:0.8rem">
+      <div style="font-size:0.65rem;color:#6050a0;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Tonight's Crowd</div>
+      <div style="font-size:1rem;color:#c9b8ff;margin-bottom:0.4rem">${crowdData.label}</div>
+      <div style="font-size:0.8rem;color:#8070a0;font-style:italic">"${crowdData.flavour}"</div>
+    </div>`;
+    crowdEl.style.display='block';
+  }
 }
 
 function rndInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
