@@ -1535,13 +1535,14 @@ function bookPromo(promoId){
 
 function renderPlanBands(){
   const el=document.getElementById('plan-bands'); if(!el) return;
-  const available=G.enquiries.filter(e=>e.status==='replied'||e.status==='confirmed');
+  // Only show headliner enquiries (slot !== 'support') that have replied or confirmed
+  const available=G.enquiries.filter(e=>(e.status==='replied'||e.status==='confirmed') && e.slot!=='support');
+  const hasHeadliner=G.headliner!==null;
   const backups=BANDS.filter(b=>b.isBackup);
   let html='';
 
-  if(!available.length && !backups.length){
-    el.innerHTML='<p style="color:#4a3060;font-size:0.8rem">No bands have responded yet. Enquire via BandBook and advance a day.</p>';
-    return;
+  if(!available.length && !hasHeadliner){
+    html='<p style="color:#4a3060;font-size:0.8rem">No bands have responded yet. Enquire via BandBook and advance a day.</p>';
   }
 
   if(available.length){
@@ -1564,20 +1565,22 @@ function renderPlanBands(){
     }).join('');
   }
 
-  // Backup bands — always available, risky
-  html+='<div style="font-size:0.68rem;color:#8050a0;margin:'+(available.length?'0.8rem':'0')+' 0 0.4rem;text-transform:uppercase;letter-spacing:0.06em">⚠️ Last-Minute Backups <span style="color:#4a3060">(risky)</span></div>';
-  html+=backups.map(band=>{
-    const idx=BANDS.indexOf(band);
-    const isSelected=G.headliner===idx;
-    const canAfford=G.money>=band.feeVal;
-    return '<div onclick="selectBackupBand(\''+band.id+'\')" style="cursor:'+(canAfford?'pointer':'default')+';padding:0.7rem 1rem;margin-bottom:0.5rem;border-radius:8px;border:1px solid '+(isSelected?'#802040':'#2a1520')+';background:'+(isSelected?'#200810':'#0a0310')+';display:flex;justify-content:space-between;align-items:center">' +
-      '<div><div style="color:#d09080;font-weight:600">'+band.name+'</div>' +
-      '<div style="font-size:0.72rem;color:#6050a0">'+band.genre+' · Last-minute</div>' +
-      '<div style="font-size:0.65rem;color:#804040;margin-top:0.2rem">⚠ '+band.backupRisk+'</div></div>' +
-      '<div style="text-align:right"><div style="color:'+(canAfford?'#d09080':'#e05060')+';font-size:0.9rem">£'+band.feeVal+'</div>' +
-      (isSelected?'<div style="font-size:0.7rem;color:#e08060">✓ BACKUP BOOKED</div>':'')+
-      '</div></div>';
-  }).join('');
+  // Backup bands — only show if no headliner confirmed yet
+  if(!hasHeadliner){
+    html+='<div style="font-size:0.68rem;color:#8050a0;margin:'+(available.length?'0.8rem':'0')+' 0 0.4rem;text-transform:uppercase;letter-spacing:0.06em">⚠️ Last-Minute Backups <span style="color:#4a3060">(risky)</span></div>';
+    html+=backups.map(band=>{
+      const idx=BANDS.indexOf(band);
+      const isSelected=G.headliner===idx;
+      const canAfford=G.money>=band.feeVal;
+      return '<div onclick="selectBackupBand(\''+band.id+'\')" style="cursor:'+(canAfford?'pointer':'default')+';padding:0.7rem 1rem;margin-bottom:0.5rem;border-radius:8px;border:1px solid '+(isSelected?'#802040':'#2a1520')+';background:'+(isSelected?'#200810':'#0a0310')+';display:flex;justify-content:space-between;align-items:center">' +
+        '<div><div style="color:#d09080;font-weight:600">'+band.name+'</div>' +
+        '<div style="font-size:0.72rem;color:#6050a0">'+band.genre+' · Last-minute</div>' +
+        '<div style="font-size:0.65rem;color:#804040;margin-top:0.2rem">⚠ '+band.backupRisk+'</div></div>' +
+        '<div style="text-align:right"><div style="color:'+(canAfford?'#d09080':'#e05060')+';font-size:0.9rem">£'+band.feeVal+'</div>' +
+        (isSelected?'<div style="font-size:0.7rem;color:#e08060">✓ BACKUP BOOKED</div>':'')+
+        '</div></div>';
+    }).join('');
+  }
 
   el.innerHTML=html;
 }
@@ -1810,26 +1813,15 @@ function startShowAnimation(band, venue, attendance, cap, profit, supportBand, o
   const canvas=document.getElementById('stage');
   if(!canvas){ setTimeout(onDone,400); return; }
 
-  // Triple-rAF + 50ms fallback: guarantees browser has painted show-screen
-  // before reading canvas dimensions (fixes week-1 black screen)
-  requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  // Use setTimeout(100ms) after showScreen so browser fully paints show-screen
+  // before we read canvas dimensions — fixes week-1 black screen where
+  // show-screen has never been rendered before.
+  setTimeout(()=>{
     const rect=canvas.getBoundingClientRect();
-    const w=rect.width>10 ? rect.width : 700;
-    const h=rect.height>10 ? rect.height : 420;
-    canvas.width  = w;
-    canvas.height = h;
-    if(canvas.width<10 || canvas.height<10){
-      // last resort: wait 80ms then try once more
-      setTimeout(()=>{
-        const r2=canvas.getBoundingClientRect();
-        canvas.width  = Math.max(200, r2.width  || 700);
-        canvas.height = Math.max(100, r2.height || 420);
-        _doShowAnimation(canvas, band, venue, attendance, cap, profit, onDone, activeGear, supportBand);
-      }, 80);
-    } else {
-      _doShowAnimation(canvas, band, venue, attendance, cap, profit, onDone, activeGear, supportBand);
-    }
-  })));
+    canvas.width  = Math.max(200, rect.width  || 700);
+    canvas.height = Math.max(100, rect.height || 420);
+    _doShowAnimation(canvas, band, venue, attendance, cap, profit, onDone, activeGear, supportBand);
+  }, 100);
 }
 
 function _doShowAnimation(canvas, band, venue, attendance, cap, profit, onDone, activeGear, supportBand){
