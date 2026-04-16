@@ -1707,6 +1707,8 @@ function runShow(){
     if(G.money<=0){ G.gameOver=true; }
     saveGame();
   }); // end startShowAnimation callback
+}
+
 function startShowAnimation(band, venue, attendance, cap, profit, onDone){
   showScreen('show-screen');
   const el=document.getElementById('show-band-name'); if(el) el.textContent=band.name;
