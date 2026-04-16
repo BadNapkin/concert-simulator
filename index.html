@@ -1675,7 +1675,7 @@ function runShow(){
   G.rep=Math.min(100,G.rep+repGain);
   // Check if new press tier unlocked
   const PRESS_UNLOCK_THRESHOLDS=[5,15,25,40,55,70,85];
-  const PRESS_UNLOCK_NAMES=['Loudly Does It','The Turning Rock','Kerranged!','NMEh','Forklifted','Bowlin\' Tone Magazine','The Guard, Iain'];
+  const PRESS_UNLOCK_NAMES=['Loudly Does It','The Turning Rock','Kerranged!','NMEh','Forklifted','Bowlin’ Tone Magazine','The Guard, Iain'];
   PRESS_UNLOCK_THRESHOLDS.forEach((threshold,i)=>{
     if(repBefore<threshold && G.rep>=threshold){
       addAlert('📰 New press outlet unlocked: '+PRESS_UNLOCK_NAMES[i]+'! Your reviews are going further.');
@@ -1933,7 +1933,7 @@ function renderPostShow({band,venue,attendance,cap,revenue,bandFee,supportFee,sf
     { minRep:25, icon:'🗞️', name:'Kerranged!',             type:'heavy music bi-weekly',     reach:'Regional',      byline:'Staff Writer: Ozzy Pawbourne' },
     { minRep:40, icon:'📻', name:'NMEh',                   type:'national music site',       reach:'National',      byline:'Reviewed by Lester Bangsworth' },
     { minRep:55, icon:'📻', name:'Forklifted',             type:'tastemaker quarterly',      reach:'National',      byline:'Pitchcraft score: see below' },
-    { minRep:70, icon:'🌍', name:'Bowlin' Tone Magazine', type:'international music press', reach:'International', byline:'feat. Hunter S. Thompsound' },
+    { minRep:70, icon:'🌍', name:'Bowlin&rsquo; Tone Magazine', type:'international music press', reach:'International', byline:'feat. Hunter S. Thompsound' },
     { minRep:85, icon:'🌍', name:'The Guard, Iain',        type:'intl. broadsheet culture',  reach:'International', byline:'Iain Guard — Security Guard & Music Critic' },
   ];
   // Pick the highest tier the player has unlocked, with chance of one tier higher
