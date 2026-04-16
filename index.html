@@ -577,9 +577,8 @@ canvas#stage { width: 100%; height: 100%; }
   <div class="status-bar">
     <span class="status-week">WK&nbsp;<span id="sb-week">1</span>&nbsp;·&nbsp;<span id="sb-day">Mon</span></span>
     <span class="status-item">VENUE:&nbsp;<span id="sb-venue">The Dive Bar</span></span>
-    <span class="status-item">CASH:&nbsp;<span id="sb-money">£500</span></span>
+    <span class="status-item">BOSS:&nbsp;<span id="sb-boss">50%</span></span>
     <span class="status-item">REP:&nbsp;<span id="sb-rep">0</span></span>
-    <span class="status-item">REGULARS:&nbsp;<span id="sb-fans">0</span></span>
     <button class="next-day-btn" id="next-day-btn" onclick="nextDay()">Next Day →</button>
   </div>
 </div>
@@ -667,16 +666,16 @@ canvas#stage { width: 100%; height: 100%; }
         <div id="ps-attendance" style="font-size:1.2rem;font-weight:700;color:#c0b0d8"></div>
       </div>
       <div style="background:#12082a;border:1px solid #2a1060;border-radius:10px;padding:0.6rem 1.1rem;text-align:center">
-        <div style="font-size:0.7rem;color:#7060a0;text-transform:uppercase;letter-spacing:0.1em">Profit</div>
-        <div id="ps-profit" style="font-size:1.2rem;font-weight:700;color:#50c878"></div>
+        <div style="font-size:0.7rem;color:#7060a0;text-transform:uppercase;letter-spacing:0.1em">Fill Rate</div>
+        <div id="ps-fill-rate" style="font-size:1.2rem;font-weight:700;color:#50c878"></div>
       </div>
       <div style="background:#12082a;border:1px solid #2a1060;border-radius:10px;padding:0.6rem 1.1rem;text-align:center">
         <div style="font-size:0.7rem;color:#7060a0;text-transform:uppercase;letter-spacing:0.1em">Fame ↑</div>
         <div id="ps-rep" style="font-size:1.2rem;font-weight:700;color:#f0c040"></div>
       </div>
       <div style="background:#12082a;border:1px solid #2a1060;border-radius:10px;padding:0.6rem 1.1rem;text-align:center">
-        <div style="font-size:0.7rem;color:#7060a0;text-transform:uppercase;letter-spacing:0.1em">New Fans</div>
-        <div id="ps-fans" style="font-size:1.2rem;font-weight:700;color:#60d0f8"></div>
+        <div style="font-size:0.7rem;color:#7060a0;text-transform:uppercase;letter-spacing:0.1em">Boss</div>
+        <div id="ps-boss-react" style="font-size:1.2rem;font-weight:700;color:#60d0f8"></div>
       </div>
     </div>
 
@@ -705,16 +704,11 @@ canvas#stage { width: 100%; height: 100%; }
       <div id="ps-review" style="font-size:0.85rem;color:#9080b8;line-height:1.5"></div>
     </div>
 
-    <!-- Financials collapsible -->
-    <details style="background:#0e0820;border:1px solid #1a0840;border-radius:12px;padding:0.8rem 1.2rem;margin-bottom:1.5rem">
-      <summary style="cursor:pointer;font-size:0.8rem;color:#7060a0;text-transform:uppercase;letter-spacing:0.1em">💰 Night's Financials</summary>
-      <div style="margin-top:0.7rem;display:flex;flex-direction:column;gap:0.3rem">
-        <div class="rev-row"><span class="rev-label">Ticket Revenue</span><span id="ps-revenue" style="color:#50c878"></span></div>
-        <div class="rev-row"><span class="rev-label">Band Fee</span><span id="ps-fee" style="color:#e05060"></span></div>
-        <div class="rev-row"><span class="rev-label">Support Fee</span><span id="ps-support-fee" style="color:#e05060"></span></div>
-        <div class="rev-row"><span class="rev-label">SFX Costs</span><span id="ps-sfx" style="color:#e05060"></span></div>
-      </div>
-    </details>
+    <!-- Boss reaction card -->
+    <div id="ps-boss-card" style="background:#0e0820;border:1px solid #1a0840;border-radius:12px;padding:0.8rem 1.2rem;margin-bottom:1.5rem">
+      <div style="font-size:0.75rem;color:#7060a0;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">👔 Boss Reaction</div>
+      <div id="ps-boss-detail" style="font-size:0.85rem;color:#9080b8;line-height:1.6"></div>
+    </div>
 
     <button onclick="continueAfterShow()" style="width:100%;padding:1rem;background:linear-gradient(135deg,#6030c0,#9060ff);border:none;border-radius:10px;color:#fff;font-size:1.1rem;font-weight:700;cursor:pointer;letter-spacing:0.05em">Next Week →</button>
   </div>
@@ -812,19 +806,35 @@ const BANDS = [
 ];
 
 const SFX_GEAR = {
-  basic:  { id:'basic',  name:'Basic Stage Lighting', icon:'💡', cost:0,   nightly:0,  desc:'Standard rig. Comes with the venue.', synergies:[], penalties:[], },
-  spots:  { id:'spots',  name:'Warm Spot Package',    icon:'🔆', cost:200, nightly:20, desc:'Flattering warm gels. Suits folk, acoustic, intimate acts.', synergies:['Acoustic Purists','Industry Darlings'], penalties:['Face Paint'], },
-  smoke:  { id:'smoke',  name:'Smoke Machine',         icon:'🌫️', cost:300, nightly:30, desc:'Atmospheric haze. Transforms a small room into something otherworldly.', synergies:['Smoke Lovers','Method Actors'], penalties:['Punctual'], },
-  uv:     { id:'uv',     name:'UV Flood Rig',          icon:'🟣', cost:350, nightly:35, desc:'Black lights. Turns face paint into art. Transcendent with the right act.', synergies:['Face Paint','Party Animals'], penalties:['Acoustic Purists'], },
-  laser:  { id:'laser',  name:'Laser Grid System',     icon:'🔴', cost:600, nightly:60, desc:'Precision laser arrays. Jaw-dropping with electronic acts.', synergies:['Party Animals','Merch Machine'], penalties:['Method Actors','Acoustic Purists'], },
-  pyro:   { id:'pyro',   name:'Pyrotechnics Kit',      icon:'🔥', cost:800, nightly:80, desc:'Flash pots and fire. Maximum carnage. 20% fritz risk.', synergies:['Pyro Enthusiasts','Crowd Surfers'], penalties:['Acoustic Purists','Punctual'], },
+  basic:  { id:'basic',  name:'Basic Stage Lighting', icon:'💡', venueMinTier:0, desc:'Standard rig. Comes with the venue.', synergies:[], penalties:[], },
+  spots:  { id:'spots',  name:'Warm Spot Package',    icon:'🔆', venueMinTier:0, desc:'Flattering warm gels. Suits folk, acoustic, intimate acts.', synergies:['Acoustic Purists','Industry Darlings'], penalties:['Face Paint'], },
+  smoke:  { id:'smoke',  name:'Smoke Machine',         icon:'🌫️', venueMinTier:1, desc:'Atmospheric haze. Transforms a small room into something otherworldly.', synergies:['Smoke Lovers','Method Actors'], penalties:['Punctual'], },
+  uv:     { id:'uv',     name:'UV Flood Rig',          icon:'🟣', venueMinTier:1, desc:'Black lights. Turns face paint into art. Transcendent with the right act.', synergies:['Face Paint','Party Animals'], penalties:['Acoustic Purists'], },
+  laser:  { id:'laser',  name:'Laser Grid System',     icon:'🔴', venueMinTier:2, desc:'Precision laser arrays. Jaw-dropping with electronic acts.', synergies:['Party Animals','Merch Machine'], penalties:['Method Actors','Acoustic Purists'], },
+  pyro:   { id:'pyro',   name:'Pyrotechnics Kit',      icon:'🔥', venueMinTier:3, desc:'Flash pots and fire. Maximum carnage. 20% fritz risk.', synergies:['Pyro Enthusiasts','Crowd Surfers'], penalties:['Acoustic Purists','Punctual'], },
 };
 
 const VENUE_TIERS = [
-  { name:'The Dive Bar',      capacity:80,  upgradeCost:1500 },
-  { name:'The Loft',          capacity:200, upgradeCost:4000 },
-  { name:'The Warehouse',     capacity:500, upgradeCost:10000 },
-  { name:'The Concert Hall',  capacity:1200, upgradeCost:null },
+  { name:'The Tap Room', subName:'Basement Stage', capacity:80, repRequired:0,
+    bossName:'Dave', bossTitle:'Pub Landlord', bossPersonality:'pragmatic',
+    bossLikes:['Party Animals','Local Heroes','Punctual'],
+    bossDislikes:['Drama Queens','Always Late'],
+    flavour:'A sticky-floored basement with a PA from 2003. It smells of ambition and spilled lager.' },
+  { name:'The Tap Room', subName:'Function Room', capacity:200, repRequired:15,
+    bossName:'Dave', bossTitle:'Pub Landlord', bossPersonality:'pragmatic',
+    bossLikes:['Party Animals','Local Heroes','Punctual'],
+    bossDislikes:['Drama Queens','Always Late'],
+    flavour:'The same Dave, but now you\'ve earned the big room upstairs. The carpet\'s only slightly less sticky.' },
+  { name:'The Meridian', subName:'Main Stage', capacity:500, repRequired:35,
+    bossName:'Fiona', bossTitle:'Arts Centre Director', bossPersonality:'cultured',
+    bossLikes:['Industry Darlings','Acoustic Purists','Method Actors'],
+    bossDislikes:['Crowd Surfers','Pyro Enthusiasts','Always Late'],
+    flavour:'A proper arts centre. Fiona has opinions. Many, many opinions.' },
+  { name:'Axiom', subName:'Main Hall', capacity:1200, repRequired:65,
+    bossName:'Marcus', bossTitle:'Venue GM', bossPersonality:'commercial',
+    bossLikes:['Merch Machine','Crowd Surfers','Rising Stars'],
+    bossDislikes:['Underground Cred','Drama Queens'],
+    flavour:'The big leagues. Marcus cares about one thing: numbers.' },
 ];
 
 const ACHIEVEMENTS = [
@@ -924,11 +934,11 @@ const NEGOTIATION_OPTS = [
 let G = {};  // populated by initGame()
 function freshState() {
   const s = {
-    week:1, dayOfWeek:0, money:500, rep:0, fans:0,
+    week:1, dayOfWeek:0, rep:0, bossSatisfaction:50,
     venueTier:0,
     headliner:null, support:null,
     pendingPromo:null,
-    sfxOwned:{basic:true}, sfxActive:{basic:true},
+    sfxOwned:{basic:true,spots:true}, sfxActive:{basic:true,spots:true},
     achievements:[], contacts:{},
     enquiries:[], messages:[],
     dailyNews:{},
@@ -953,16 +963,28 @@ function _addAliases(g) {
 }
 
 // ── PERSISTENCE ────────────────────────────────────────────────────────────
-function saveGame(){ try{ localStorage.setItem('csim_v3', JSON.stringify(G)); }catch(e){} }
+function saveGame(){ try{ localStorage.setItem('csim_v4', JSON.stringify(G)); }catch(e){} }
 function loadGame(){
   try{
-    const r=localStorage.getItem('csim_v3');
+    const r=localStorage.getItem('csim_v4');
     if(r){ G=_addAliases(Object.assign(freshState(),JSON.parse(r))); return true; }
   }catch(e){}
   return false;
 }
-function hasSave(){ return !!localStorage.getItem('csim_v3'); }
-function wipeSave(){ localStorage.removeItem('csim_v3'); }
+function hasSave(){ return !!localStorage.getItem('csim_v4'); }
+function wipeSave(){ localStorage.removeItem('csim_v4'); }
+function syncSFXToTier(){
+  const tier = G.venueTier||0;
+  Object.values(SFX_GEAR).forEach(gear=>{
+    if(gear.venueMinTier <= tier){
+      if(!G.sfxOwned) G.sfxOwned={};
+      if(!G.sfxActive) G.sfxActive={};
+      G.sfxOwned[gear.id]=true;
+      // auto-activate only if not explicitly deactivated before
+      if(G.sfxActive[gear.id]===undefined) G.sfxActive[gear.id]=true;
+    }
+  });
+}
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
 function setText(id,v){ const e=document.getElementById(id); if(e) e.textContent=v; }
@@ -1005,10 +1027,14 @@ function updateStatusBar(){
   const v=VENUE_TIERS[G.venueTier];
   setText('sb-week', `WK ${G.week}`);
   setText('sb-day',  DAYS[G.dayOfWeek]);
-  setText('sb-venue', v?v.name:'—');
-  setText('sb-money',`£${G.money}`);
-  setText('sb-rep',  `${G.rep} REP`);
-  setText('sb-fans', `${G.fans} REGULARS`);
+  setText('sb-venue', v?(v.name+(v.subName?' · '+v.subName:'')):'—');
+  setText('sb-boss',  `${G.bossSatisfaction||50}%`);
+  setText('sb-rep',   `${G.rep} REP`);
+  const bossEl=document.getElementById('sb-boss');
+  if(bossEl){
+    const bs=G.bossSatisfaction||50;
+    bossEl.style.color = bs>=60?'#60c878':bs>=30?'#e0a030':'#e05050';
+  }
 }
 
 // ── NEXT DAY ───────────────────────────────────────────────────────────────
@@ -1091,6 +1117,30 @@ function endWeek(){
     });
     G.enquiries=G.enquiries.filter(e=>e.status==='confirmed');
   }
+
+  // Boss satisfaction: fired or warning
+  const bs = G.bossSatisfaction||50;
+  if(bs < 20){
+    G.gameOver=true;
+    addAlert('💼 You\'ve been fired. '+( VENUE_TIERS[G.venueTier]||VENUE_TIERS[0]).bossName+' has had enough.', true);
+    saveGame(); updateStatusBar();
+    setTimeout(()=>{ showScreen('gameover-screen'); renderGameOver(); }, 600);
+    return;
+  }
+  if(bs < 40){
+    addAlert('⚠️ '+(VENUE_TIERS[G.venueTier]||VENUE_TIERS[0]).bossName+' pulled you aside for a chat. Fill that room or you\'re out.', true);
+  }
+
+  // Venue promotion check
+  const nextTierIdx = G.venueTier + 1;
+  const nextTier = VENUE_TIERS[nextTierIdx];
+  if(nextTier && G.rep >= nextTier.repRequired && bs >= 50){
+    G.venueTier = nextTierIdx;
+    syncSFXToTier();
+    const vt = VENUE_TIERS[G.venueTier];
+    addAlert('🎉 Promotion! You\'ve moved up to '+vt.name+' — '+vt.subName+'. New boss: '+vt.bossName+'.', false);
+  }
+
   G.week++; G.dayOfWeek=0;
   G.headliner=null; G.support=null; G.pendingPromo=null;
   saveGame(); updateStatusBar(); renderOffice();
@@ -1100,13 +1150,12 @@ function endWeek(){
 function bookBand(bandId, slot) {
   const band = BANDS.find(b => b.id === bandId);
   if (!band) return;
-  if (G.money < band.feeVal) { addAlert('Not enough cash to book ' + band.name + '.'); return; }
   if (slot === 'headline') {
     G.headliner = BANDS.indexOf(band);
-    addAlert('✅ ' + band.name + ' confirmed as headliner at £' + band.feeVal + '. Show is Saturday!');
+    addAlert('✅ ' + band.name + ' confirmed as headliner. Show is Saturday!');
   } else if (slot === 'support') {
     G.support = band.id;
-    addAlert('➕ ' + band.name + ' added as support act at £' + band.feeVal + '.');
+    addAlert('➕ ' + band.name + ' added as support act.');
   }
   saveGame(); updateStatusBar(); renderBandCarousel(); renderOffice();
 }
@@ -1364,15 +1413,15 @@ function renderOffice(){
       : `<div style="display:flex;flex-direction:column;gap:0.4rem">`+
         PROMOS.map(p=>{
           const sel=G.pendingPromo===p.id;
-          const canAfford=G.money>=p.cost;
+          const canAfford=true;
           return `<div onclick="bookPromo('${p.id}')" style="cursor:${canAfford?'pointer':'default'};display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.8rem;border-radius:6px;border:1px solid ${sel?'#6030c0':'#1e1030'};background:${sel?'#180a38':'#0a0618'}">
             <div>
               <span style="color:${canAfford?'#c9b8ff':'#3a2a60'};font-size:0.8rem">${p.label}</span>
               <span style="color:#4a3a70;font-size:0.68rem;margin-left:0.4rem">${p.desc}</span>
             </div>
             <div style="display:flex;align-items:center;gap:0.5rem">
-              <span style="color:${canAfford?'#c0a040':'#3a2a50'};font-size:0.78rem">£${p.cost}</span>
-              ${sel?'<span style="color:#60c878;font-size:0.65rem">✓</span>':(!canAfford?'<span style="color:#6a2a2a;font-size:0.65rem">low funds</span>':'')}
+              <span style="color:#8060b0;font-size:0.78rem">+${p.repBonus} REP</span>
+              ${sel?'<span style="color:#60c878;font-size:0.65rem">✓</span>':''}
             </div>
           </div>`;
         }).join('')+`</div>`
@@ -1401,24 +1450,36 @@ function renderOffice(){
   }
   html+=`</div>`;
 
-  // ── CARD 4: FINANCIALS ──
-  html+=`<div style="background:#0e0e18;border:1px solid #1e1e30;border-radius:8px;padding:1rem 1.2rem;margin-bottom:0.8rem">
-    <div style="font-size:0.65rem;color:#6050a0;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.7rem">💷 Finances</div>
-    <div style="display:flex;gap:1rem;flex-wrap:wrap">
-      <div style="flex:1;min-width:80px;background:#0a0618;border-radius:6px;padding:0.6rem 0.8rem;text-align:center">
-        <div style="font-size:1.1rem;color:#60c878;font-weight:700">£${G.money}</div>
-        <div style="font-size:0.62rem;color:#3a3060;text-transform:uppercase;letter-spacing:0.1em;margin-top:0.2rem">Cash</div>
+  // ── CARD 4: YOUR BOSS ──
+  { const vt=VENUE_TIERS[G.venueTier]||VENUE_TIERS[0];
+    const bs=G.bossSatisfaction||50;
+    const bsColor=bs>=60?'#60c878':bs>=30?'#e0a030':'#e05050';
+    const bsMood=bs>=80?'😄 Very Happy':bs>=60?'🙂 Satisfied':bs>=40?'😐 Neutral':bs>=20?'😠 Unhappy':'😡 Furious';
+    const likesHtml=(vt.bossLikes||[]).map(t=>`<span style="background:#0a2010;color:#60c878;border-radius:4px;padding:0.1rem 0.4rem;font-size:0.65rem;margin:0.1rem">✓ ${t}</span>`).join('');
+    const dislikesHtml=(vt.bossDislikes||[]).map(t=>`<span style="background:#200a10;color:#e05050;border-radius:4px;padding:0.1rem 0.4rem;font-size:0.65rem;margin:0.1rem">✗ ${t}</span>`).join('');
+    html+=`<div style="background:#0e0e18;border:1px solid #1e1e30;border-radius:8px;padding:1rem 1.2rem;margin-bottom:0.8rem">
+    <div style="font-size:0.65rem;color:#6050a0;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.7rem">👔 Your Boss</div>
+    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.7rem">
+      <div style="font-size:1.8rem">🧑‍💼</div>
+      <div>
+        <div style="color:#c9b8ff;font-weight:700;font-size:0.95rem">${vt.bossName}</div>
+        <div style="color:#6050a0;font-size:0.7rem">${vt.bossTitle} · ${vt.name}</div>
       </div>
-      <div style="flex:1;min-width:80px;background:#0a0618;border-radius:6px;padding:0.6rem 0.8rem;text-align:center">
-        <div style="font-size:1.1rem;color:#b090ff;font-weight:700">${G.rep}</div>
-        <div style="font-size:0.62rem;color:#3a3060;text-transform:uppercase;letter-spacing:0.1em;margin-top:0.2rem">Rep</div>
-      </div>
-      <div style="flex:1;min-width:80px;background:#0a0618;border-radius:6px;padding:0.6rem 0.8rem;text-align:center">
-        <div style="font-size:1.1rem;color:#e0a030;font-weight:700">${G.fans}</div>
-        <div style="font-size:0.62rem;color:#3a3060;text-transform:uppercase;letter-spacing:0.1em;margin-top:0.2rem">Regulars</div>
+      <div style="margin-left:auto;text-align:right">
+        <div style="font-size:1.1rem;color:${bsColor};font-weight:700">${bs}%</div>
+        <div style="font-size:0.65rem;color:#6050a0">satisfaction</div>
       </div>
     </div>
+    <div style="background:#0a0618;border-radius:6px;height:6px;margin-bottom:0.7rem">
+      <div style="background:${bsColor};height:6px;border-radius:6px;width:${bs}%;transition:width 0.4s"></div>
+    </div>
+    <div style="font-size:0.72rem;color:#8070b0;margin-bottom:0.5rem">${bsMood}</div>
+    <div style="font-size:0.65rem;color:#6050a0;margin-bottom:0.3rem">Likes:</div>
+    <div style="flex-wrap:wrap;display:flex;gap:0.2rem;margin-bottom:0.5rem">${likesHtml||'<span style="color:#3a3060;font-size:0.65rem">—</span>'}</div>
+    <div style="font-size:0.65rem;color:#6050a0;margin-bottom:0.3rem">Dislikes:</div>
+    <div style="flex-wrap:wrap;display:flex;gap:0.2rem">${dislikesHtml||'<span style="color:#3a3060;font-size:0.65rem">—</span>'}</div>
   </div>`;
+  }
 
   // ── CARD 5: RECENT HISTORY ──
   if(G.history&&G.history.length){
@@ -1451,7 +1512,7 @@ function _drawCard(el) {
   const total = _cb.length;
   const bandIdx = BANDS.indexOf(band); const isHL = G.headliner === bandIdx;
   const isSup = G.support === band.id;
-  const canAfford = G.money >= band.feeVal;
+  const canAfford = true; // employment model — no cash gate
           const hasEnq = G.enquiries && G.enquiries.some(e=>e.bandId===band.id && (e.slot==='headline'||!e.slot) && e.status!=='declined' && e.status!=='confirmed');
   const hasSuppEnq = G.enquiries && G.enquiries.some(e=>e.bandId===band.id && e.slot==='support' && e.status!=='declined' && e.status!=='confirmed');
   const tier = G.contacts[band.id] ? G.contacts[band.id].tier : 0;
@@ -1513,38 +1574,28 @@ function renderBandBook(){ _ci=0; renderBandCarousel(); }
 function renderSFX() {
   const el = document.getElementById('sfx-list');
   if (!el) return;
+  syncSFXToTier();
   el.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;padding:1.5rem 2rem;overflow-y:auto;flex:1';
   el.innerHTML = Object.values(SFX_GEAR).map(gear => {
     const owned  = !!(G.sfxOwned&&G.sfxOwned[gear.id]);
     const active = !!(G.sfxActive&&G.sfxActive[gear.id]);
     const synStr = gear.synergies.length ? '✓ Works with: ' + gear.synergies.join(', ') : '';
     const penStr = (gear.penalties||[]).length ? '✗ Clashes with: ' + (gear.penalties||[]).join(', ') : '';
-    const buyable = gear.cost > 0 && !owned;
-    return '<div class="sfx-card' + (owned?' owned':'') + (active?' active-sfx':'') + '">' +
+    const unlockVenue = VENUE_TIERS[gear.venueMinTier];
+    const unlockLabel = unlockVenue ? unlockVenue.name + (unlockVenue.subName?' · '+unlockVenue.subName:'') : 'Higher venue';
+    return '<div class="sfx-card' + (owned?' owned':'') + (active?' active-sfx':'') + (!owned?' locked':'') + '">' +
       '<div class="sfx-icon">' + gear.icon + '</div>' +
       '<div class="sfx-name">' + gear.name + (active?' <span style="color:#60c878;font-size:0.6rem">● ON</span>':'') + '</div>' +
       '<div class="sfx-desc">' + gear.desc + '</div>' +
       (synStr ? '<div class="sfx-synergy">' + synStr + '</div>' : '') +
       (penStr ? '<div class="sfx-penalty">' + penStr + '</div>' : '') +
-      '<div class="sfx-cost">Buy: £' + gear.cost + ' · Nightly: £' + gear.nightly + '</div>' +
       '<div class="sfx-actions">' +
         (owned
           ? '<button class="sfx-btn' + (active?' toggle-on':'') + '" onclick="toggleSFX(\'' + gear.id + '\')">' + (active?'Deactivate':'Activate') + '</button>'
-          : (gear.cost > 0
-              ? '<button class="sfx-btn" ' + (G.money < gear.cost ? 'disabled' : '') + ' onclick="buySFX(\'' + gear.id + '\')">Buy £' + gear.cost + '</button>'
-              : '<span style="color:#50c878;font-size:0.75rem">✓ Included</span>')) +
+          : '<span style="color:#6050a0;font-size:0.72rem">🔒 Unlocks at: ' + unlockLabel + '</span>') +
       '</div>' +
     '</div>';
   }).join('');
-}
-
-function buySFX(id) {
-  const gear = SFX_GEAR[id]; if (!gear || G.sfxOwned[id]) return;
-  if (G.money < gear.cost) { addAlert('Not enough cash to buy ' + gear.name + '.', true); return; }
-  G.money -= gear.cost;
-  G.sfxOwned[id] = true;
-  addAlert(gear.icon + ' ' + gear.name + ' installed! Toggle it on before your next show.', false);
-  updateStatusBar(); renderSFX(); saveGame();
 }
 
 function toggleSFX(id) {
@@ -1683,10 +1734,10 @@ function dismissAllAlerts(){
 
 // ── PLANNING PAGE ──────────────────────────────────────────────────────────
 const PROMOS = [
-  { id:'flyering',  label:'🗺️ Flyering',    cost:30,  repBonus:1, desc:'+1 REP, slight attendance boost' },
-  { id:'social',    label:'📱 Social Push',  cost:50,  repBonus:2, desc:'+2 REP, good attendance boost' },
-  { id:'presale',   label:'🎟️ Pre-Sale',     cost:20,  repBonus:0, desc:'Guaranteed floor attendance' },
-  { id:'press',     label:'📰 Press Release',cost:80,  repBonus:3, desc:'+3 REP, best attendance boost' },
+  { id:'flyering',  label:'🗺️ Flyering',    repBonus:1, desc:'+1 REP, slight attendance boost' },
+  { id:'social',    label:'📱 Social Push',  repBonus:2, desc:'+2 REP, good attendance boost' },
+  { id:'presale',   label:'🎟️ Pre-Sale',     repBonus:0, desc:'Guaranteed floor attendance' },
+  { id:'press',     label:'📰 Press Release',repBonus:3, desc:'+3 REP, best attendance boost' },
 ];
 
 if(!window._planPromo) window._planPromo = null;
@@ -1703,7 +1754,7 @@ function openPlanning(){
   if(promoReadout){
     const promo = G.pendingPromo ? PROMOS.find(p=>p.id===G.pendingPromo) : null;
     promoReadout.innerHTML = promo
-      ? '<span style="color:#60c878">✓ '+promo.label+'</span> <span style="color:#4a3060;font-size:0.75rem">(£'+promo.cost+' · booked earlier this week)</span>'
+      ? '<span style="color:#60c878">✓ '+promo.label+'</span> <span style="color:#4a3060;font-size:0.75rem">(booked earlier this week)</span>'
       : '<span style="color:#4a3060">None — book promotions earlier in the week via Home Base.</span>';
   }
   renderPlanCosts();
@@ -1730,7 +1781,7 @@ function confirmPlanning(){
   // store promo — cost/rep applied at show time in runShow
   if(window._planPromo){
     const promo=PROMOS.find(p=>p.id===window._planPromo);
-    if(promo && G.money>=promo.cost){
+    if(promo){
       G.pendingPromo=promo.id;
     }
   }
@@ -1742,7 +1793,6 @@ function confirmPlanning(){
 function bookPromo(promoId){
   if(G.dayOfWeek>=5){ addAlert('📣 Promotion deadline has passed — book promos before Friday.'); return; }
   const promo=PROMOS.find(p=>p.id===promoId); if(!promo) return;
-  if(G.money<promo.cost){ addAlert('Not enough cash for '+promo.label+'.'); return; }
   G.pendingPromo=G.pendingPromo===promoId?null:promoId;
   addAlert(G.pendingPromo?'📣 '+promo.label+' booked for Saturday! Cost deducted on show night.':'📣 Promotion cancelled.');
   saveGame(); updateStatusBar(); renderOffice();
@@ -1767,14 +1817,13 @@ function renderPlanBands(){
       if(!band) return '';
       const isSelected=G.headliner===BANDS.indexOf(band);
       const isConfirmed=enq.status==='confirmed';
-      const canAfford=G.money>=enq.feeOffered;
+      const canAfford=true;
       return '<div onclick="selectPlanBand(\''+enq.id+'\')" style="cursor:'+(canAfford?'pointer':'default')+';padding:0.8rem 1rem;margin-bottom:0.5rem;border-radius:8px;border:1px solid '+(isSelected?'#6030c0':'#2a1a50')+';background:'+(isSelected?'#1a0a40':'#0a0520')+';display:flex;justify-content:space-between;align-items:center">' +
         '<div><div style="color:#c9b8ff;font-weight:600">'+band.name+'</div>' +
         '<div style="font-size:0.72rem;color:#6050a0">'+band.genre+' · '+fameLabel(band.fame)+'</div>' +
         (isConfirmed?'<div style="font-size:0.68rem;color:#4caf50">✓ Negotiated & confirmed</div>':'<div style="font-size:0.68rem;color:#ff9040">⚡ Replied — click to book</div>')+
         '</div>' +
-        '<div style="text-align:right"><div style="color:'+(canAfford?'#c9b8ff':'#e05060')+';font-size:0.9rem">£'+enq.feeOffered+'</div>' +
-        (!canAfford?'<div style="font-size:0.65rem;color:#e05060">Can\'t afford</div>':'')+
+        '<div style="text-align:right"><div style="color:#c9b8ff;font-size:0.9rem">'+enq.feeOffered+' fans est.</div>' +
         (isSelected?'<div style="font-size:0.7rem;color:#60c878">✓ HEADLINER</div>':'')+
         '</div></div>';
     }).join('');
@@ -1786,12 +1835,12 @@ function renderPlanBands(){
     html+=backups.map(band=>{
       const idx=BANDS.indexOf(band);
       const isSelected=G.headliner===idx;
-      const canAfford=G.money>=band.feeVal;
+      const canAfford=true;
       return '<div onclick="selectBackupBand(\''+band.id+'\')" style="cursor:'+(canAfford?'pointer':'default')+';padding:0.7rem 1rem;margin-bottom:0.5rem;border-radius:8px;border:1px solid '+(isSelected?'#802040':'#2a1520')+';background:'+(isSelected?'#200810':'#0a0310')+';display:flex;justify-content:space-between;align-items:center">' +
         '<div><div style="color:#d09080;font-weight:600">'+band.name+'</div>' +
         '<div style="font-size:0.72rem;color:#6050a0">'+band.genre+' · Last-minute</div>' +
         '<div style="font-size:0.65rem;color:#804040;margin-top:0.2rem">⚠ '+band.backupRisk+'</div></div>' +
-        '<div style="text-align:right"><div style="color:'+(canAfford?'#d09080':'#e05060')+';font-size:0.9rem">£'+band.feeVal+'</div>' +
+        '<div style="text-align:right"><div style="color:#d09080;font-size:0.9rem">'+band.fans+' fans</div>' +
         (isSelected?'<div style="font-size:0.7rem;color:#e08060">✓ BACKUP BOOKED</div>':'')+
         '</div></div>';
     }).join('');
@@ -1803,7 +1852,6 @@ function renderPlanBands(){
 function selectPlanBand(enquiryId){
   const enq=G.enquiries.find(e=>e.id===enquiryId); if(!enq) return;
   const band=BANDS.find(b=>b.id===enq.bandId)||BANDS[enq.bandId]; if(!band) return;
-  if(G.money<enq.feeOffered){ addAlert('Not enough cash to book '+band.name+'.'); return; }
   if(enq.status==='replied'){ enq.status='confirmed'; }
   G.headliner=BANDS.indexOf(band);
   addAlert('✅ '+band.name+' locked in as headliner at £'+enq.feeOffered+'. Fee paid on show night.');
@@ -1812,7 +1860,6 @@ function selectPlanBand(enquiryId){
 
 function selectBackupBand(bandId){
   const band=BANDS.find(b=>b.id===bandId); if(!band) return;
-  if(G.money<band.feeVal){ addAlert('Not enough cash even for a backup.'); return; }
   G.headliner=BANDS.indexOf(band);
   addAlert('⚠️ '+band.name+' booked as last-minute backup. Expect the unexpected.');
   saveGame(); updateStatusBar(); renderPlanBands(); renderPlanCosts();
@@ -1841,9 +1888,9 @@ function renderPlanPromos(){
   const el=document.getElementById('plan-promos'); if(!el) return;
   el.innerHTML=PROMOS.map(p=>{
     const sel=window._planPromo===p.id;
-    const canAfford=G.money>=p.cost;
+    const canAfford=true;
     return '<div onclick="'+(canAfford?'selectPromo(\''+p.id+'\')':'')+'" style="cursor:'+(canAfford?'pointer':'default')+';padding:0.5rem 0.8rem;border-radius:8px;border:1px solid '+(sel?'#6030c0':'#2a1a50')+';background:'+(sel?'#1a0a40':'#0a0520')+';margin-bottom:0.4rem;width:100%">' +
-      '<div style="display:flex;justify-content:space-between"><span style="color:'+(canAfford?'#c9b8ff':'#4a3060')+';font-size:0.8rem">'+p.label+'</span><span style="color:'+(canAfford?'#e0c060':'#4a3060')+';font-size:0.8rem">£'+p.cost+'</span></div>' +
+      '<div style="display:flex;justify-content:space-between"><span style="color:#c9b8ff;font-size:0.8rem">'+p.label+'</span><span style="color:#8060b0;font-size:0.8rem">+'+p.repBonus+' REP</span></div>' +
       '<div style="font-size:0.68rem;color:#6050a0">'+p.desc+'</div>'+
       (sel?'<div style="font-size:0.65rem;color:#60c878">✓ Selected</div>':'')+
       '</div>';
@@ -1859,30 +1906,21 @@ function renderPlanCosts(){
   const el=document.getElementById('plan-costs'); if(!el) return;
   const band=G.headliner!==null?BANDS[G.headliner]:null;
   const enq=band?G.enquiries.find(e=>(e.bandId===band.id||e.bandId===G.headliner)&&e.status==='confirmed'):null;
-  const bandFee=enq?enq.feeOffered:(band?band.feeVal:0);
-  let sfxCost=0;
-  Object.keys(G.sfxActive||{}).forEach(id=>{const g=SFX_GEAR[id];if(g&&G.sfxActive[id])sfxCost+=g.nightly;});
+  const bandFee=0; // employment model
+  let sfxCost=0; // no nightly costs
   const promo=window._planPromo?PROMOS.find(p=>p.id===window._planPromo):null;
-  const promoCost=promo?promo.cost:0;
-  const total=bandFee+sfxCost+promoCost;
   const venue=VENUE_TIERS[G.venueTier];
   const estTickets=band?Math.min(venue.capacity,Math.round(band.fans*0.8)):0;
-  const estRevenue=estTickets*(10+G.rep);
-  const estProfit=estRevenue-total;
+  const estFill=venue.capacity?Math.round((estTickets/venue.capacity)*100):0;
   const row=(label,val,col)=>'<div style="display:flex;justify-content:space-between;margin-bottom:0.35rem"><span style="color:#6050a0;font-size:0.8rem">'+label+'</span><span style="color:'+(col||'#c9b8ff')+';font-size:0.8rem">'+val+'</span></div>';
   const supportBand=G.support?BANDS.find(b=>b.id===G.support):null;
-  const supportFee=supportBand?supportBand.feeVal:0;
   el.innerHTML=
-    row('Headliner Fee', band?'-£'+bandFee:'—', '#e05060')+
-    row('Support Act', supportFee?'-£'+supportFee:'None', supportFee?'#e05060':'#4a3060')+
-    row('SFX Nightly', sfxCost?'-£'+sfxCost:'—', '#e05060')+
-    row('Promotion', promoCost?'-£'+promoCost:'—', '#e05060')+
+    row('Headliner', band?band.name:'None booked', band?'#c9b8ff':'#4a3060')+
+    row('Support Act', supportBand?supportBand.name:'None', '#8060b0')+
+    row('Promotion', promo?promo.label:'None', '#8060b0')+
     '<div style="border-top:1px solid #2a1a50;margin:0.5rem 0"></div>'+
-    row('Total Costs', '£'+total, '#e05060')+
-    row('Est. Ticket Revenue', band?'~£'+estRevenue:'—', '#50c878')+
-    '<div style="border-top:1px solid #2a1a50;margin:0.5rem 0"></div>'+
-    row('Est. Profit', band?'~£'+estProfit:(G.money>=total?'Affordable':'⚠ Over budget'), estProfit>0?'#50c878':'#e05060')+
-    row('Your Cash', '£'+Math.round(G.money), G.money>=total?'#c9b8ff':'#e05060');
+    row('Est. Fill Rate', band?'~'+estFill+'%':'—', estFill>=80?'#50c878':estFill>=50?'#e0a030':'#e05060')+
+    row('Boss Satisfaction', (G.bossSatisfaction||50)+'%', (G.bossSatisfaction||50)>=50?'#50c878':'#e05060');
   // disable confirm if no headliner
   const btn=document.getElementById('plan-confirm-btn');
   if(btn) btn.disabled=!band;
@@ -1967,9 +2005,9 @@ function resolveRivalry(choice, detail){
   const oldSupport = BANDS.find(b=>b.id===G.support);
 
   if(choice==='drop_support'){
-    G.money = Math.max(0, G.money - 50);
+    G.bossSatisfaction = Math.max(0, (G.bossSatisfaction||50) - 10);
     G.support = null;
-    addAlert(`💸 ${oldSupport?oldSupport.name:'Support'} paid off and sent home. -£50. ${headliner.name} headlines solo.`);
+    addAlert(`😬 ${oldSupport?oldSupport.name:'Support'} dropped to avoid the rivalry. ${headliner.name} headlines solo. Boss satisfaction -10.`);
     addAlert(detail);
   } else if(choice==='no_support'){
     G.support = null;
@@ -1979,8 +2017,7 @@ function resolveRivalry(choice, detail){
     const backup = BANDS.find(b=>b.id===detail);
     if(backup){
       G.support = backup.id;
-      G.money = Math.max(0, G.money - backup.feeVal);
-      addAlert(`📞 ${backup.name} rushed in as emergency support. £${backup.feeVal} paid. Good luck.`);
+      addAlert(`📞 ${backup.name} rushed in as emergency support. Good luck.`);
       if(backup.backupRisk) addAlert(`⚠️ Risk: "${backup.backupRisk}"`);
     }
   }
@@ -1997,11 +2034,8 @@ function runShow(){
 
   // Use negotiated fee if available, otherwise band's standard fee
   const enq=G.enquiries.find(e=>e.bandId===band.id&&e.status==='confirmed');
-  const bandFee=enq?enq.feeOffered:band.feeVal;
-
-  // Support act fee
+  // Support act
   const supportBand=G.support?BANDS.find(b=>b.id===G.support):null;
-  const supportFee=supportBand?supportBand.feeVal:0;
   if(supportBand){ addAlert('🎵 '+supportBand.name+' opened the show.'); }
 
   // Trait match bonus: shared traits between support and headliner boost attendance
@@ -2019,14 +2053,10 @@ function runShow(){
     }
   }
 
-  // SFX nightly cost
-  let sfxCost=0;
-  Object.keys(G.sfxActive).forEach(id=>{ const item=SFX_GEAR[id]; if(item&&G.sfxActive[id]) sfxCost+=item.nightly; });
-
-  // Promo: apply attendance + rep bonus, deduct cost
+  // Promo: apply attendance + rep bonus (no cost in employment model)
   const promo=G.pendingPromo?PROMOS.find(p=>p.id===G.pendingPromo):null;
   const promoBoost=promo?{flyering:1.1,social:1.2,presale:1.15,press:1.3}[promo.id]||1:1;
-  if(promo){ G.money-=promo.cost; G.rep=Math.min(100,G.rep+promo.repBonus); }
+  if(promo){ G.rep=Math.min(100,G.rep+promo.repBonus); }
   G.pendingPromo=null;
 
   // Backup band risk: chance of chaos reducing attendance
@@ -2035,19 +2065,11 @@ function runShow(){
 
   // Attendance
   const cap=venue.capacity;
-  const ticketPrice=10+G.rep;
   const drawFraction=0.7+Math.random()*0.4;
   const baseAttendance=Math.round(band.fans*drawFraction*promoBoost)-backupPenalty+traitMatchBonus;
   const attendance=Math.min(cap, Math.max(5, baseAttendance));
-  const revenue=attendance*ticketPrice;
-  const profit=revenue-bandFee-supportFee-sfxCost;
 
-  // NOTE: G.money and G.rep are adjusted after personality events below
-  // placeholder — personality block will set final values
   const repGain=Math.max(1,Math.round((attendance/cap)*6));
-  const fanGain=Math.round(attendance*0.25);
-  // Note: repGain/fanGain use pre-personality attendance intentionally (rep/fan delta shown on postshow)
-  // finalAttendance and adjProfit are used for all financial and history tracking
   const repBefore=G.rep;
   G.rep=Math.min(100,G.rep+repGain);
   // Check if new press tier unlocked
@@ -2058,8 +2080,6 @@ function runShow(){
       addAlert('📰 New press outlet unlocked: '+PRESS_UNLOCK_NAMES[i]+'! Your reviews are going further.');
     }
   });
-  G.fans+=fanGain;
-
   // Support band gains fame/fans from the show
   if(supportBand){
     const suppFanGain=Math.round(finalAttendance*0.08);
@@ -2242,23 +2262,32 @@ function runShow(){
   }
 
   // Apply all personality event deltas
-  let _totalAttDelta=0, _totalCashDelta=0, _totalRepDelta=0;
+  let _totalAttDelta=0, _totalBossDelta=0, _totalRepDelta=0;
   _personalityEvents.forEach(ev=>{
     _totalAttDelta+=ev.attendanceDelta||0;
-    _totalCashDelta+=ev.cashDelta||0;
+    _totalBossDelta+=Math.round((ev.cashDelta||0)/10); // cashDelta→bossSatisfactionDelta
     _totalRepDelta+=ev.repDelta||0;
   });
 
   // Clamp attendance after personality events
   const finalAttendance = Math.min(cap, Math.max(1, attendance + _totalAttDelta));
-  // Override attendance with personality-adjusted value
-  // (we'll use finalAttendance below instead of attendance for revenue)
-  const adjRevenue = finalAttendance * ticketPrice;
-  const adjProfit = adjRevenue - bandFee - supportFee - sfxCost + _totalCashDelta;
 
-  // Apply cash and rep from personality events
-  G.money = Math.round(G.money + adjProfit); // personality-adjusted profit
-  if(G.money<0) G.money=0;
+  // Boss satisfaction: fill rate + personality events + trait likes/dislikes
+  const fillRate = finalAttendance / cap;
+  const vt = VENUE_TIERS[G.venueTier] || VENUE_TIERS[0];
+  let bossDelta = fillRate>=0.8 ? 10 : fillRate>=0.5 ? 3 : -8;
+  bossDelta += _totalBossDelta;
+  // Boss trait reactions
+  const _bandTraits = band.traits || [];
+  (vt.bossLikes||[]).forEach(t=>{ if(_bandTraits.includes(t)) bossDelta+=5; });
+  (vt.bossDislikes||[]).forEach(t=>{ if(_bandTraits.includes(t)) bossDelta-=8; });
+  G.bossSatisfaction = Math.min(100, Math.max(0, (G.bossSatisfaction||50) + bossDelta));
+
+  // Boss trait reaction alerts
+  (vt.bossLikes||[]).forEach(t=>{ if(_bandTraits.includes(t)) addAlert('👔 '+vt.bossName+' loved the '+t+' vibes tonight. +5 satisfaction.'); });
+  (vt.bossDislikes||[]).forEach(t=>{ if(_bandTraits.includes(t)) addAlert('😤 '+vt.bossName+' was not happy about the '+t+' antics. -8 satisfaction.', true); });
+
+  // Apply rep delta from personality events
   G.rep = Math.min(100, Math.max(0, G.rep + _totalRepDelta));
 
   // Fire personality alert(s) — only first 2 to avoid spam
@@ -2278,11 +2307,11 @@ function runShow(){
   // Review
   const vName=venue.name; const bName=band.name; const genre=band.genre;
   const fill=s=>s.replace(/{venue}/g,vName).replace(/{band}/g,bName).replace(/{genre}/g,genre);
-  let reviewPool= adjProfit>50&&finalAttendance/cap>0.8 ? REVIEWS_GOOD : adjProfit>0 ? REVIEWS_MID : REVIEWS_BAD;
+  let reviewPool= fillRate>=0.8 ? REVIEWS_GOOD : fillRate>=0.5 ? REVIEWS_MID : REVIEWS_BAD;
   let review=specialReview||fill(rnd(reviewPool));
-  if(band.isBackup&&backupPenalty>0) review='⚠️ '+band.backupRisk+' '+review;
+  if(band.isBackup&&backupPenalty>0) review='⚠️ '+(band.backupRisk||'Backup risk')+' '+review;
 
-  G.history.push({week:G.week,band:bName,attendance:finalAttendance,capacity:cap,profit:adjProfit,review});
+  G.history.push({week:G.week,band:bName,attendance:finalAttendance,capacity:cap,fillRate:Math.round(fillRate*100),review});
 
   // Update contacts
   if(!G.contacts[band.id]) G.contacts[band.id]={tier:0,gigs:0,bestNight:'None yet'};
@@ -2295,10 +2324,10 @@ function runShow(){
   if(G.history.length>=5) unlockAchievement('five_shows');
 
   // Show animation then post-show screen
-  startShowAnimation(band, venue, finalAttendance, cap, adjProfit, supportBand, ()=>{
+  startShowAnimation(band, venue, finalAttendance, cap, bossDelta, supportBand, ()=>{
     showScreen('postshow-screen');
-    renderPostShow({band,venue,attendance:finalAttendance,cap,revenue:adjRevenue,bandFee,supportFee,sfxCost,profit:adjProfit,repGain,fanGain,review,promo});
-    if(G.money<=0){ G.gameOver=true; }
+    renderPostShow({band,venue,attendance:finalAttendance,cap,repGain,bossDelta,review,promo});
+    if(G.bossSatisfaction<=0){ G.gameOver=true; }
     saveGame();
   }); // end startShowAnimation callback
 }
@@ -2501,7 +2530,7 @@ function _doShowAnimation(canvas, band, venue, attendance, cap, profit, onDone, 
   requestAnimationFrame(drawFrame);
 }
 
-function renderPostShow({band,venue,attendance,cap,revenue,bandFee,supportFee,sfxCost,profit,repGain,fanGain,review,promo}){
+function renderPostShow({band,venue,attendance,cap,repGain,bossDelta,review,promo}){
   const setText=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   const fillRate = attendance/cap;
   const stars = Math.min(5,Math.max(1,Math.round(fillRate*5)));
@@ -2512,13 +2541,11 @@ function renderPostShow({band,venue,attendance,cap,revenue,bandFee,supportFee,sf
   setText('ps-stars', '★'.repeat(stars)+'☆'.repeat(5-stars));
   setText('ps-score-line', promo ? '📣 '+promo.label+' boosted attendance' : '');
   setText('ps-attendance', attendance+' / '+cap);
-  setText('ps-profit', (profit>=0?'+':'')+'£'+profit);
+  const fillPct = Math.round((attendance/cap)*100);
+  setText('ps-fill-rate', fillPct+'%');
+  const fillEl = document.getElementById('ps-fill-rate');
+  if(fillEl) fillEl.style.color = fillPct>=80?'#50c878':fillPct>=50?'#e0a030':'#e05060';
   setText('ps-rep', '+'+repGain);
-  setText('ps-fans', '+'+fanGain);
-  setText('ps-revenue', '£'+revenue);
-  setText('ps-fee', '-£'+bandFee);
-  setText('ps-support-fee', supportFee ? '-£'+supportFee : 'None');
-  setText('ps-sfx', sfxCost ? '-£'+sfxCost : 'None');
 
   // Press — tiered by rep/fame
   const hl = fill(rnd(profit>50?REVIEWS_GOOD:profit>0?REVIEWS_MID:REVIEWS_BAD));
@@ -2643,8 +2670,9 @@ function renderPostShow({band,venue,attendance,cap,revenue,bandFee,supportFee,sf
   });
 
   // Animate profit pill colour
-  const profitEl = document.getElementById('ps-profit');
-  if(profitEl) profitEl.style.color = profit>=0?'#50c878':'#e05060';
+  // boss reaction detail
+  const bossReactEl = document.getElementById('ps-boss-react');
+  if(bossReactEl){ const bd=bossDelta||0; bossReactEl.textContent=(bd>=0?'+':'')+bd+'%'; bossReactEl.style.color=bd>=0?'#50c878':'#e05060'; }
 }
 
 function rndInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
