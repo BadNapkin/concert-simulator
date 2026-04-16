@@ -822,12 +822,12 @@ const BANDS = [
 ];
 
 const SFX_GEAR = {
-  basic:  { id:'basic',  name:'Basic Stage Lighting', icon:'💡', venueMinTier:0, desc:'Standard rig. Comes with the venue.', synergies:[], penalties:[], },
-  spots:  { id:'spots',  name:'Warm Spot Package',    icon:'🔆', venueMinTier:0, desc:'Flattering warm gels. Suits folk, acoustic, intimate acts.', synergies:['Acoustic Purists','Industry Darlings'], penalties:['Face Paint'], },
-  smoke:  { id:'smoke',  name:'Smoke Machine',         icon:'🌫️', venueMinTier:1, desc:'Atmospheric haze. Transforms a small room into something otherworldly.', synergies:['Smoke Lovers','Method Actors'], penalties:['Punctual'], },
-  uv:     { id:'uv',     name:'UV Flood Rig',          icon:'🟣', venueMinTier:1, desc:'Black lights. Turns face paint into art. Transcendent with the right act.', synergies:['Face Paint','Party Animals'], penalties:['Acoustic Purists'], },
-  laser:  { id:'laser',  name:'Laser Grid System',     icon:'🔴', venueMinTier:2, desc:'Precision laser arrays. Jaw-dropping with electronic acts.', synergies:['Party Animals','Merch Machine'], penalties:['Method Actors','Acoustic Purists'], },
-  pyro:   { id:'pyro',   name:'Pyrotechnics Kit',      icon:'🔥', venueMinTier:3, desc:'Flash pots and fire. Maximum carnage. 20% fritz risk.', synergies:['Pyro Enthusiasts','Crowd Surfers'], penalties:['Acoustic Purists','Punctual'], },
+  basic:  { id:'basic',  name:'Basic Stage Lighting', icon:'💡', venueMinTier:0, desc:'Standard rig. Comes with the venue.', synergies:[], penalties:[], tokenCost:0 },
+  spots:  { id:'spots',  name:'Warm Spot Package',    icon:'🔆', venueMinTier:0, desc:'Flattering warm gels. Suits folk, acoustic, intimate acts.', synergies:['Acoustic Purists','Industry Darlings'], penalties:['Face Paint'], tokenCost:1 },
+  smoke:  { id:'smoke',  name:'Smoke Machine',         icon:'🌫️', venueMinTier:1, desc:'Atmospheric haze. Transforms a small room into something otherworldly.', synergies:['Smoke Lovers','Method Actors'], penalties:['Punctual'], tokenCost:1 },
+  uv:     { id:'uv',     name:'UV Flood Rig',          icon:'🟣', venueMinTier:1, desc:'Black lights. Turns face paint into art. Transcendent with the right act.', synergies:['Face Paint','Party Animals'], penalties:['Acoustic Purists'], tokenCost:1 },
+  laser:  { id:'laser',  name:'Laser Grid System',     icon:'🔴', venueMinTier:2, desc:'Precision laser arrays. Jaw-dropping with electronic acts.', synergies:['Party Animals','Merch Machine'], penalties:['Method Actors','Acoustic Purists'], tokenCost:2 },
+  pyro:   { id:'pyro',   name:'Pyrotechnics Kit',      icon:'🔥', venueMinTier:3, desc:'Flash pots and fire. Maximum carnage. 20% fritz risk.', synergies:['Pyro Enthusiasts','Crowd Surfers'], penalties:['Acoustic Purists','Punctual'], tokenCost:2 },
 };
 
 const VENUE_TIERS = [
@@ -970,6 +970,7 @@ function freshState() {
     sfxOwned:{basic:true,spots:true}, sfxActive:{basic:true,spots:true},
     achievements:[], contacts:{}, discovered:{},
     weeklyBudget:6, tokensSpent:0,
+    revealedTraits:{}, revealedBossTraits:[],
     enquiries:[], messages:[],
     dailyNews:{},
     alerts:[],
@@ -992,6 +993,8 @@ function _addAliases(g) {
   if (!g.discovered) g.discovered = {};
   if (g.weeklyBudget===undefined) g.weeklyBudget=6;
   if (g.tokensSpent===undefined) g.tokensSpent=0;
+  if (!g.revealedTraits) g.revealedTraits={};
+  if (!g.revealedBossTraits) g.revealedBossTraits=[];
   return g;
 }
 
@@ -1542,8 +1545,12 @@ function renderOffice(){
     const bs=G.bossSatisfaction||50;
     const bsColor=bs>=60?'#60c878':bs>=30?'#e0a030':'#e05050';
     const bsMood=bs>=80?'😄 Very Happy':bs>=60?'🙂 Satisfied':bs>=40?'😐 Neutral':bs>=20?'😠 Unhappy':'😡 Furious';
-    const likesHtml=(vt.bossLikes||[]).map(t=>`<span style="background:#0a2010;color:#60c878;border-radius:4px;padding:0.1rem 0.4rem;font-size:0.65rem;margin:0.1rem">✓ ${t}</span>`).join('');
-    const dislikesHtml=(vt.bossDislikes||[]).map(t=>`<span style="background:#200a10;color:#e05050;border-radius:4px;padding:0.1rem 0.4rem;font-size:0.65rem;margin:0.1rem">✗ ${t}</span>`).join('');
+    const _revBoss=G.revealedBossTraits||[];
+    const likesHtml=(vt.bossLikes||[]).filter(t=>_revBoss.includes(t)).map(t=>`<span style="background:#0a2010;color:#60c878;border-radius:4px;padding:0.1rem 0.4rem;font-size:0.65rem;margin:0.1rem">✓ ${t}</span>`).join('');
+    const dislikesHtml=(vt.bossDislikes||[]).filter(t=>_revBoss.includes(t)).map(t=>`<span style="background:#200a10;color:#e05050;border-radius:4px;padding:0.1rem 0.4rem;font-size:0.65rem;margin:0.1rem">✗ ${t}</span>`).join('');
+    const bossPrefsHtml=_revBoss.length===0
+      ? `<span style="color:#4a3060;font-size:0.72rem;font-style:italic">You\'re still figuring out what ${vt.bossName} responds to.</span>`
+      : (likesHtml+dislikesHtml)||`<span style="color:#4a3060;font-size:0.72rem;font-style:italic">Some preferences noted from past shows.</span>`;
     html+=`<div style="background:#0e0e18;border:1px solid #1e1e30;border-radius:8px;padding:1rem 1.2rem;margin-bottom:0.8rem">
     <div style="font-size:0.65rem;color:#6050a0;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.7rem">👔 Your Boss</div>
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.7rem">
@@ -1623,8 +1630,13 @@ function _drawCard(el) {
           <div class="band-name" style="text-align:center">${band.name}</div>
           <div class="band-genre" style="text-align:center;margin-bottom:0.8rem">${band.genre} · ${fameLabel(band.fame)}</div>
           <div class="band-bio">${band.bio}</div>
-          <div class="band-traits" style="margin:0.6rem 0">${band.traits.map(t=>'<span class="trait-tag">'+t+'</span>').join('')}</div>
-          ${hints.length?'<div class="combo-hints">'+hints.map(h=>'<span class="combo-hint-tag">✨ '+h+'</span>').join('')+'</div>':''}
+          <div class="band-traits" style="margin:0.6rem 0">
+            ${(()=>{
+              const revealed=(G.revealedTraits&&G.revealedTraits[band.id])||[];
+              if(revealed.length===0) return '<span style="color:#4a3060;font-size:0.72rem;font-style:italic">You\'ll learn more about them after a show.</span>';
+              return revealed.map(t=>'<span class="trait-tag">'+t+'</span>').join('');
+            })()}
+          </div>
           ${tier>0?'<div style="font-size:0.68rem;color:#507060;margin:0.3rem 0">Relationship: '+tierLabel(tier)+'</div>':''}
           <div class="band-agent">
             ${band.agent==='Self-managed'
@@ -1695,10 +1707,20 @@ function renderSFX() {
 
 function toggleSFX(id) {
   if (!G.sfxOwned[id]) return;
+  const gear = SFX_GEAR[id];
+  const cost = gear ? (gear.tokenCost || 0) : 0;
   if (G.sfxActive[id]) {
+    // Deactivating — refund tokens
     delete G.sfxActive[id];
+    G.tokensSpent = Math.max(0, (G.tokensSpent || 0) - cost);
   } else {
+    // Activating — check budget (free gear always allowed)
+    if (cost > 0 && tokensLeft() < cost) {
+      showToast('Not enough tokens! (Need ' + cost + ' 🎟️)');
+      return;
+    }
     G.sfxActive[id] = true;
+    G.tokensSpent = (G.tokensSpent || 0) + cost;
   }
   updateStatusBar(); renderSFX(); saveGame();
 }
@@ -2062,9 +2084,10 @@ function renderPlanSFX(){
   if(!owned.length){ el.innerHTML='<p style="color:#4a3060;font-size:0.75rem">No gear owned yet. Buy SFX from the Gear tab.</p>'; return; }
   el.innerHTML=owned.map(id=>{
     const gear=SFX_GEAR[id]; if(!gear) return '';
+    const cost=gear.tokenCost||0;
     const active=!!(G.sfxActive&&G.sfxActive[id]);
     return '<div onclick="planToggleSFX(\''+id+'\')" style="cursor:pointer;padding:0.4rem 0.8rem;border-radius:20px;border:1px solid '+(active?'#6030c0':'#2a1a50')+';background:'+(active?'#1a0a40':'#0a0520')+';font-size:0.75rem;color:'+(active?'#c9b8ff':'#6050a0')+'">' +
-      gear.icon+' '+gear.name+' <span style="color:#6050a0">£'+gear.nightly+'/show</span>' +
+      gear.icon+' '+gear.name+(cost>0?' <span style="color:#a080d0;font-size:0.7rem">('+cost+' 🎟️)</span>':' <span style="color:#407040;font-size:0.7rem">(free)</span>') +
       (active?' <span style="color:#60c878">● ON</span>':'')+
       '</div>';
   }).join('');
@@ -2108,6 +2131,10 @@ function renderPlanCosts(){
   const tSpent=(G.tokensSpent||0); const tTotal=(G.weeklyBudget||4); const tLeft=tTotal-tSpent;
   const tColor=tLeft<=0?'#e05060':tLeft===1?'#e0a030':'#60c878';
   el.innerHTML=
+    (()=>{
+      const activeSfxCost=Object.keys(G.sfxActive||{}).filter(id=>G.sfxActive[id]).reduce((s,id)=>s+(SFX_GEAR[id]?SFX_GEAR[id].tokenCost||0:0),0);
+      return activeSfxCost>0?row('Active SFX',activeSfxCost+' 🎟️','#a080d0'):'';
+    })()+
     row('Headliner', band?band.name+' ('+bandTokenCost(band)+' 🎟️)':'None booked', band?'#c9b8ff':'#4a3060')+
     row('Support Act', supportBand?supportBand.name+' ('+bandTokenCost(supportBand)+' 🎟️)':'None', '#8060b0')+
     row('Promo', promo?promo.label+' (1 🎟️)':'None', '#8060b0')+
@@ -2534,9 +2561,25 @@ function runShow(){
   }
   G.bossSatisfaction = Math.min(100, Math.max(0, (G.bossSatisfaction||50) + bossDelta));
 
-  // Boss trait reaction alerts
-  (vt.bossLikes||[]).forEach(t=>{ if(_bandTraits.includes(t)) addAlert('👔 '+vt.bossName+' loved the '+t+' vibes tonight. +5 satisfaction.'); });
-  (vt.bossDislikes||[]).forEach(t=>{ if(_bandTraits.includes(t)) addAlert('😤 '+vt.bossName+' was not happy about the '+t+' antics. -8 satisfaction.', true); });
+  // Boss trait reaction alerts + trait discovery
+  if(!G.revealedBossTraits) G.revealedBossTraits=[];
+  if(!G.revealedTraits) G.revealedTraits={};
+  (vt.bossLikes||[]).forEach(t=>{
+    if(_bandTraits.includes(t)){
+      addAlert('👔 '+vt.bossName+' loved the '+t+' vibes tonight. +5 satisfaction.');
+      if(!G.revealedBossTraits.includes(t)) G.revealedBossTraits.push(t);
+      if(!G.revealedTraits[band.id]) G.revealedTraits[band.id]=[];
+      if(!G.revealedTraits[band.id].includes(t)) G.revealedTraits[band.id].push(t);
+    }
+  });
+  (vt.bossDislikes||[]).forEach(t=>{
+    if(_bandTraits.includes(t)){
+      addAlert('😤 '+vt.bossName+' was not happy about the '+t+' antics. -8 satisfaction.', true);
+      if(!G.revealedBossTraits.includes(t)) G.revealedBossTraits.push(t);
+      if(!G.revealedTraits[band.id]) G.revealedTraits[band.id]=[];
+      if(!G.revealedTraits[band.id].includes(t)) G.revealedTraits[band.id].push(t);
+    }
+  });
 
   // Boss personality reaction to crowd type
   const _bossPersonality = vt.bossPersonality||'pragmatic';
