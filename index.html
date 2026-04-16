@@ -2234,7 +2234,7 @@ function runShow(){
   G._lastCrowd = { id:_crowd.id, label:_crowd.label, flavour:_crowdFlavour };
   // Check if new press tier unlocked
   const PRESS_UNLOCK_THRESHOLDS=[5,15,25,40,55,70,85];
-  const PRESS_UNLOCK_NAMES=['Loudly Does It','The Turning Rock','Kerranged!','NMEh','Forklifted','Bowlin' Tone Magazine','The Guard, Iain'];
+  const PRESS_UNLOCK_NAMES=['Loudly Does It','The Turning Rock','Kerranged!','NMEh','Forklifted','Bowlin\' Tone Magazine','The Guard, Iain'];
   PRESS_UNLOCK_THRESHOLDS.forEach((threshold,i)=>{
     if(repBefore<threshold && G.rep>=threshold){
       addAlert('📰 New press outlet unlocked: '+PRESS_UNLOCK_NAMES[i]+'! Your reviews are going further.');
