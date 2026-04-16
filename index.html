@@ -358,6 +358,10 @@ canvas#stage { width: 100%; height: 100%; }
         <div class="panel-heading" id="office-venue-name">The Dive Bar</div>
       </div>
       <div class="schedule-slots" id="schedule-slots"></div>
+      <div style="padding:0.8rem 1.5rem 0;border-top:1px solid #1a0a40">
+        <div style="font-size:0.7rem;color:#6050a0;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.6rem">📣 Promote Saturday's Show</div>
+        <div id="office-promos" style="display:flex;flex-wrap:wrap;gap:0.5rem;padding-bottom:0.8rem"></div>
+      </div>
     </div>
 
     <!-- BANDBOOK PANEL -->
@@ -596,6 +600,22 @@ const BANDS = [
     bio:"Slow. Heavy. Inevitable. Like getting old, but louder.",
     traits:['Uncompromising','Pyro Enthusiasts','Always Late'], fee:'££', feeVal:210,
     agent:'Nora Finch @ Riff Co.', fame:1, fans:48 },
+  // ── BACKUP BANDS (always available, last-minute, problematic) ──
+  { id:'bk1', name:'The Filthy Casuals', genre:'Pub Rock', genreKey:'rock',
+    bio:"We'll play anywhere, anytime, for anyone. Don't ask questions. We won't either.",
+    traits:['Always Late','Drama Queens','Road Warriors'], fee:'£', feeVal:40,
+    agent:'Self-managed', fame:0, fans:8, isBackup:true,
+    backupRisk:"They showed up two hours late and played three songs before the guitarist walked off." },
+  { id:'bk2', name:'DJ Trev', genre:'DJ Set', genreKey:'electronic',
+    bio:"Trev has a laptop and 4,000 songs. No crowd has ever hated him enough to leave.",
+    traits:['Party Animals','Always Late'], fee:'£', feeVal:30,
+    agent:'Self-managed', fame:0, fans:5, isBackup:true,
+    backupRisk:"Trev played the wrong BPM for the first 45 minutes. The crowd was confused but stayed." },
+  { id:'bk3', name:'Broken Orbit', genre:'Indie', genreKey:'rock',
+    bio:"Between labels, between tours, between meals. Available.",
+    traits:['Drama Queens','Underground Cred','Always Late'], fee:'£', feeVal:50,
+    agent:'Self-managed', fame:0, fans:10, isBackup:true,
+    backupRisk:"Lead singer had a meltdown mid-set over the monitor mix. Finished anyway." },
 ];
 
 const SFX_GEAR = {
@@ -706,7 +726,8 @@ function freshState() {
   const s = {
     week:1, dayOfWeek:0, money:500, rep:0, fans:0,
     venueTier:0,
-    headliner:null,
+    headliner:null, support:null,
+    pendingPromo:null,
     sfxOwned:{basic:true}, sfxActive:{basic:true},
     achievements:[], contacts:{},
     enquiries:[], messages:[],
@@ -988,6 +1009,23 @@ function renderOffice(){
     </div>`;
   }
   el.innerHTML=html;
+
+  // Render mid-week promotions in office
+  const promoEl=document.getElementById('office-promos');
+  if(promoEl){
+    if(G.dayOfWeek>=6){ promoEl.innerHTML='<span style="color:#4a3060;font-size:0.75rem">Show night — too late to promote.</span>'; }
+    else {
+      promoEl.innerHTML=PROMOS.map(p=>{
+        const sel=G.pendingPromo===p.id;
+        const canAfford=G.money>=p.cost;
+        return '<div onclick="bookPromo(\''+p.id+'\')" style="cursor:'+(canAfford?'pointer':'default')+';padding:0.4rem 0.8rem;border-radius:8px;border:1px solid '+(sel?'#6030c0':'#2a1a50')+';background:'+(sel?'#1a0a40':'#0a0520')+';font-size:0.75rem">' +
+          '<span style="color:'+(canAfford?'#c9b8ff':'#4a3060')+'">'+p.label+'</span> ' +
+          '<span style="color:'+(canAfford?'#e0c060':'#3a2a50')+'">£'+p.cost+'</span>' +
+          (sel?' <span style="color:#60c878;font-size:0.65rem">✓ Booked</span>':'')+
+          '</div>';
+      }).join('');
+    }
+  }
 }
 
 // ── BAND CAROUSEL ──────────────────────────────────────────────────────────
@@ -1102,15 +1140,10 @@ function buySFX(id) {
 
 function toggleSFX(id) {
   if (!G.sfxOwned[id]) return;
-  if (id === 'basic') {
-    G.sfxActive = { basic: !G.sfxActive['basic'] };
+  if (G.sfxActive[id]) {
+    delete G.sfxActive[id];
   } else {
-    if (G.sfxActive[id]) {
-      delete G.sfxActive[id];
-    } else {
-      delete G.sfxActive['basic'];
-      G.sfxActive[id] = true;
-    }
+    G.sfxActive[id] = true;
   }
   updateStatusBar(); renderSFX(); saveGame();
 }
@@ -1138,21 +1171,45 @@ function renderAchievements() {
 function renderInbox() {
   const el = document.getElementById('inbox-list');
   if (!el) return;
-  const msgs = (G.messages || []).map(m => ({ type:'msg', from:m.from, text:m.text, date:m.date, urgent:false }));
-  const enqs = (G.enquiries || []).map(e => {
-    const band = BANDS.find(b => b.id === e.bandId) || (typeof e.bandId === "number" ? BANDS[e.bandId] : null);
-    const bname = band ? band.name : 'Unknown Band';
-    return { type:'enq', from: bname + ' (Enquiry)', text: e.status === 'confirmed' ? '✓ Confirmed for Week ' + e.week : e.status === 'pending' ? 'Awaiting response...' : e.reply || e.status, date: e.date || 'Week ' + (e.week||'?'), urgent: e.status === 'replied' };
+  let html = '';
+
+  // Messages
+  (G.messages || []).slice().reverse().forEach(m => {
+    html += '<div class="msg-item">' +
+      '<div class="msg-from">' + m.from + '</div>' +
+      '<div class="msg-date">' + (m.date||'') + '</div>' +
+      '<div class="msg-text">' + m.text + '</div>' +
+    '</div>';
   });
-  const all = [...msgs, ...enqs].reverse();
-  if (!all.length) { el.innerHTML = '<p style="color:#4a3060;font-size:0.8rem;padding:1.5rem">Your inbox is empty.</p>'; return; }
-  el.innerHTML = all.map(item =>
-    '<div class="msg-item' + (item.urgent?' msg-urgent':'') + '">' +
-      '<div class="msg-from">' + item.from + (item.type==='enq'?' <span style="font-size:0.6rem;color:#5a4080">ENQUIRY</span>':'') + '</div>' +
-      '<div class="msg-date">' + item.date + '</div>' +
-      '<div class="msg-text">' + item.text + '</div>' +
-    '</div>'
-  ).join('');
+
+  // Enquiries — show full reply + negotiation buttons inline
+  (G.enquiries || []).slice().reverse().forEach(enq => {
+    const band = BANDS.find(b => b.id === enq.bandId) || BANDS[enq.bandId];
+    if (!band) return;
+    const statusCol = {pending:'#8070a0', replied:'#e0a030', confirmed:'#50c878', declined:'#e05060'}[enq.status]||'#c9b8ff';
+    const statusLabel = {pending:'⏳ Awaiting reply', replied:'💬 Reply received', confirmed:'✅ Confirmed', declined:'❌ Declined'}[enq.status]||enq.status;
+    html += '<div class="msg-item' + (enq.status==='replied'?' msg-urgent':'') + '">' +
+      '<div class="msg-from">' + band.name + ' <span style="font-size:0.6rem;color:#5a4080">ENQUIRY</span>' +
+        '<span style="float:right;font-size:0.7rem;color:'+statusCol+'">'+statusLabel+'</span></div>' +
+      '<div class="msg-date">Fee: £' + enq.feeOffered + '</div>';
+    if (enq.status === 'replied' && enq.replyText) {
+      html += '<div class="msg-text" style="font-style:italic;color:#a090d0;margin:0.4rem 0">"' + enq.replyText + '"</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.5rem">' +
+        NEGOTIATION_OPTS.map((o,i) =>
+          '<button onclick="handleNegotiation('+enq.id+','+i+')" style="font-size:0.72rem;padding:0.3rem 0.7rem;background:#1a0a40;border:1px solid #3a2a60;color:#c9b8ff;border-radius:6px;cursor:pointer">'+o.label+'</button>'
+        ).join('') + '</div>';
+    } else if (enq.status === 'confirmed') {
+      html += '<div class="msg-text" style="color:#50c878">Confirmed as headliner at £'+enq.feeOffered+'</div>';
+    } else if (enq.status === 'pending') {
+      html += '<div class="msg-text" style="color:#6050a0">Waiting on their agent...</div>';
+    } else if (enq.status === 'declined') {
+      html += '<div class="msg-text" style="color:#e05060">Passed or walked.</div>';
+    }
+    html += '</div>';
+  });
+
+  if (!html) { el.innerHTML = '<p style="color:#4a3060;font-size:0.8rem;padding:1.5rem">Your inbox is empty.</p>'; return; }
+  el.innerHTML = html;
 }
 
 function renderMessages() { renderInbox(); }
@@ -1229,53 +1286,90 @@ function closePlanning(){
 
 function confirmPlanning(){
   closePlanning();
-  // apply promo
+  // store promo — cost/rep applied at show time in runShow
   if(window._planPromo){
     const promo=PROMOS.find(p=>p.id===window._planPromo);
     if(promo && G.money>=promo.cost){
-      G.money-=promo.cost;
-      G.rep=Math.min(100,G.rep+promo.repBonus);
       G.pendingPromo=promo.id;
-      addAlert('📣 '+promo.label+' booked for show night.');
+      addAlert('📣 '+promo.label+' booked for show night. Cost deducted on the night.');
     }
   }
-  saveGame(); updateStatusBar();
+  saveGame(); updateStatusBar(); renderOffice();
+}
+
+function bookPromo(promoId){
+  if(G.dayOfWeek>=6){ addAlert('Too late to book promotion — show is tonight!'); return; }
+  const promo=PROMOS.find(p=>p.id===promoId); if(!promo) return;
+  if(G.money<promo.cost){ addAlert('Not enough cash for '+promo.label+'.'); return; }
+  G.pendingPromo=G.pendingPromo===promoId?null:promoId;
+  addAlert(G.pendingPromo?'📣 '+promo.label+' booked for Saturday! Cost deducted on show night.':'📣 Promotion cancelled.');
+  saveGame(); updateStatusBar(); renderOffice();
 }
 
 function renderPlanBands(){
   const el=document.getElementById('plan-bands'); if(!el) return;
   const available=G.enquiries.filter(e=>e.status==='replied'||e.status==='confirmed');
-  if(!available.length){
+  const backups=BANDS.filter(b=>b.isBackup);
+  let html='';
+
+  if(!available.length && !backups.length){
     el.innerHTML='<p style="color:#4a3060;font-size:0.8rem">No bands have responded yet. Enquire via BandBook and advance a day.</p>';
     return;
   }
-  el.innerHTML=available.map(enq=>{
-    const band=BANDS.find(b=>b.id===enq.bandId)||BANDS[enq.bandId];
-    if(!band) return '';
-    const isSelected=G.headliner===BANDS.indexOf(band);
-    const isConfirmed=enq.status==='confirmed';
-    const canAfford=G.money>=enq.feeOffered;
-    return '<div onclick="selectPlanBand(\''+enq.id+'\')" style="cursor:'+(isConfirmed||canAfford?'pointer':'default')+';padding:0.8rem 1rem;margin-bottom:0.5rem;border-radius:8px;border:1px solid '+(isSelected?'#6030c0':'#2a1a50')+';background:'+(isSelected?'#1a0a40':'#0a0520')+';display:flex;justify-content:space-between;align-items:center">' +
-      '<div><div style="color:#c9b8ff;font-weight:600">'+band.name+'</div>' +
-      '<div style="font-size:0.72rem;color:#6050a0">'+band.genre+' · '+fameLabel(band.fame)+'</div>' +
-      (isConfirmed?'<div style="font-size:0.68rem;color:#4caf50">✓ Confirmed</div>':'<div style="font-size:0.68rem;color:#ff9040">⚡ Awaiting final confirmation</div>')+
-      '</div>' +
-      '<div style="text-align:right"><div style="color:'+(canAfford?'#c9b8ff':'#e05060');+';font-size:0.9rem">£'+enq.feeOffered+'</div>' +
-      (!canAfford?'<div style="font-size:0.65rem;color:#e05060">Can\'t afford</div>':'')+
-      (isSelected?'<div style="font-size:0.7rem;color:#60c878">✓ Selected</div>':'')+
+
+  if(available.length){
+    html+='<div style="font-size:0.68rem;color:#6050a0;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.06em">Responded to Enquiries</div>';
+    html+=available.map(enq=>{
+      const band=BANDS.find(b=>b.id===enq.bandId)||BANDS[enq.bandId];
+      if(!band) return '';
+      const isSelected=G.headliner===BANDS.indexOf(band);
+      const isConfirmed=enq.status==='confirmed';
+      const canAfford=G.money>=enq.feeOffered;
+      return '<div onclick="selectPlanBand(\''+enq.id+'\')" style="cursor:'+(canAfford?'pointer':'default')+';padding:0.8rem 1rem;margin-bottom:0.5rem;border-radius:8px;border:1px solid '+(isSelected?'#6030c0':'#2a1a50')+';background:'+(isSelected?'#1a0a40':'#0a0520')+';display:flex;justify-content:space-between;align-items:center">' +
+        '<div><div style="color:#c9b8ff;font-weight:600">'+band.name+'</div>' +
+        '<div style="font-size:0.72rem;color:#6050a0">'+band.genre+' · '+fameLabel(band.fame)+'</div>' +
+        (isConfirmed?'<div style="font-size:0.68rem;color:#4caf50">✓ Negotiated & confirmed</div>':'<div style="font-size:0.68rem;color:#ff9040">⚡ Replied — click to book</div>')+
+        '</div>' +
+        '<div style="text-align:right"><div style="color:'+(canAfford?'#c9b8ff':'#e05060')+';font-size:0.9rem">£'+enq.feeOffered+'</div>' +
+        (!canAfford?'<div style="font-size:0.65rem;color:#e05060">Can\'t afford</div>':'')+
+        (isSelected?'<div style="font-size:0.7rem;color:#60c878">✓ HEADLINER</div>':'')+
+        '</div></div>';
+    }).join('');
+  }
+
+  // Backup bands — always available, risky
+  html+='<div style="font-size:0.68rem;color:#8050a0;margin:'+(available.length?'0.8rem':'0')+' 0 0.4rem;text-transform:uppercase;letter-spacing:0.06em">⚠️ Last-Minute Backups <span style="color:#4a3060">(risky)</span></div>';
+  html+=backups.map(band=>{
+    const idx=BANDS.indexOf(band);
+    const isSelected=G.headliner===idx;
+    const canAfford=G.money>=band.feeVal;
+    return '<div onclick="selectBackupBand(\''+band.id+'\')" style="cursor:'+(canAfford?'pointer':'default')+';padding:0.7rem 1rem;margin-bottom:0.5rem;border-radius:8px;border:1px solid '+(isSelected?'#802040':'#2a1520')+';background:'+(isSelected?'#200810':'#0a0310')+';display:flex;justify-content:space-between;align-items:center">' +
+      '<div><div style="color:#d09080;font-weight:600">'+band.name+'</div>' +
+      '<div style="font-size:0.72rem;color:#6050a0">'+band.genre+' · Last-minute</div>' +
+      '<div style="font-size:0.65rem;color:#804040;margin-top:0.2rem">⚠ '+band.backupRisk+'</div></div>' +
+      '<div style="text-align:right"><div style="color:'+(canAfford?'#d09080':'#e05060')+';font-size:0.9rem">£'+band.feeVal+'</div>' +
+      (isSelected?'<div style="font-size:0.7rem;color:#e08060">✓ BACKUP BOOKED</div>':'')+
       '</div></div>';
   }).join('');
+
+  el.innerHTML=html;
 }
 
 function selectPlanBand(enquiryId){
   const enq=G.enquiries.find(e=>e.id===enquiryId); if(!enq) return;
   const band=BANDS.find(b=>b.id===enq.bandId)||BANDS[enq.bandId]; if(!band) return;
   if(G.money<enq.feeOffered){ addAlert('Not enough cash to book '+band.name+'.'); return; }
-  // confirm enquiry if still replied
   if(enq.status==='replied'){ enq.status='confirmed'; }
   G.headliner=BANDS.indexOf(band);
-  G.money-=enq.feeOffered;
-  addAlert('✅ '+band.name+' confirmed as headliner at £'+enq.feeOffered+'!');
+  addAlert('✅ '+band.name+' locked in as headliner at £'+enq.feeOffered+'. Fee paid on show night.');
+  saveGame(); updateStatusBar(); renderPlanBands(); renderPlanCosts();
+}
+
+function selectBackupBand(bandId){
+  const band=BANDS.find(b=>b.id===bandId); if(!band) return;
+  if(G.money<band.feeVal){ addAlert('Not enough cash even for a backup.'); return; }
+  G.headliner=BANDS.indexOf(band);
+  addAlert('⚠️ '+band.name+' booked as last-minute backup. Expect the unexpected.');
   saveGame(); updateStatusBar(); renderPlanBands(); renderPlanCosts();
 }
 
@@ -1352,19 +1446,35 @@ function runShow(){
   const band=BANDS[G.headliner];
   const venue=VENUE_TIERS[G.venueTier];
 
+  // Use negotiated fee if available, otherwise band's standard fee
+  const enq=G.enquiries.find(e=>e.bandId===band.id&&e.status==='confirmed');
+  const bandFee=enq?enq.feeOffered:band.feeVal;
+
   // SFX nightly cost
   let sfxCost=0;
   Object.keys(G.sfxActive).forEach(id=>{ const item=SFX_GEAR[id]; if(item&&G.sfxActive[id]) sfxCost+=item.nightly; });
+
+  // Promo: apply attendance + rep bonus, deduct cost
+  const promo=G.pendingPromo?PROMOS.find(p=>p.id===G.pendingPromo):null;
+  const promoBoost=promo?{flyering:1.1,social:1.2,presale:1.15,press:1.3}[promo.id]||1:1;
+  if(promo){ G.money-=promo.cost; G.rep=Math.min(100,G.rep+promo.repBonus); }
+  G.pendingPromo=null;
+
+  // Backup band risk: chance of chaos reducing attendance
+  let backupPenalty=0;
+  if(band.isBackup){ if(Math.random()<0.6){ backupPenalty=Math.round(band.fans*0.4); } }
 
   // Attendance
   const cap=venue.capacity;
   const ticketPrice=10+G.rep;
   const drawFraction=0.7+Math.random()*0.4;
-  const attendance=Math.min(cap, Math.round(band.fans*drawFraction));
+  const baseAttendance=Math.round(band.fans*drawFraction*promoBoost)-backupPenalty;
+  const attendance=Math.min(cap, Math.max(5, baseAttendance));
   const revenue=attendance*ticketPrice;
-  const profit=revenue-band.feeVal-sfxCost;
+  const profit=revenue-bandFee-sfxCost;
 
-  G.money=Math.max(0,G.money+profit);
+  G.money=Math.round(G.money+profit);
+  if(G.money<0) G.money=0;
   const repGain=Math.max(1,Math.round((attendance/cap)*6));
   const fanGain=Math.round(attendance*0.25);
   G.rep=Math.min(100,G.rep+repGain);
@@ -1383,29 +1493,45 @@ function runShow(){
   const vName=venue.name; const bName=band.name; const genre=band.genre;
   const fill=s=>s.replace(/{venue}/g,vName).replace(/{band}/g,bName).replace(/{genre}/g,genre);
   let reviewPool= profit>50&&attendance/cap>0.8 ? REVIEWS_GOOD : profit>0 ? REVIEWS_MID : REVIEWS_BAD;
-  const review=specialReview||fill(rnd(reviewPool));
+  let review=specialReview||fill(rnd(reviewPool));
+  if(band.isBackup&&backupPenalty>0) review='⚠️ '+band.backupRisk+' '+review;
 
   G.history.push({week:G.week,band:bName,attendance,capacity:cap,profit,review});
+
+  // Update contacts
+  if(!G.contacts[band.id]) G.contacts[band.id]={tier:0,gigs:0,bestNight:'None yet'};
+  G.contacts[band.id].gigs=(G.contacts[band.id].gigs||0)+1;
+  if(!G.contacts[band.id].bestNight||attendance>cap*0.8) G.contacts[band.id].bestNight='Wk '+G.week;
 
   // Achievements
   if(attendance>=cap) unlockAchievement('sold_out');
   if(G.history.length===1) unlockAchievement('first_show');
   if(G.history.length>=5) unlockAchievement('five_shows');
-  if(G.rep>=50) unlockAchievement('rep50');
 
   // Post-show screen
   showScreen('postshow-screen');
+  setText('ps-week',       G.week);
   setText('ps-band',       band.name);
   setText('ps-attendance', `${attendance} / ${cap}`);
   setText('ps-revenue',    `£${revenue}`);
-  setText('ps-fee',        `£${band.feeVal}`);
-  setText('ps-sfx',        `£${sfxCost}`);
-  setText('ps-profit',     `£${profit}`);
+  setText('ps-fee',        `-£${bandFee}`);
+  setText('ps-sfx',        sfxCost?`-£${sfxCost}`:'None');
+  setText('ps-profit',     (profit>=0?'+':'')+`£${profit}`);
   setText('ps-rep',        `+${repGain}`);
   setText('ps-fans',       `+${fanGain}`);
   setText('ps-review',     review);
+  // Stars (1-5)
+  const stars=Math.min(5,Math.max(1,Math.round((attendance/cap)*5)));
+  setText('ps-stars','★'.repeat(stars)+'☆'.repeat(5-stars));
+  // headline
+  const hl=fill(rnd(profit>50?REVIEWS_GOOD:profit>0?REVIEWS_MID:REVIEWS_BAD));
+  setText('ps-headline', hl);
+  setText('ps-source','Local Gig Guide · Week '+G.week);
+  // promo note
+  if(promo) setText('ps-score-line','📣 '+promo.label+' boosted attendance');
+  else setText('ps-score-line','');
 
-  if(G.money<=0&&profit<0){ G.gameOver=true; }
+  if(G.money<=0){ G.gameOver=true; }
   saveGame();
 }
 
