@@ -451,6 +451,12 @@ canvas#stage { width: 100%; height: 100%; }
       </div>
     </div>
 
+    <!-- SUPPORT ACT -->
+    <div style="margin-bottom:1.2rem">
+      <div style="font-size:0.75rem;color:#8070b0;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.6rem">🎵 Support Act <span style="color:#4a3060;text-transform:none;font-size:0.68rem">(optional · fame 0 only)</span></div>
+      <div id="plan-support" style="display:flex;flex-wrap:wrap;gap:0.5rem"></div>
+    </div>
+
     <!-- SFX GEAR -->
     <div style="margin-bottom:1.2rem">
       <div style="font-size:0.75rem;color:#8070b0;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.6rem">🎛️ Production Gear</div>
@@ -508,6 +514,7 @@ canvas#stage { width: 100%; height: 100%; }
       <div class="rev-row"><span class="rev-label">Attendance</span><span id="ps-attendance" style="color:#c0b0d8"></span></div>
       <div class="rev-row"><span class="rev-label">Ticket Revenue</span><span id="ps-revenue" style="color:#50c878"></span></div>
       <div class="rev-row"><span class="rev-label">Band Fee</span><span id="ps-fee" style="color:#e05060"></span></div>
+      <div class="rev-row"><span class="rev-label">Support Fee</span><span id="ps-support-fee" style="color:#e05060"></span></div>
       <div class="rev-row"><span class="rev-label">Profit</span><span id="ps-profit" style="color:#c9b8ff;font-weight:600"></span></div>
       <div class="rev-row"><span class="rev-label">REP Gained</span><span id="ps-rep" style="color:#50c878"></span></div>
       <div class="rev-row"><span class="rev-label">Fans Gained</span><span id="ps-fans" style="color:#50c878"></span></div>
@@ -879,7 +886,7 @@ function endWeek(){
     G.enquiries=G.enquiries.filter(e=>e.status==='confirmed');
   }
   G.week++; G.dayOfWeek=0;
-  G.headliner=null;
+  G.headliner=null; G.support=null; G.pendingPromo=null;
   saveGame(); updateStatusBar(); renderOffice();
 }
 
@@ -891,6 +898,9 @@ function bookBand(bandId, slot) {
   if (slot === 'headline') {
     G.headliner = BANDS.indexOf(band);
     addAlert('✅ ' + band.name + ' confirmed as headliner at £' + band.feeVal + '. Show is Saturday!');
+  } else if (slot === 'support') {
+    G.support = band.id;
+    addAlert('➕ ' + band.name + ' added as support act at £' + band.feeVal + '.');
   }
   saveGame(); updateStatusBar(); renderBandCarousel(); renderOffice();
 }
@@ -1044,7 +1054,7 @@ function _drawCard(el) {
   const band = _cb[_ci];
   const total = _cb.length;
   const bandIdx = BANDS.indexOf(band); const isHL = G.headliner === bandIdx;
-  const isSup = false;
+  const isSup = G.support === band.id;
   const canAfford = G.money >= band.feeVal;
           const hasEnq = G.enquiries && G.enquiries.some(e=>e.bandId===band.id && e.status!=='declined' && e.status!=='confirmed');
   const tier = G.contacts[band.id] ? G.contacts[band.id].tier : 0;
@@ -1273,11 +1283,32 @@ if(!window._planPromo) window._planPromo = null;
 function openPlanning(){
   document.getElementById('planning-modal').style.display='block';
   document.getElementById('plan-week').textContent=G.week;
-  window._planPromo = null;
+  window._planPromo = G.pendingPromo || null;
   renderPlanBands();
+  renderPlanSupport();
   renderPlanSFX();
   renderPlanPromos();
   renderPlanCosts();
+}
+
+function renderPlanSupport(){
+  const el=document.getElementById('plan-support'); if(!el) return;
+  const available=BANDS.filter(b=>b.fame===0&&!b.isBackup);
+  if(!available.length){ el.innerHTML='<span style="color:#4a3060;font-size:0.75rem">No support acts available yet.</span>'; return; }
+  el.innerHTML=available.map(band=>{
+    const isSel=G.support===band.id;
+    const canAfford=G.money>=band.feeVal;
+    return '<div onclick="'+(canAfford?'selectPlanSupport(\''+band.id+'\')':'')+'" style="cursor:'+(canAfford?'pointer':'default')+';padding:0.4rem 0.8rem;border-radius:8px;border:1px solid '+(isSel?'#306090':'#2a1a50')+';background:'+(isSel?'#0a1a30':'#0a0520')+';font-size:0.75rem;color:'+(canAfford?'#90c0e0':'#4a3060')+'">' +
+      band.name+' <span style="color:#5a5080">£'+band.feeVal+'</span>'+(isSel?' <span style="color:#60c8a0">✓</span>':'')+
+    '</div>';
+  }).join('');
+}
+
+function selectPlanSupport(bandId){
+  G.support = (G.support===bandId) ? null : bandId;
+  const band=BANDS.find(b=>b.id===bandId);
+  if(G.support&&band) addAlert('🎵 '+band.name+' added as support act.');
+  saveGame(); renderPlanSupport(); renderPlanCosts();
 }
 
 function closePlanning(){
@@ -1425,8 +1456,11 @@ function renderPlanCosts(){
   const estRevenue=estTickets*(10+G.rep);
   const estProfit=estRevenue-total;
   const row=(label,val,col)=>'<div style="display:flex;justify-content:space-between;margin-bottom:0.35rem"><span style="color:#6050a0;font-size:0.8rem">'+label+'</span><span style="color:'+(col||'#c9b8ff')+';font-size:0.8rem">'+val+'</span></div>';
+  const supportBand=G.support?BANDS.find(b=>b.id===G.support):null;
+  const supportFee=supportBand?supportBand.feeVal:0;
   el.innerHTML=
     row('Headliner Fee', band?'-£'+bandFee:'—', '#e05060')+
+    row('Support Act', supportFee?'-£'+supportFee:'None', supportFee?'#e05060':'#4a3060')+
     row('SFX Nightly', sfxCost?'-£'+sfxCost:'—', '#e05060')+
     row('Promotion', promoCost?'-£'+promoCost:'—', '#e05060')+
     '<div style="border-top:1px solid #2a1a50;margin:0.5rem 0"></div>'+
@@ -1450,6 +1484,11 @@ function runShow(){
   const enq=G.enquiries.find(e=>e.bandId===band.id&&e.status==='confirmed');
   const bandFee=enq?enq.feeOffered:band.feeVal;
 
+  // Support act fee
+  const supportBand=G.support?BANDS.find(b=>b.id===G.support):null;
+  const supportFee=supportBand?supportBand.feeVal:0;
+  if(supportBand){ addAlert('🎵 '+supportBand.name+' opened the show.'); }
+
   // SFX nightly cost
   let sfxCost=0;
   Object.keys(G.sfxActive).forEach(id=>{ const item=SFX_GEAR[id]; if(item&&G.sfxActive[id]) sfxCost+=item.nightly; });
@@ -1471,7 +1510,7 @@ function runShow(){
   const baseAttendance=Math.round(band.fans*drawFraction*promoBoost)-backupPenalty;
   const attendance=Math.min(cap, Math.max(5, baseAttendance));
   const revenue=attendance*ticketPrice;
-  const profit=revenue-bandFee-sfxCost;
+  const profit=revenue-bandFee-supportFee-sfxCost;
 
   G.money=Math.round(G.money+profit);
   if(G.money<0) G.money=0;
@@ -1515,6 +1554,7 @@ function runShow(){
   setText('ps-attendance', `${attendance} / ${cap}`);
   setText('ps-revenue',    `£${revenue}`);
   setText('ps-fee',        `-£${bandFee}`);
+  setText('ps-support-fee', supportFee ? `-£${supportFee}` : 'None');
   setText('ps-sfx',        sfxCost?`-£${sfxCost}`:'None');
   setText('ps-profit',     (profit>=0?'+':'')+`£${profit}`);
   setText('ps-rep',        `+${repGain}`);
