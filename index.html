@@ -1675,7 +1675,7 @@ function runShow(){
   G.rep=Math.min(100,G.rep+repGain);
   // Check if new press tier unlocked
   const PRESS_UNLOCK_THRESHOLDS=[5,15,25,40,55,70,85];
-  const PRESS_UNLOCK_NAMES=['City Scene Blog','Northern Noise','Underground Weekly','NME Online','Pitchfork UK','Rolling Stone (Intl)','The Guardian Music'];
+  const PRESS_UNLOCK_NAMES=['Loudly Does It','The Turning Rock','Kerranged!','NMEh','Forklifted','Bowlin\' Tone Magazine','The Guard, Iain'];
   PRESS_UNLOCK_THRESHOLDS.forEach((threshold,i)=>{
     if(repBefore<threshold && G.rep>=threshold){
       addAlert('📰 New press outlet unlocked: '+PRESS_UNLOCK_NAMES[i]+'! Your reviews are going further.');
@@ -1927,14 +1927,14 @@ function renderPostShow({band,venue,attendance,cap,revenue,bandFee,supportFee,sf
 
   // Progressive outlets unlock by rep
   const PRESS_TIERS = [
-    { minRep:0,  icon:'📰', name:'The Local Rag',         type:'weekly freesheet',   reach:'Local' },
-    { minRep:5,  icon:'📰', name:'City Scene Blog',        type:'online music blog',  reach:'Local' },
-    { minRep:15, icon:'🗞️', name:'Northern Noise',         type:'regional zine',      reach:'Regional' },
-    { minRep:25, icon:'🗞️', name:'Underground Weekly',     type:'indie music weekly', reach:'Regional' },
-    { minRep:40, icon:'📻', name:'NME Online',             type:'national music site', reach:'National' },
-    { minRep:55, icon:'📻', name:'Pitchfork UK',           type:'national tastemaker', reach:'National' },
-    { minRep:70, icon:'🌍', name:'Rolling Stone (Intl)',   type:'international press', reach:'International' },
-    { minRep:85, icon:'🌍', name:'The Guardian Music',     type:'international broadsheet', reach:'International' },
+    { minRep:0,  icon:'📰', name:'The Beermat Gazette',    type:'pub noticeboard weekly',    reach:'Local',         byline:'Ed. Dave "Two-Pints" Hobbs' },
+    { minRep:5,  icon:'📰', name:'Loudly Does It',         type:'bedroom music blog',        reach:'Local',         byline:'by @noisyboi94' },
+    { minRep:15, icon:'🗞️', name:'The Turning Rock',       type:'regional rock fanzine',     reach:'Regional',      byline:'Mick Jagoff, Contributing Ed.' },
+    { minRep:25, icon:'🗞️', name:'Kerranged!',             type:'heavy music bi-weekly',     reach:'Regional',      byline:'Staff Writer: Ozzy Pawbourne' },
+    { minRep:40, icon:'📻', name:'NMEh',                   type:'national music site',       reach:'National',      byline:'Reviewed by Lester Bangsworth' },
+    { minRep:55, icon:'📻', name:'Forklifted',             type:'tastemaker quarterly',      reach:'National',      byline:'Pitchcraft score: see below' },
+    { minRep:70, icon:'🌍', name:'Bowlin' Tone Magazine', type:'international music press', reach:'International', byline:'feat. Hunter S. Thompsound' },
+    { minRep:85, icon:'🌍', name:'The Guard, Iain',        type:'intl. broadsheet culture',  reach:'International', byline:'Iain Guard — Security Guard & Music Critic' },
   ];
   // Pick the highest tier the player has unlocked, with chance of one tier higher
   const unlocked = PRESS_TIERS.filter(t=>G.rep>=t.minRep);
@@ -1951,7 +1951,10 @@ function renderPostShow({band,venue,attendance,cap,revenue,bandFee,supportFee,sf
   const srcEl = document.getElementById('ps-source');
   if(srcEl){
     const reachCol = {Local:'#506080',Regional:'#507080',National:'#6040b0',International:'#b08020'};
-    srcEl.innerHTML = tier.icon+' <strong style="color:#c9b8ff">'+tier.name+'</strong> <span style="color:'+reachCol[tier.reach]+';font-size:0.65rem;margin-left:0.3rem">'+tier.reach.toUpperCase()+'</span> · Week '+G.week;
+    srcEl.innerHTML = tier.icon+' <strong style="color:#c9b8ff">'+tier.name+'</strong>'
+      +' <span style="color:'+reachCol[tier.reach]+';font-size:0.65rem;margin-left:0.3rem">'+tier.reach.toUpperCase()+'</span>'
+      +' <span style="color:#4a3a60;font-size:0.65rem;margin-left:0.4rem">— '+tier.byline+'</span>'
+      +' · Week '+G.week;
   }
 
   // Band progression
