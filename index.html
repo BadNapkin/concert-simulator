@@ -307,6 +307,29 @@ canvas#stage { width: 100%; height: 100%; }
   .newspaper { padding: 1rem; }
   canvas#stage { height: 200px !important; }
 }
+/* ── ALERT POPUP OVERLAY ── */
+#alert-popup-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.72); align-items: center; justify-content: center;
+}
+#alert-popup-overlay.active { display: flex; }
+#alert-popup-box {
+  background: #110d20; border: 1px solid #5a3a90; border-radius: 12px;
+  padding: 2rem 2.2rem 1.5rem; max-width: 420px; width: 90%;
+  box-shadow: 0 0 40px rgba(140,80,255,0.35); text-align: center; position: relative;
+}
+#alert-popup-box.urgent { border-color: #c03060; box-shadow: 0 0 40px rgba(220,60,100,0.4); }
+#alert-popup-icon { font-size: 2rem; margin-bottom: 0.6rem; }
+#alert-popup-text { color: #e0d0f8; font-size: 1rem; line-height: 1.6; margin-bottom: 1.4rem; }
+#alert-popup-date { font-size: 0.7rem; color: #5a4080; margin-bottom: 1rem; letter-spacing: 0.1em; }
+#alert-popup-more { font-size: 0.72rem; color: #7060a0; margin-top: -0.8rem; margin-bottom: 1rem; }
+#alert-popup-ok {
+  background: rgba(120,60,200,0.3); border: 1px solid rgba(180,100,255,0.6);
+  color: #d0b8f0; padding: 0.55rem 2.5rem; font-family: inherit;
+  font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer;
+  border-radius: 6px; transition: all 0.2s;
+}
+#alert-popup-ok:hover { border-color: rgba(180,100,255,0.9); color: #fff; box-shadow: 0 0 16px rgba(180,100,255,0.3); }
 </style>
 </head>
 <body>
@@ -999,15 +1022,52 @@ function bookBand(bandId, slot) {
   saveGame(); updateStatusBar(); renderBandCarousel(); renderOffice();
 }
 
+// ── ALERT POPUP QUEUE ──────────────────────────────────────────────────────
+let _alertQueue = [];
+let _alertPopupOpen = false;
+
 function addAlert(text, urgent=false){
   if(!G.alerts) G.alerts=[];
   const day = (typeof DAYS!=='undefined'&&G.dayOfWeek!==undefined) ? DAYS[G.dayOfWeek] : '';
-  G.alerts.unshift({text, urgent, date:'Wk '+G.week+' '+day});
+  const date = 'Wk '+G.week+' '+day;
+  G.alerts.unshift({text, urgent, date});
   if(G.alerts.length>50) G.alerts.length=50;
   renderAlerts();
-  // flash badge dot
   const badge = document.getElementById('alerts-badge');
   if(badge){ badge.style.display='inline-block'; }
+  // Queue for popup display
+  _alertQueue.push({text, urgent, date});
+  if(!_alertPopupOpen) _showNextAlertPopup();
+}
+
+function _showNextAlertPopup(){
+  if(!_alertQueue.length){ _alertPopupOpen=false; return; }
+  _alertPopupOpen = true;
+  const a = _alertQueue.shift();
+  const overlay = document.getElementById('alert-popup-overlay');
+  const box = document.getElementById('alert-popup-box');
+  const icon = document.getElementById('alert-popup-icon');
+  const dateEl = document.getElementById('alert-popup-date');
+  const textEl = document.getElementById('alert-popup-text');
+  const moreEl = document.getElementById('alert-popup-more');
+  if(!overlay) return;
+  // Pick icon from first emoji in text, or default
+  const emojiMatch = a.text.match(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/u);
+  icon.textContent = emojiMatch ? emojiMatch[0] : (a.urgent ? '⚠️' : '🔔');
+  dateEl.textContent = a.date;
+  textEl.textContent = a.text;
+  const queued = _alertQueue.length;
+  moreEl.textContent = queued > 0 ? `+${queued} more alert${queued>1?'s':''} pending` : '';
+  box.className = a.urgent ? 'urgent' : '';
+  overlay.classList.add('active');
+}
+
+function dismissAlertPopup(){
+  const overlay = document.getElementById('alert-popup-overlay');
+  if(overlay) overlay.classList.remove('active');
+  _alertPopupOpen = false;
+  // Small delay so rapid alerts don't feel jarring
+  if(_alertQueue.length) setTimeout(_showNextAlertPopup, 180);
 }
 
 function enquireBand(bandId, slot){
@@ -1115,7 +1175,7 @@ function handleNegotiation(enquiryId, choiceIndex){
     enq.status='declined';
     addAlert(`📋 Passed on ${band.name}. Enquiry closed.`);
   }
-  saveGame(); renderEnquiries(); renderPlanSupport(); updateStatusBar(); renderOffice();
+  saveGame(); renderEnquiries(); renderInbox(); renderPlanSupport(); updateStatusBar(); renderOffice();
 }
 
 // ── OFFICE / SCENE FEED ────────────────────────────────────────────────────
@@ -1810,16 +1870,22 @@ function startShowAnimation(band, venue, attendance, cap, profit, supportBand, o
   }).join('');
 
   const canvas=document.getElementById('stage');
-  if(!canvas){ setTimeout(onDone,400); return; }
+  if(!canvas){ console.warn('[SHOW] canvas#stage not found'); setTimeout(onDone,400); return; }
 
-  // Force canvas to known good dimensions immediately using offsetParent,
-  // then refine after a paint cycle. This fixes week-1 where show-screen
-  // is displayed for the first time and getBoundingClientRect returns 0.
-  canvas.width = 700; canvas.height = 420; // safe defaults first
+  const showScreen_el = document.getElementById('show-screen');
+  console.log('[SHOW] show-screen classes:', showScreen_el ? showScreen_el.className : 'NOT FOUND');
+  console.log('[SHOW] show-screen display:', showScreen_el ? getComputedStyle(showScreen_el).display : 'N/A');
+
+  // Set safe defaults first
+  canvas.width = 700; canvas.height = 420;
   void canvas.offsetWidth; // force reflow
+
   requestAnimationFrame(()=>{
     const rect = canvas.getBoundingClientRect();
+    console.log('[SHOW] canvas rect after rAF:', JSON.stringify({w:rect.width,h:rect.height,top:rect.top,left:rect.left}));
+    console.log('[SHOW] canvas.width/height before adjust:', canvas.width, canvas.height);
     if(rect.width > 10){ canvas.width = rect.width; canvas.height = Math.max(100, rect.height); }
+    console.log('[SHOW] canvas.width/height FINAL:', canvas.width, canvas.height);
     _doShowAnimation(canvas, band, venue, attendance, cap, profit, onDone, activeGear, supportBand);
   });
 }
@@ -2175,5 +2241,15 @@ window.addEventListener('DOMContentLoaded', initStartScreen);
 // Belt-and-suspenders: also run after a short delay in case of slow parse
 setTimeout(initStartScreen, 200);
 </script>
+<!-- Alert Popup Overlay -->
+<div id="alert-popup-overlay">
+  <div id="alert-popup-box">
+    <div id="alert-popup-icon">🔔</div>
+    <div id="alert-popup-date"></div>
+    <div id="alert-popup-text"></div>
+    <div id="alert-popup-more"></div>
+    <button id="alert-popup-ok" onclick="dismissAlertPopup()">OK</button>
+  </div>
+</div>
 </body>
 </html>
