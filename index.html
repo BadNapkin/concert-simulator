@@ -2011,23 +2011,37 @@ function continueAfterShow(){
 // ── INIT ───────────────────────────────────────────────────────────────────
 function initGame(fresh){
   try {
-    if(!fresh&&hasSave()){ loadGame(); }
-    else { wipeSave(); G=_addAliases(freshState()); }
+    if(!fresh && hasSave()){
+      loadGame();
+    } else {
+      // Only wipe AFTER we've successfully built fresh state
+      const newState = _addAliases(freshState());
+      wipeSave();
+      G = newState;
+    }
     showScreen('game-screen');
     updateStatusBar();
-    const firstNav=document.querySelector('.nav-btn[onclick*="office"]');
+    // Robust nav: try multiple selectors
+    const firstNav = document.querySelector('.nav-btn[data-panel="office"]')
+                  || document.querySelector('.nav-btn[onclick*="office"]');
     switchPanel('office', firstNav);
   } catch(e) {
-    alert('ERROR in initGame: ' + e.message + '\n\nStack: ' + e.stack);
+    console.error('initGame error:', e);
+    alert('ERROR starting game: ' + e.message + '\n\nTry clearing browser storage and reloading.');
   }
 }
 
-window.addEventListener('DOMContentLoaded',()=>{
-  if(hasSave()){
-    const cb=document.getElementById('continue-btn');
-    if(cb) cb.style.display='inline-block';
-  }
-});
+// Robust start screen init — runs on DOMContentLoaded AND as a fallback
+function initStartScreen(){
+  try {
+    const cb = document.getElementById('continue-btn');
+    if(cb) cb.style.display = hasSave() ? 'inline-block' : 'none';
+  } catch(e){ console.warn('initStartScreen:', e); }
+}
+
+window.addEventListener('DOMContentLoaded', initStartScreen);
+// Belt-and-suspenders: also run after a short delay in case of slow parse
+setTimeout(initStartScreen, 200);
 </script>
 </body>
 </html>
