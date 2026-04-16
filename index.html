@@ -2042,10 +2042,12 @@ function runShow(){
   const revenue=attendance*ticketPrice;
   const profit=revenue-bandFee-supportFee-sfxCost;
 
-  G.money=Math.round(G.money+profit);
-  if(G.money<0) G.money=0;
+  // NOTE: G.money and G.rep are adjusted after personality events below
+  // placeholder — personality block will set final values
   const repGain=Math.max(1,Math.round((attendance/cap)*6));
   const fanGain=Math.round(attendance*0.25);
+  // Note: repGain/fanGain use pre-personality attendance intentionally (rep/fan delta shown on postshow)
+  // finalAttendance and adjProfit are used for all financial and history tracking
   const repBefore=G.rep;
   G.rep=Math.min(100,G.rep+repGain);
   // Check if new press tier unlocked
@@ -2060,9 +2062,9 @@ function runShow(){
 
   // Support band gains fame/fans from the show
   if(supportBand){
-    const suppFanGain=Math.round(attendance*0.08);
+    const suppFanGain=Math.round(finalAttendance*0.08);
     supportBand.fans=(supportBand.fans||0)+suppFanGain;
-    const fillRate=attendance/cap;
+    const fillRate=finalAttendance/cap;
     if(fillRate>=0.8 && supportBand.fame===0){
       supportBand.fame=1;
       addAlert('📈 '+supportBand.name+' had a great night — they\'re rising! Fame: Local Act now.');
@@ -2077,7 +2079,194 @@ function runShow(){
     G.contacts[supportBand.id].tier=Math.min(3,(G.contacts[supportBand.id].tier||0)+1);
   }
 
-  // SFX combo check
+  // ── PERSONALITY EVENTS ──────────────────────────────────────────────────
+  // Each trait on the headliner can fire a consequence (good or bad)
+  const _traits = band.traits || [];
+  const _hasSfx = id => G.sfxOwned && G.sfxOwned[id];
+  const _activeSmoke = G.sfxActive && (G.sfxActive['smoke'] || G.sfxActive['basic']);
+
+  const _personalityEvents = []; // {icon, text, attendanceDelta, cashDelta, repDelta}
+
+  if(_traits.includes('Always Late')){
+    // 60% chance they actually show up late
+    if(Math.random()<0.6){
+      const lateLines=[
+        `${band.name} rolled in 45 minutes late. Crowd was already restless.`,
+        `${band.name}'s van broke down outside Bristol. They made it — barely.`,
+        `${band.name} couldn't find the venue. Soundcheck was 20 minutes. It showed.`,
+        `${band.name} arrived mid-support set. The vibe was off all night.`,
+      ];
+      _personalityEvents.push({icon:'⏰', text:rnd(lateLines), attendanceDelta:-12, cashDelta:0, repDelta:-1});
+    } else {
+      _personalityEvents.push({icon:'😅', text:`${band.name} actually showed up on time for once. You could tell they were as surprised as you.`, attendanceDelta:5, cashDelta:0, repDelta:0});
+    }
+  }
+
+  if(_traits.includes('Drama Queens')){
+    if(Math.random()<0.5){
+      const dramaLines=[
+        `${band.name}'s rider included specific brand of mineral water. You sent someone to three shops.`,
+        `${band.name}'s frontperson refused to go on until the lighting was "more violet". Cost you a delay.`,
+        `${band.name} demanded the support act be removed from their dressing room wall. Long story.`,
+        `${band.name}'s manager called three times before 6pm. Each time a new demand.`,
+      ];
+      const dramaCash = -(20 + Math.floor(Math.random()*30));
+      _personalityEvents.push({icon:'💅', text:rnd(dramaLines), attendanceDelta:0, cashDelta:dramaCash, repDelta:0});
+    } else {
+      _personalityEvents.push({icon:'✨', text:`${band.name} were surprisingly professional tonight. No drama. You'll take it.`, attendanceDelta:0, cashDelta:0, repDelta:1});
+    }
+  }
+
+  if(_traits.includes('Uncompromising')){
+    if(Math.random()<0.45){
+      const uncLines=[
+        `${band.name} refused to cut their set short for the curfew. You got a warning from the council.`,
+        `${band.name} wouldn't let the sound engineer adjust their mix. Half the room couldn't hear the vocals.`,
+        `${band.name} insisted on playing an unreleased 18-minute track. Crowd thinned out by minute 12.`,
+      ];
+      _personalityEvents.push({icon:'🗿', text:rnd(uncLines), attendanceDelta:-8, cashDelta:0, repDelta:-1});
+    } else {
+      _personalityEvents.push({icon:'💪', text:`${band.name}'s uncompromising set was exactly what the room needed. Raw and relentless.`, attendanceDelta:10, cashDelta:0, repDelta:1});
+    }
+  }
+
+  if(_traits.includes('Pyro Enthusiasts') && !_hasSfx('pyro')){
+    // They tried to bring their own — venue wasn't rigged for it
+    if(Math.random()<0.5){
+      const pyroLines=[
+        `${band.name} attempted a DIY pyro moment. The fire alarm went off. Show stopped for 10 minutes.`,
+        `${band.name} brought their own flash pots. Your venue isn't licensed for it. Awkward conversation with the landlord.`,
+        `${band.name} set off a flare during the encore. You'll be hearing from the council.`,
+      ];
+      _personalityEvents.push({icon:'🔥', text:rnd(pyroLines), attendanceDelta:-10, cashDelta:-40, repDelta:-2});
+    }
+  }
+
+  if(_traits.includes('Pyro Enthusiasts') && _hasSfx('pyro')){
+    _personalityEvents.push({icon:'🎆', text:`${band.name} lit up the room. Pyro + a crowd-ready band — the place went absolutely mental.`, attendanceDelta:12, cashDelta:0, repDelta:1});
+  }
+
+  if(_traits.includes('Method Actors')){
+    const fillRate = attendance / cap;
+    if(fillRate < 0.4){
+      const methodLines=[
+        `${band.name} took one look at the half-empty room and phoned in the performance.`,
+        `${band.name}'s frontperson sat on the floor during the second song. Artistic statement, apparently.`,
+        `${band.name} played the whole set with their backs to the audience. Concept piece. Nobody clapped.`,
+      ];
+      _personalityEvents.push({icon:'🎭', text:rnd(methodLines), attendanceDelta:-8, cashDelta:0, repDelta:-1});
+    } else {
+      _personalityEvents.push({icon:'🎭', text:`${band.name} fed off the energy in the room. A full crowd brings out something else in them entirely.`, attendanceDelta:8, cashDelta:0, repDelta:1});
+    }
+  }
+
+  if(_traits.includes('Party Animals')){
+    const partyRoll = Math.random();
+    if(partyRoll < 0.3){
+      _personalityEvents.push({icon:'🍻', text:`${band.name} started their own after-party in the green room. Three crew members didn't show up for load-out.`, attendanceDelta:0, cashDelta:-25, repDelta:0});
+    } else if(partyRoll < 0.7){
+      _personalityEvents.push({icon:'🎉', text:`${band.name} turned the venue into a proper party. People are still talking about it.`, attendanceDelta:15, cashDelta:0, repDelta:1});
+    } else {
+      _personalityEvents.push({icon:'🚨', text:`${band.name}'s energy tipped over into chaos. Two people were asked to leave. Atmosphere never recovered.`, attendanceDelta:-10, cashDelta:0, repDelta:-1});
+    }
+  }
+
+  if(_traits.includes('Road Warriors')){
+    if(Math.random()<0.7){
+      _personalityEvents.push({icon:'🚐', text:`${band.name} run a tight ship. In, soundchecked, and ready 90 minutes before doors. The show was seamless.`, attendanceDelta:6, cashDelta:0, repDelta:1});
+    }
+  }
+
+  if(_traits.includes('Punctual')){
+    _personalityEvents.push({icon:'🕐', text:`${band.name} were ready before you were. Early soundcheck meant a crisp, well-mixed show.`, attendanceDelta:5, cashDelta:0, repDelta:0});
+  }
+
+  if(_traits.includes('Local Heroes') && G.venueTier===0){
+    _personalityEvents.push({icon:'🏠', text:`${band.name} brought their whole local following out. Half the crowd seemed to know them personally.`, attendanceDelta:15, cashDelta:0, repDelta:1});
+  }
+
+  if(_traits.includes('Smoke Lovers') && !_activeSmoke){
+    if(Math.random()<0.55){
+      const smokeLines=[
+        `${band.name} asked about the smoke machine. You had to break the news. They were visibly deflated.`,
+        `${band.name}'s rider notes: "Smoke. Non-negotiable." Your notes: "We don't have one."`,
+        `Without atmosphere, ${band.name}'s set felt flat. They're a smoke-and-mirrors band — literally.`,
+      ];
+      _personalityEvents.push({icon:'🌫️', text:rnd(smokeLines), attendanceDelta:-8, cashDelta:0, repDelta:-1});
+    }
+  }
+
+  if(_traits.includes('Underground Cred') && G.venueTier>=2){
+    _personalityEvents.push({icon:'🙄', text:`${band.name} weren't comfortable in a room this big. Their set felt stiff — they're better in a basement.`, attendanceDelta:-10, cashDelta:0, repDelta:0});
+  }
+
+  if(_traits.includes('Merch Machine')){
+    const merchRevenue = Math.round(attendance * (0.08 + Math.random()*0.07));
+    if(merchRevenue > 0){
+      _personalityEvents.push({icon:'👕', text:`${band.name} moved a lot of merch tonight. Their cut: gone. Your cut: well, you didn't have a cut table. Something to think about.`, attendanceDelta:0, cashDelta:0, repDelta:0});
+    }
+  }
+
+  if(_traits.includes('Industry Darlings') && Math.random()<0.3){
+    _personalityEvents.push({icon:'🤵', text:`A label rep was in the room tonight watching ${band.name}. Word gets around.`, attendanceDelta:0, cashDelta:0, repDelta:2});
+  }
+
+  if(_traits.includes('Crowd Surfers')){
+    const csRoll = Math.random();
+    if(csRoll<0.4){
+      _personalityEvents.push({icon:'🏄', text:`Crowd surfing got out of hand. Your bar staff were not impressed. Great photos though.`, attendanceDelta:5, cashDelta:-15, repDelta:0});
+    } else {
+      _personalityEvents.push({icon:'🏄', text:`The crowd surfing during ${band.name}'s set was the highlight of the night. Someone's already posted it online.`, attendanceDelta:8, cashDelta:0, repDelta:1});
+    }
+  }
+
+  if(_traits.includes('Label Pressure') && Math.random()<0.35){
+    const lpLines=[
+      `${band.name}'s label had a rep at the show. The band played it safe — too safe.`,
+      `${band.name} seemed distracted all night. Label politics bleeding into the performance.`,
+      `Rumour is ${band.name} are being pushed to record a new EP. The tension was palpable on stage.`,
+    ];
+    _personalityEvents.push({icon:'📱', text:rnd(lpLines), attendanceDelta:-5, cashDelta:0, repDelta:0});
+  }
+
+  if(_traits.includes('Rising Stars') && Math.random()<0.5){
+    _personalityEvents.push({icon:'⭐', text:`${band.name} are on the way up and everyone in the room could feel it. Booking them now was a smart call.`, attendanceDelta:10, cashDelta:0, repDelta:1});
+  }
+
+  if(_traits.includes('Face Paint') && Math.random()<0.6){
+    _personalityEvents.push({icon:'🎨', text:`${band.name}'s face paint ritual took 40 extra minutes backstage. Worth it — the visual was striking.`, attendanceDelta:5, cashDelta:0, repDelta:0});
+  }
+
+  if(_traits.includes('Acoustic Purists') && Object.keys(G.sfxActive||{}).filter(id=>id!=='basic'&&G.sfxActive[id]).length > 0){
+    _personalityEvents.push({icon:'🎸', text:`${band.name} were unhappy with all the gear on stage. "We don't need gimmicks," the singer said into a microphone connected to a £200 reverb unit.`, attendanceDelta:-5, cashDelta:0, repDelta:-1});
+  }
+
+  // Apply all personality event deltas
+  let _totalAttDelta=0, _totalCashDelta=0, _totalRepDelta=0;
+  _personalityEvents.forEach(ev=>{
+    _totalAttDelta+=ev.attendanceDelta||0;
+    _totalCashDelta+=ev.cashDelta||0;
+    _totalRepDelta+=ev.repDelta||0;
+  });
+
+  // Clamp attendance after personality events
+  const finalAttendance = Math.min(cap, Math.max(1, attendance + _totalAttDelta));
+  // Override attendance with personality-adjusted value
+  // (we'll use finalAttendance below instead of attendance for revenue)
+  const adjRevenue = finalAttendance * ticketPrice;
+  const adjProfit = adjRevenue - bandFee - supportFee - sfxCost + _totalCashDelta;
+
+  // Apply cash and rep from personality events
+  G.money = Math.round(G.money + adjProfit); // personality-adjusted profit
+  if(G.money<0) G.money=0;
+  G.rep = Math.min(100, Math.max(0, G.rep + _totalRepDelta));
+
+  // Fire personality alert(s) — only first 2 to avoid spam
+  _personalityEvents.slice(0,2).forEach(ev=>{
+    addAlert(ev.icon+' '+ev.text, ev.repDelta<0||ev.cashDelta<0);
+  });
+
+  // ── SFX combo check
   let specialReview=null;
   COMBOS.forEach(combo=>{
     if(G.sfxActive[combo.sfx]&&combo.match(band)){
@@ -2089,26 +2278,26 @@ function runShow(){
   // Review
   const vName=venue.name; const bName=band.name; const genre=band.genre;
   const fill=s=>s.replace(/{venue}/g,vName).replace(/{band}/g,bName).replace(/{genre}/g,genre);
-  let reviewPool= profit>50&&attendance/cap>0.8 ? REVIEWS_GOOD : profit>0 ? REVIEWS_MID : REVIEWS_BAD;
+  let reviewPool= adjProfit>50&&finalAttendance/cap>0.8 ? REVIEWS_GOOD : adjProfit>0 ? REVIEWS_MID : REVIEWS_BAD;
   let review=specialReview||fill(rnd(reviewPool));
   if(band.isBackup&&backupPenalty>0) review='⚠️ '+band.backupRisk+' '+review;
 
-  G.history.push({week:G.week,band:bName,attendance,capacity:cap,profit,review});
+  G.history.push({week:G.week,band:bName,attendance:finalAttendance,capacity:cap,profit:adjProfit,review});
 
   // Update contacts
   if(!G.contacts[band.id]) G.contacts[band.id]={tier:0,gigs:0,bestNight:'None yet'};
   G.contacts[band.id].gigs=(G.contacts[band.id].gigs||0)+1;
-  if(!G.contacts[band.id].bestNight||attendance>cap*0.8) G.contacts[band.id].bestNight='Wk '+G.week;
+  if(!G.contacts[band.id].bestNight||finalAttendance>cap*0.8) G.contacts[band.id].bestNight='Wk '+G.week;
 
   // Achievements
-  if(attendance>=cap) unlockAchievement('sold_out');
+  if(finalAttendance>=cap) unlockAchievement('sold_out');
   if(G.history.length===1) unlockAchievement('first_show');
   if(G.history.length>=5) unlockAchievement('five_shows');
 
   // Show animation then post-show screen
-  startShowAnimation(band, venue, attendance, cap, profit, supportBand, ()=>{
+  startShowAnimation(band, venue, finalAttendance, cap, adjProfit, supportBand, ()=>{
     showScreen('postshow-screen');
-    renderPostShow({band,venue,attendance,cap,revenue,bandFee,supportFee,sfxCost,profit,repGain,fanGain,review,promo});
+    renderPostShow({band,venue,attendance:finalAttendance,cap,revenue:adjRevenue,bandFee,supportFee,sfxCost,profit:adjProfit,repGain,fanGain,review,promo});
     if(G.money<=0){ G.gameOver=true; }
     saveGame();
   }); // end startShowAnimation callback
