@@ -506,10 +506,10 @@ canvas#stage { width: 100%; height: 100%; }
       <div id="plan-sfx" style="display:flex;flex-wrap:wrap;gap:0.5rem"></div>
     </div>
 
-    <!-- PROMOTIONS -->
-    <div style="margin-bottom:1.2rem">
-      <div style="font-size:0.75rem;color:#8070b0;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.6rem">📣 Promotion</div>
-      <div style="display:flex;flex-wrap:wrap;gap:0.5rem" id="plan-promos"></div>
+    <!-- PROMOTIONS (read-only — must be booked earlier in the week) -->
+    <div style="margin-bottom:1.2rem" id="plan-promo-summary">
+      <div style="font-size:0.75rem;color:#8070b0;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem">📣 Promotion</div>
+      <div id="plan-promo-readout" style="font-size:0.82rem;color:#7060a0;font-style:italic">No promotion booked.</div>
     </div>
 
     <!-- COST BREAKDOWN -->
@@ -914,6 +914,8 @@ function nextDay(){
     });
     const b=document.getElementById('inbox-badge'); if(b) b.style.display='block';
     saveGame(); updateStatusBar(); renderOffice();
+    // If inbox panel is currently active, refresh it live
+    if(document.getElementById('panel-inbox')?.classList.contains('active')) renderInbox();
     // open planning modal
     setTimeout(()=>openPlanning(), 300);
     return;
@@ -937,6 +939,8 @@ function nextDay(){
       const b=document.getElementById('inbox-badge'); if(b) b.style.display='block';
     }
   });
+  // Live-refresh inbox if active
+  if(document.getElementById('panel-inbox')?.classList.contains('active')) renderInbox();
 
   // Inject daily news
   const key=`${G.week}-${G.dayOfWeek}`;
@@ -1438,7 +1442,14 @@ function openPlanning(){
   renderPlanBands();
   renderPlanSupport();
   renderPlanSFX();
-  renderPlanPromos();
+  // Show active promo as read-only summary
+  const promoReadout = document.getElementById('plan-promo-readout');
+  if(promoReadout){
+    const promo = G.pendingPromo ? PROMOS.find(p=>p.id===G.pendingPromo) : null;
+    promoReadout.innerHTML = promo
+      ? '<span style="color:#60c878">✓ '+promo.label+'</span> <span style="color:#4a3060;font-size:0.75rem">(£'+promo.cost+' · booked earlier this week)</span>'
+      : '<span style="color:#4a3060">None — book promotions earlier in the week via Home Base.</span>';
+  }
   renderPlanCosts();
 }
 
@@ -1475,12 +1486,11 @@ function confirmPlanning(){
       G.pendingPromo=promo.id;
     }
   }
-  // Advance to Saturday and fire the show immediately
   G.dayOfWeek=6;
   saveGame(); updateStatusBar();
-  // Week 1 needs extra delay: show-screen canvas has never been rendered before
-  const delay = G.week===1 ? 800 : 400;
-  setTimeout(()=>runShow(), delay);
+  // Show the show-screen first so canvas has real dimensions, then animate
+  showScreen('show-screen');
+  setTimeout(()=>runShow(), 600);
 }
 
 function bookPromo(promoId){
@@ -1736,8 +1746,12 @@ function startShowAnimation(band, venue, attendance, cap, profit, onDone){
   if(!canvas){ setTimeout(onDone,400); return; }
 
   // Resize canvas to fill its container
-  canvas.width=canvas.offsetWidth||700;
-  canvas.height=canvas.offsetHeight||320;
+  // Force layout then read dimensions
+  canvas.style.width='100%'; canvas.style.height='100%';
+  canvas.width = canvas.clientWidth || canvas.offsetWidth || canvas.parentElement?.clientWidth || 700;
+  canvas.height = canvas.clientHeight || canvas.offsetHeight || canvas.parentElement?.clientHeight || 320;
+  if(canvas.width < 100) canvas.width = 700;
+  if(canvas.height < 100) canvas.height = 320;
   const ctx=canvas.getContext('2d');
   const W=canvas.width, H=canvas.height;
 
