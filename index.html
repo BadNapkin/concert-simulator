@@ -1014,7 +1014,7 @@ function freshState() {
     week:1, dayOfWeek:0, rep:0, bossSatisfaction:50,
     venueTier:0,
     headliner:null, support:null,
-    pendingPromo:null,
+    pendingPromo:null, pendingPromos:[], dailyAvailable:[], lastAvailRefresh:-1,
     sfxOwned:{basic:true,spots:true}, sfxActive:{basic:true,spots:true},
     achievements:[], contacts:{}, discovered:{},
     weeklyBudget:6, tokensSpent:0,
@@ -1130,6 +1130,7 @@ function updateStatusBar(){
 function nextDay(){
   if(G.gameOver) return;
   G.dayOfWeek++;
+  refreshDailyBands();
 
   if(G.dayOfWeek===5){
     // deliver any last-minute replies before planning page
@@ -1230,7 +1231,16 @@ function endWeek(){
   }
 
   G.week++; G.dayOfWeek=0;
-  G.headliner=null; G.support=null; G.pendingPromo=null;
+  // Pay-day boost every 4 weeks
+  if(G.week%4===0){
+    G.weeklyBudget=(G.weeklyBudget||4)+2;
+    G.paydayWeek=true;
+    addAlert('💰 Pay-day Friday incoming! Budget +2 tokens this week — bigger crowds expected.');
+  } else {
+    G.paydayWeek=false;
+  rivalUpdate();
+  }
+  G.headliner=null; G.support=null; G.pendingPromo=null; G.pendingPromos=[];
   // Reset weekly budget (scales with venue tier)
   G.weeklyBudget = [6,7,8,10][G.venueTier] || 6;
   G.tokensSpent = 0;
@@ -1514,7 +1524,7 @@ function renderOffice(){
 
   // Week pill
   const pill=document.getElementById('office-week-pill');
-  if(pill) pill.textContent='WK '+G.week+' · '+DAYS[G.dayOfWeek];
+  if(pill) pill.textContent='WK '+G.week+' · '+(G.paydayWeek?'💰 PAY-DAY · ':'')+DAYS[G.dayOfWeek];
   const vname=document.getElementById('office-venue-name');
   if(vname) vname.textContent=venue.name;
 
@@ -2020,12 +2030,65 @@ const PROMOS = [
   { id:'press',     label:'📰 Press Release',repBonus:3, desc:'+3 REP, best attendance boost' },
 ];
 
+// ── RIVAL PROMOTER ─────────────────────────────────────────────────────────
+const DEAF_JEFF = {
+  name:'Deaf Jeff',
+  venue:'The Tap Room (Main Room)',
+  hype:30, // starts with some rep
+  lines:[
+    'Heard you had a good night. Won\'t last.',
+    'My room holds twice as many. Just saying.',
+    'Already booked three of the bands you wanted.',
+    'The Tap Room is where careers actually happen.',
+    'Nice little show. Come talk when you\'re ready for the big league.',
+    'Word on the street — your crowd walked past my queue to get to you. That\'s embarrassing for you.',
+  ]
+};
+
+function rivalUpdate(){
+  // Jeff gains hype each week, scaled by your rep
+  const jeffGain = 2 + Math.floor(Math.random()*3);
+  DEAF_JEFF.hype = Math.min(100, DEAF_JEFF.hype + jeffGain);
+  // If Jeff's hype > player rep, he steals some attendance next show
+  G._jeffSteal = DEAF_JEFF.hype > G.rep ? Math.floor((DEAF_JEFF.hype - G.rep)*0.3) : 0;
+  // Jeff poaches a random available band 20% of the time
+  if(Math.random()<0.2){
+    const available = BANDS.filter(b=>b.id!==( BANDS[G.headliner]||{}).id && !b._jeffBooked);
+    if(available.length){
+      const target = available[Math.floor(Math.random()*available.length)];
+      target._jeffBooked = G.week;
+      const line = DEAF_JEFF.lines[Math.floor(Math.random()*DEAF_JEFF.lines.length)];
+      addAlert('😤 Deaf Jeff snagged '+target.name+' for The Tap Room this week! \''+line+'\'', true);
+    }
+  }
+  // Clear Jeff\'s bookings after 1 week
+  BANDS.forEach(b=>{ if(b._jeffBooked && b._jeffBooked < G.week) delete b._jeffBooked; });
+}
+
+function refreshDailyBands(){
+  const key=G.week*10+G.dayOfWeek;
+  if(G.lastAvailRefresh===key) return; // already done today
+  G.lastAvailRefresh=key;
+  // Clear previous flags
+  BANDS.forEach(b=>{ delete b._hotToday; delete b._unavailToday; });
+  // 2 random bands are 'just became available' today
+  const pool=BANDS.filter(b=>!b._jeffBooked&&b.id!==(BANDS[G.headliner]||{}).id);
+  const shuffled=pool.slice().sort(()=>Math.seededRandom?Math.seededRandom():Math.random()-0.5);
+  const hot=shuffled.slice(0,2);
+  hot.forEach(b=>b._hotToday=true);
+  // 1 random band is on tour/unavailable
+  const unavail=shuffled.find(b=>!b._hotToday);
+  if(unavail) unavail._unavailToday=true;
+  G.dailyAvailable=hot.map(b=>b.id);
+}
+
 if(!window._planPromo) window._planPromo = null;
 
 function openPlanning(){
   document.getElementById('planning-modal').style.display='block';
   document.getElementById('plan-week').textContent=G.week;
   window._planPromo = G.pendingPromo || null;
+  window._planPromos = (G.pendingPromos||[]).slice();
   renderPlanBands();
   renderPlanSupport();
   renderPlanSFX();
@@ -2178,19 +2241,23 @@ function planToggleSFX(id){
 
 function renderPlanPromos(){
   const el=document.getElementById('plan-promos'); if(!el) return;
+  if(!window._planPromos) window._planPromos=[];
   el.innerHTML=PROMOS.map(p=>{
-    const sel=window._planPromo===p.id;
-    const canAfford=true;
-    return '<div onclick="'+(canAfford?'selectPromo(\''+p.id+'\')':'')+'" style="cursor:'+(canAfford?'pointer':'default')+';padding:0.5rem 0.8rem;border-radius:8px;border:1px solid '+(sel?'#6030c0':'#2a1a50')+';background:'+(sel?'#1a0a40':'#0a0520')+';margin-bottom:0.4rem;width:100%">' +
-      '<div style="display:flex;justify-content:space-between"><span style="color:#c9b8ff;font-size:0.8rem">'+p.label+'</span><span style="color:#8060b0;font-size:0.8rem">+'+p.repBonus+' REP</span></div>' +
-      '<div style="font-size:0.68rem;color:#6050a0">'+p.desc+'</div>'+
-      (sel?'<div style="font-size:0.65rem;color:#60c878">✓ Selected</div>':'')+
-      '</div>';
+    const sel=window._planPromos.includes(p.id);
+    return '<div onclick="selectPromo(\''+p.id+'\')" style="cursor:pointer;padding:0.5rem 0.8rem;border-radius:8px;border:1px solid '+(sel?'#6030c0':'#2a1a50')+';background:'+(sel?'#1a0a40':'#0a0520')+';margin-bottom:0.4rem;width:100%">'
+      +'<div style="display:flex;justify-content:space-between"><span style="color:#c9b8ff;font-size:0.8rem">'+p.label+'</span><span style="color:#8060b0;font-size:0.8rem">+'+p.repBonus+' REP</span></div>'
+      +'<div style="font-size:0.68rem;color:#6050a0">'+p.desc+'</div>'
+      +(sel?'<div style="font-size:0.65rem;color:#60c878">✓ Selected</div>':'')
+      +'</div>';
   }).join('');
 }
 
 function selectPromo(id){
-  window._planPromo = (window._planPromo===id) ? null : id;
+  if(!window._planPromos) window._planPromos=[];
+  const idx=window._planPromos.indexOf(id);
+  if(idx>=0) window._planPromos.splice(idx,1);
+  else window._planPromos.push(id);
+  window._planPromo=window._planPromos[0]||null; // backward compat
   renderPlanPromos(); renderPlanCosts();
 }
 
@@ -2366,10 +2433,14 @@ function runShow(){
   }
 
   // Promo: apply attendance + rep bonus (no cost in employment model)
-  const promo=G.pendingPromo?PROMOS.find(p=>p.id===G.pendingPromo):null;
-  const promoBoost=promo?{flyering:1.1,social:1.2,presale:1.15,press:1.3}[promo.id]||1:1;
-  if(promo){ G.rep=Math.min(100,G.rep+promo.repBonus); }
-  G.pendingPromo=null;
+  // Stacked promos
+  const activePromos=(G.pendingPromos&&G.pendingPromos.length?G.pendingPromos:[G.pendingPromo]).filter(Boolean);
+  const promoBoostMap={flyering:1.1,social:1.2,presale:1.15,press:1.3};
+  let promoBoost=activePromos.reduce((acc,pid)=>acc*(promoBoostMap[pid]||1),1);
+  promoBoost=Math.min(promoBoost,2.0); // cap at 2x
+  let promoRepBonus=activePromos.reduce((acc,pid)=>{const p=PROMOS.find(x=>x.id===pid);return acc+(p?p.repBonus:0);},0);
+  if(promoRepBonus>0){ G.rep=Math.min(100,G.rep+promoRepBonus); }
+  G.pendingPromo=null; G.pendingPromos=[];
 
   // Backup band risk: chance of chaos reducing attendance
   let backupPenalty=0;
@@ -2378,8 +2449,11 @@ function runShow(){
   // Attendance
   const cap=venue.capacity;
   const drawFraction=0.7+Math.random()*0.4;
-  const baseAttendance=Math.round(band.fans*drawFraction*promoBoost)-backupPenalty+traitMatchBonus;
-  const attendance=Math.min(cap, Math.max(5, baseAttendance));
+  const jeffSteal=G._jeffSteal||0;
+  const paydayMult=G.paydayWeek?1.25:1;
+  const baseAttendance=Math.round(band.fans*drawFraction*promoBoost*paydayMult)-backupPenalty+traitMatchBonus;
+  const attendance=Math.min(cap, Math.max(5, baseAttendance-jeffSteal));
+  if(jeffSteal>0) addAlert('😤 Deaf Jeff\'s show at The Tap Room pulled '+jeffSteal+' people away tonight.');
 
   const repGain=Math.max(1,Math.round((attendance/cap)*6));
   const repBefore=G.rep;
