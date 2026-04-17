@@ -429,9 +429,19 @@ canvas#stage { width: 100%; height: 100%; }
 #tutorial-dots { display:flex; gap:5px; margin-right:auto; }
 .t-dot { width:6px; height:6px; border-radius:50%; background:#2a1840; transition:background 0.2s; }
 .t-dot.active { background:#9060d0; }
-</style>
-</head>
-<body>
+
+/* === MOBILE ENHANCEMENTS === */
+/* Bigger tap targets on mobile */
+@media (max-width: 600px) {
+  .btn { min-height: 44px; font-size: 0.95rem; }
+  .nav-btn { min-width: 44px; min-height: 44px; }
+  .band-card { padding: 0.8rem; }
+  #plan-sfx > div { min-height: 80px; }
+  .msg-bubble { padding: 0.7rem 0.9rem; }
+  .start-title { font-size: 2rem !important; }
+  #start-screen { padding: 1.5rem 1rem; }
+  .panel { padding-bottom: 5rem; }
+}
 
 <!-- ACHIEVEMENT TOAST -->
 <div class="ach-toast" id="ach-toast"></div>
@@ -440,7 +450,7 @@ canvas#stage { width: 100%; height: 100%; }
 <!-- START SCREEN -->
 <div class="screen active" id="start-screen">
   <div class="start-glow"></div>
-  <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;width:100%;text-align:center;padding:1rem 0">
+  <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:100%;width:100%;text-align:center;padding:2rem 1rem 3rem">
   <div class="start-title">Concert Simulator</div>
   <div class="start-sub">Talent Booker — The Dive Bar</div>
   <div class="start-tagline">"Develop the acts. Build the scene. Leave a legacy."<br>Every great venue started with one good night.</div>
@@ -679,7 +689,7 @@ canvas#stage { width: 100%; height: 100%; }
     <div style="max-width:620px;margin:0 auto;padding:1.2rem 1.2rem 5rem;box-sizing:border-box">
 
       <!-- PAGE 0: THE SHOW -->
-      <div id="ps-page-0">
+      <div id="ps-page-0";padding-bottom:2rem">
         <!-- Stat pills row -->
         <div style="display:flex;gap:0.7rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.2rem">
           <div style="background:#12082a;border:1px solid #2a1060;border-radius:10px;padding:0.6rem 1.1rem;text-align:center">
@@ -719,7 +729,7 @@ canvas#stage { width: 100%; height: 100%; }
       </div>
 
       <!-- PAGE 1: SCENE -->
-      <div id="ps-page-1" style="display:none">
+      <div id="ps-page-1" style="display:none";padding-bottom:2rem">
         <div id="ps-crowd-section" style="display:none"></div>
         <div style="font-size:0.75rem;color:#6040a0;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.7rem">📱 Scene Reactions</div>
         <div id="ps-social-feed" style="display:flex;flex-direction:column;gap:0.6rem;margin-bottom:1.2rem"></div>
@@ -730,7 +740,7 @@ canvas#stage { width: 100%; height: 100%; }
       </div>
 
       <!-- PAGE 2: PRESS & BOSS -->
-      <div id="ps-page-2" style="display:none">
+      <div id="ps-page-2" style="display:none;padding-bottom:2rem">
         <!-- Press clipping -->
         <div id="ps-newspaper" style="background:#0e0820;border:1px solid #2a1060;border-radius:12px;padding:1rem 1.2rem;margin-bottom:1.2rem">
           <div id="ps-source" style="font-size:0.7rem;color:#7060a0;letter-spacing:0.08em;margin-bottom:0.3rem"></div>
@@ -1843,7 +1853,7 @@ function renderInbox() {
           '<button onclick="handleNegotiation('+enq.id+','+i+')" style="font-size:0.72rem;padding:0.3rem 0.7rem;background:#1a0a40;border:1px solid #3a2a60;color:#c9b8ff;border-radius:6px;cursor:pointer">'+o.label+'</button>'
         ).join('') + '</div>';
     } else if (enq.status === 'confirmed') {
-      html += '<div class="msg-text" style="color:#50c878">Confirmed as headliner ✅</div>';
+      html += '<div class="msg-text" style="color:#50c878">'+(enq.slot==='support'?'Confirmed as support act ✅':'Confirmed as headliner ✅')+'</div>';
     } else if (enq.status === 'pending') {
       const pb = BANDS.find(b=>b.id===enq.bandId);
       const pendingMsg = pb && pb.agent==='Self-managed' ? 'Ringing them directly...' : 'Waiting on their agent...';
