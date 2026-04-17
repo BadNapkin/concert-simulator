@@ -306,7 +306,7 @@ canvas#stage { width: 100%; height: 100%; }
   #game-screen { flex-direction: column; }
   .sidebar { width: 100%; height: 48px; flex-direction: row; justify-content: space-around; padding: 0; border-right: none; border-bottom: 1px solid #1e1e2e; overflow-x: auto; flex-shrink: 0; }
   .nav-btn { flex-direction: column; gap: 0; padding: 0.5rem 0.6rem; min-width: 44px; font-size: 1.1rem; }
-  .tooltip { display: none; }
+  .tooltip { display: none !important; font-size: 0; }
   .main-content { flex: 1; overflow: hidden; position: relative; padding-bottom: 44px; box-sizing: border-box; }
   .panel { padding-bottom: 8px; }
   .office-grid { grid-template-columns: 1fr !important; }
@@ -688,11 +688,11 @@ canvas#stage { width: 100%; height: 100%; }
   </div>
 
   <!-- Scrollable page container -->
-  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch">
-    <div style="max-width:620px;margin:0 auto;padding:1.2rem 1.2rem 5rem;box-sizing:border-box">
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:env(safe-area-inset-bottom,0)">
+    <div style="max-width:620px;margin:0 auto;padding:1.2rem 1.2rem 6rem;box-sizing:border-box">
 
       <!-- PAGE 0: THE SHOW -->
-      <div id="ps-page-0";padding-bottom:2rem">
+      <div id="ps-page-0" style="padding-bottom:2rem">
         <!-- Stat pills row -->
         <div style="display:flex;gap:0.7rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.2rem">
           <div style="background:#12082a;border:1px solid #2a1060;border-radius:10px;padding:0.6rem 1.1rem;text-align:center">
@@ -732,7 +732,7 @@ canvas#stage { width: 100%; height: 100%; }
       </div>
 
       <!-- PAGE 1: SCENE -->
-      <div id="ps-page-1" style="display:none";padding-bottom:2rem">
+      <div id="ps-page-1" style="display:none;padding-bottom:2rem">
         <div id="ps-crowd-section" style="display:none"></div>
         <div style="font-size:0.75rem;color:#6040a0;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.7rem">📱 Scene Reactions</div>
         <div id="ps-social-feed" style="display:flex;flex-direction:column;gap:0.6rem;margin-bottom:1.2rem"></div>
