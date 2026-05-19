@@ -510,34 +510,40 @@ canvas#stage { width: 100%; height: 100%; }
 
   <!-- STAGE BAR -->
   <div class="stage-bar">
-    <div class="stage-btn active" id="stage-plan">📋 PLAN</div>
-    <div class="stage-btn" id="stage-show">🎸 RUN SHOW</div>
-    <div class="stage-btn" id="stage-review">📊 REVIEW</div>
+    <div class="stage-btn active" id="stage-book">📋 BOOK</div>
+    <div class="stage-btn" id="stage-plan">🎛️ PLAN</div>
+    <div class="stage-btn" id="stage-perf">🎸 PERFORMANCE</div>
+    <div class="stage-btn" id="stage-legacy">🌟 LEGACY</div>
     <div class="stage-util-bar">
       <button class="stage-util-btn" onclick="switchPanel('achievements')">🏆</button>
       <button class="stage-util-btn" onclick="switchPanel('contacts')">👥</button>
-      <button class="stage-util-btn" style="position:relative" onclick="switchPanel('alerts')">🔔<span id="alerts-badge" style="display:none;position:absolute;top:-3px;right:-3px;width:7px;height:7px;border-radius:50%;background:#ff4466;"></span></button>
+      <span id="alerts-badge" style="display:none"></span>
     </div>
   </div>
 
   <div class="main-content">
 
-    <!-- PLAN PANEL — Book bands, promos, then run show -->
-    <div class="panel active" id="panel-office">
+    <!-- PLAN PANEL — Promos, FX, run show -->
+    <div class="panel" id="panel-office">
       <div class="panel-header" style="padding:0.8rem 1.5rem;display:flex;align-items:center;justify-content:space-between">
         <div>
-          <div class="panel-title">Show Planning</div>
+          <div class="panel-title">Plan Your Show</div>
           <div class="panel-heading" id="office-venue-name" style="font-size:1.1rem">The Dive Bar</div>
         </div>
       </div>
       <div style="flex:1;overflow-y:auto;padding:0.8rem 1.2rem 1rem" id="scene-feed"></div>
     </div>
 
-    <!-- BANDBOOK — inline within plan flow -->
-    <div class="panel" id="panel-bandbook">
+    <!-- BOOK PANEL — Enquire and book bands -->
+    <div class="panel active" id="panel-bandbook">
       <div class="panel-header">
-        <div class="panel-title">Book a Band</div>
-        <div class="panel-heading">BandBook 📱</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="panel-title">Stage 1 · Book</div>
+            <div class="panel-heading">Book a Band 📱</div>
+          </div>
+          <button onclick="switchPanel('office')" style="background:linear-gradient(135deg,#3a1a80,#6030c0);border:none;color:#c9b8ff;padding:0.5rem 1rem;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.8rem;letter-spacing:0.05em">Plan Show →</button>
+        </div>
       </div>
       <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
         <div class="band-grid" id="band-carousel"></div>
@@ -1078,16 +1084,17 @@ function switchPanel(id){
   const p=document.getElementById('panel-'+id); if(!p) return;
   p.classList.add('active');
   // update stage bar
-  ['plan','show','review'].forEach(s=>{
+  ['book','plan','perf','legacy'].forEach(s=>{
     const el=document.getElementById('stage-'+s);
     if(el) el.classList.remove('active','done');
   });
-  if(id==='office'){
-    const el=document.getElementById('stage-plan'); if(el) el.classList.add('active');
-    renderOffice();
-  } else if(id==='bandbook'){
-    const el=document.getElementById('stage-plan'); if(el) el.classList.add('active');
+  if(id==='bandbook'){
+    const el=document.getElementById('stage-book'); if(el) el.classList.add('active');
     renderBandCarousel();
+  } else if(id==='office'){
+    const el=document.getElementById('stage-book'); if(el) el.classList.add('done');
+    const el2=document.getElementById('stage-plan'); if(el2) el2.classList.add('active');
+    renderOffice();
   }
   if(id==='achievements') renderAchievements();
   if(id==='contacts')     renderContacts();
@@ -1137,9 +1144,9 @@ function runShowIfReady(){
 }
 
 function endWeek(){
-  // reset stage bar to PLAN
-  ['plan','show','review'].forEach(s=>{ const el=document.getElementById('stage-'+s); if(el){el.classList.remove('active','done');} });
-  const _ep=document.getElementById('stage-plan'); if(_ep) _ep.classList.add('active');
+  // reset stage bar to BOOK
+  ['book','plan','perf','legacy'].forEach(s=>{ const el=document.getElementById('stage-'+s); if(el){el.classList.remove('active','done');} });
+  const _ep=document.getElementById('stage-book'); if(_ep) _ep.classList.add('active');
   // Upset mechanic: bands with unanswered enquiries lose relationship
   if(G.enquiries){
     G.enquiries.forEach(enq=>{
@@ -2340,9 +2347,10 @@ function resolveRivalry(choice, detail){
 
 // ── SHOW FLOW ──────────────────────────────────────────────────────────────
 function runShow(){
-  ['plan','show','review'].forEach(s=>{ const el=document.getElementById('stage-'+s); if(el){el.classList.remove('active','done');} });
-  const _sp=document.getElementById('stage-plan'); if(_sp) _sp.classList.add('done');
-  const _ss=document.getElementById('stage-show'); if(_ss) _ss.classList.add('active');
+  ['book','plan','perf','legacy'].forEach(s=>{ const el=document.getElementById('stage-'+s); if(el){el.classList.remove('active','done');} });
+  const _sp=document.getElementById('stage-book'); if(_sp) _sp.classList.add('done');
+  const _sp2=document.getElementById('stage-plan'); if(_sp2) _sp2.classList.add('done');
+  const _ss=document.getElementById('stage-perf'); if(_ss) _ss.classList.add('active');
   if(G.headliner===null){ addAlert('No headliner confirmed!'); return; }
   const band=BANDS[G.headliner];
   const venue=VENUE_TIERS[G.venueTier];
@@ -2985,11 +2993,10 @@ function _doShowAnimation(canvas, band, venue, attendance, cap, profit, onDone, 
 }
 
 function renderPostShow({band,venue,attendance,cap,repGain,bossDelta,review,promo}){
-  // highlight REVIEW stage
-  ['plan','show','review'].forEach(s=>{ const el=document.getElementById('stage-'+s); if(el){el.classList.remove('active','done');} });
-  const _sp=document.getElementById('stage-plan'); if(_sp) _sp.classList.add('done');
-  const _ss=document.getElementById('stage-show'); if(_ss) _ss.classList.add('done');
-  const _sr=document.getElementById('stage-review'); if(_sr) _sr.classList.add('active');
+  // highlight LEGACY stage
+  ['book','plan','perf','legacy'].forEach(s=>{ const el=document.getElementById('stage-'+s); if(el){el.classList.remove('active','done');} });
+  ['book','plan','perf'].forEach(s=>{ const el=document.getElementById('stage-'+s); if(el) el.classList.add('done'); });
+  const _sr=document.getElementById('stage-legacy'); if(_sr) _sr.classList.add('active');
   const fill=s=>s.replace(/{venue}/g,venue.name).replace(/{band}/g,band.name).replace(/{genre}/g,band.genre);
   const setText=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   const fillRate = attendance/cap;
