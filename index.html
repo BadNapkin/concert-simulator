@@ -482,8 +482,7 @@ canvas#stage { width: 100%; height: 100%; }
         <li style="padding:0.3rem 0;border-bottom:1px solid #1a1028">📱 <strong style="color:#e0d0f8">BandBook</strong> — Browse acts and send enquiries. They reply within 1–2 days.</li>
         <li style="padding:0.3rem 0;border-bottom:1px solid #1a1028">📬 <strong style="color:#e0d0f8">Inbox</strong> — When a band replies, their offer appears here with negotiation options.</li>
         <li style="padding:0.3rem 0;border-bottom:1px solid #1a1028">🏠 <strong style="color:#e0d0f8">Office</strong> — See the week schedule and pick a mid-week promotion to boost attendance.</li>
-        <li style="padding:0.3rem 0;border-bottom:1px solid #1a1028">🎛️ <strong style="color:#e0d0f8">SFX Gear</strong> — Buy and activate production gear to enhance your shows.</li>
-        <li style="padding:0.3rem 0">🎤 <strong style="color:#e0d0f8">Friday</strong> — A planning screen pops up. Confirm your headliner, add a support act, and lock in gear.</li>
+        <li style="padding:0.3rem 0">🎤 <strong style="color:#e0d0f8">Run Show</strong> — Once you've booked a headliner, hit Run Show from the Plan screen.</li>
       </ul>
 
       <div style="color:#c9b8ff;font-size:0.9rem;margin-bottom:0.3rem">💬 Negotiation</div>
@@ -518,9 +517,7 @@ canvas#stage { width: 100%; height: 100%; }
     <div class="nav-btn" data-panel="contacts" onclick="switchPanel('contacts',this)">
       <span>👥</span><span class="tooltip">CONTACTS</span>
     </div>
-    <div class="nav-btn" data-panel="inbox" onclick="switchPanel('inbox',this)" style="position:relative">
-      <span>📬</span><span class="tooltip">INBOX</span><span id="inbox-badge" style="display:none;position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#e0a030;"></span>
-    </div>
+
     <div class="nav-btn" data-panel="alerts" onclick="switchPanel('alerts',this)" style="position:relative">
       <span>🔔</span><span class="tooltip">ALERTS</span><span id="alerts-badge" style="display:none;position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#ff4466;"></span>
     </div>
@@ -534,7 +531,7 @@ canvas#stage { width: 100%; height: 100%; }
           <div class="panel-title">Local Scene</div>
           <div class="panel-heading" id="office-venue-name" style="font-size:1.1rem">The Dive Bar</div>
         </div>
-        <div id="office-week-pill" style="font-size:0.68rem;color:#8070a0;background:#0e0e18;border:1px solid #2a1a50;border-radius:12px;padding:0.25rem 0.7rem;letter-spacing:0.1em"></div>
+
       </div>
       <div style="flex:1;overflow-y:auto;padding:0.8rem 1.2rem 1rem" id="scene-feed"></div>
     </div>
@@ -581,13 +578,7 @@ canvas#stage { width: 100%; height: 100%; }
     </div>
 
     <!-- INBOX PANEL -->
-    <div class="panel" id="panel-inbox">
-      <div class="panel-header">
-        <div class="panel-title">Band Negotiations</div>
-        <div class="panel-heading">📬 Inbox</div>
-      </div>
-      <div style="overflow-y:auto;flex:1;padding:1rem 1.5rem" id="inbox-list"></div>
-    </div>
+
   </div>
 
   <!-- STATUS BAR -->
@@ -1093,11 +1084,11 @@ function switchPanel(id, btnEl){
   if(id==='achievements') renderAchievements();
   if(id==='contacts')     renderContacts();
   if(id==='alerts')       renderAlerts();
-  if(id==='inbox')        { renderInbox(); const b=document.getElementById('inbox-badge'); if(b) b.style.display='none'; }
+  if(id==='bandbook')     { renderBandCarousel(); }
 }
 function switchTab(tab){
   // inbox is now a top-level panel, redirect there
-  if(tab==='inbox'){ switchPanel('inbox', document.querySelector('.nav-btn[data-panel="inbox"]')); return; }
+  if(tab==='inbox'){ switchPanel('bandbook', document.querySelector('.nav-btn[data-panel="bandbook"]')); return; }
   document.querySelectorAll('.bb-tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.tab-pane').forEach(c=>c.classList.remove('active'));
   const btn=document.querySelector(`.bb-tab[data-tab="${tab}"]`);
@@ -1267,7 +1258,7 @@ function dismissAlertPopup(){
 }
 
 function shakeInbox(){
-  const btn = document.querySelector('.nav-btn[data-panel="inbox"]');
+  const btn = document.querySelector('.nav-btn[data-panel="bandbook"]');
   if(!btn) return;
   btn.classList.remove('shaking');
   void btn.offsetWidth; // reflow to restart animation
@@ -1280,7 +1271,7 @@ function takeAlertAction(){
   const text = document.getElementById('alert-popup-text')?.textContent || '';
   // Route to relevant panel based on alert content
   let panel = 'alerts';
-  if(/inbox|reply|agent|enquiry/i.test(text)) panel = 'inbox';
+  if(/inbox|reply|agent|enquiry/i.test(text)) panel = 'bandbook';
   else if(/headliner|support|planning|confirmed|lineup/i.test(text)) panel = 'office';
   else if(/achievement|unlocked/i.test(text)) panel = 'achievements';
   else if(/gear|sfx|smoke|laser|pyro|uv/i.test(text)) panel = 'sfx';
@@ -1468,9 +1459,7 @@ function renderOffice(){
   const feed=document.getElementById('scene-feed'); if(!feed) return;
   const venue=VENUE_TIERS[G.venueTier];
 
-  // Week pill
-  const pill=document.getElementById('office-week-pill');
-  if(pill) pill.textContent='WK '+G.week+(G.paydayWeek?' · 💰 PAY-DAY':'');
+  // (week pill removed)
   const vname=document.getElementById('office-venue-name');
   if(vname) vname.textContent=venue.name;
 
@@ -1483,8 +1472,8 @@ function renderOffice(){
   html+=`<div style="background:#0e0e18;border:1px solid #1e1e30;border-radius:8px;padding:1rem 1.2rem;margin-bottom:0.8rem">
     <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.6rem">
       <span style="font-size:1rem">🎸</span>
-      <span style="font-size:0.65rem;color:#6050a0;text-transform:uppercase;letter-spacing:0.12em">Saturday's Show</span>
-      <span style="margin-left:auto;font-size:0.65rem;color:#3a3060">${daysLeft>0?daysLeft+' day'+(daysLeft!==1?'s':'')+' away':'Tonight!'}</span>
+      <span style="font-size:0.65rem;color:#6050a0;text-transform:uppercase;letter-spacing:0.12em">Next Show</span>
+
     </div>
     ${headliner
       ? `<div style="color:#c9b8ff;font-size:1rem;font-weight:600">${headliner.name}</div>
@@ -2397,8 +2386,7 @@ function runShow(){
   const cap=venue.capacity;
   const drawFraction=0.7+Math.random()*0.4;
   const jeffSteal=G._jeffSteal||0;
-  const paydayMult=G.paydayWeek?1.25:1;
-  const baseAttendance=Math.round(band.fans*drawFraction*promoBoost*paydayMult)-backupPenalty+traitMatchBonus;
+  const baseAttendance=Math.round(band.fans*drawFraction*promoBoost)-backupPenalty+traitMatchBonus;
   const attendance=Math.min(cap, Math.max(5, baseAttendance-jeffSteal));
   if(jeffSteal>0) addAlert('😤 Deaf Jeff\'s show at The Tap Room pulled '+jeffSteal+' people away tonight.');
 
