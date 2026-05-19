@@ -24,27 +24,30 @@ body { background: #0a0a0f; color: #e8e0d0; font-family: 'Georgia', serif; overf
 .btn-primary { background: rgba(120,60,200,0.3); border-color: rgba(180,100,255,0.7); }
 
 /* ── MAIN GAME ── */
-#game-screen { background: #0a0a0f; align-items: stretch; justify-content: flex-start; flex-direction: row; }
+#game-screen { background: #0a0a0f; align-items: stretch; justify-content: flex-start; flex-direction: column; }
 
-/* Sidebar nav */
-.sidebar { width: 64px; background: #0e0e16; border-right: 1px solid #1e1e2e; display: flex; flex-direction: column; align-items: center; padding: 1rem 0; gap: 0.5rem; flex-shrink: 0; }
-.nav-btn { width: 44px; height: 44px; background: transparent; border: 1px solid transparent; color: #504060; font-size: 1.2rem; cursor: pointer; border-radius: 8px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; position: relative; }
-.nav-btn:hover, .nav-btn.active { background: #1a1a2e; border-color: #3a2060; color: #b090e0; }
-.nav-btn .tooltip { display: none; position: absolute; left: 52px; background: #1a1a2e; border: 1px solid #3a2060; padding: 0.3rem 0.6rem; font-size: 0.7rem; white-space: nowrap; color: #c0b0d8; border-radius: 4px; letter-spacing: 0.1em; z-index: 100; }
-.nav-btn:hover .tooltip { display: block; }
+/* Stage bar */
+.stage-bar { display: flex; align-items: center; justify-content: center; gap: 0; background: #0c0c18; border-bottom: 1px solid #1e1e2e; flex-shrink: 0; padding: 0; height: 48px; }
+.stage-btn { flex: 1; max-width: 160px; height: 100%; background: transparent; border: none; border-right: 1px solid #1e1e2e; color: #3a2a60; font-family: inherit; font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; cursor: default; display: flex; align-items: center; justify-content: center; gap: 0.4rem; transition: all 0.2s; }
+.stage-btn:last-child { border-right: none; }
+.stage-btn.active { color: #c9b8ff; background: #130a28; }
+.stage-btn.done { color: #60c878; }
+.stage-util-bar { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; padding: 0 1rem; height: 100%; flex-shrink: 0; border-left: 1px solid #1e1e2e; }
+.stage-util-btn { background: none; border: 1px solid #2a1a50; color: #6050a0; font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 6px; cursor: pointer; font-family: inherit; }
+.stage-util-btn:hover { border-color: #6030c0; color: #b090e0; }
 
 /* Main content */
 .main-content { flex: 1; overflow: hidden; position: relative; }
 
-/* ── PANELS — NO display on individual IDs, only via .panel / .panel.active ── */
-.panel { position: absolute; inset: 0; display: none; flex-direction: column; overflow: hidden; padding-bottom: 48px; }
+/* ── PANELS ── */
+.panel { position: absolute; inset: 0; display: none; flex-direction: column; overflow: hidden; padding-bottom: 40px; }
 .panel.active { display: flex; }
-.panel-header { padding: 1.5rem 2rem 1rem; border-bottom: 1px solid #1e1e2e; flex-shrink: 0; }
+.panel-header { padding: 1rem 1.5rem 0.8rem; border-bottom: 1px solid #1e1e2e; flex-shrink: 0; }
 .panel-title { font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase; color: #6050a0; margin-bottom: 0.25rem; }
 .panel-heading { font-size: 1.4rem; color: #e0d0f8; }
 
 /* ── STATUS BAR ── */
-.status-bar { position: absolute; bottom: 0; left: 64px; right: 0; min-height: 48px; background: linear-gradient(to right, #0c0c18, #0e0e16); border-top: 1px solid #1e1e2e; display: flex; align-items: center; padding: 0 0.5rem; gap: 0; z-index: 50; overflow: hidden; flex-wrap: nowrap; }
+.status-bar { position: absolute; bottom: 0; left: 0; right: 0; min-height: 40px; background: linear-gradient(to right, #0c0c18, #0e0e16); border-top: 1px solid #1e1e2e; display: flex; align-items: center; padding: 0 0.5rem; gap: 0; z-index: 50; overflow: hidden; flex-wrap: nowrap; }
 .status-item { font-size: 0.72rem; letter-spacing: 0.08em; color: #6050a0; white-space: nowrap; padding: 0 0.8rem; border-right: 1px solid #1e1e2e; }
 .status-item:last-child { border-right: none; }
 .status-item span { color: #d0c0e8; font-weight: 600; }
@@ -504,91 +507,88 @@ canvas#stage { width: 100%; height: 100%; }
 
 <!-- MAIN GAME SCREEN -->
 <div class="screen" id="game-screen">
-  <div class="sidebar">
-    <div class="nav-btn active" data-panel="office" onclick="switchPanel('office',this)">
-      <span>🏠</span><span class="tooltip">THE OFFICE</span>
-    </div>
-    <div class="nav-btn" data-panel="bandbook" onclick="switchPanel('bandbook',this)">
-      <span>📱</span><span class="tooltip">BANDBOOK</span>
-    </div>
-    <div class="nav-btn" data-panel="achievements" onclick="switchPanel('achievements',this)">
-      <span>🏆</span><span class="tooltip">ACHIEVEMENTS</span>
-    </div>
-    <div class="nav-btn" data-panel="contacts" onclick="switchPanel('contacts',this)">
-      <span>👥</span><span class="tooltip">CONTACTS</span>
-    </div>
 
-    <div class="nav-btn" data-panel="alerts" onclick="switchPanel('alerts',this)" style="position:relative">
-      <span>🔔</span><span class="tooltip">ALERTS</span><span id="alerts-badge" style="display:none;position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#ff4466;"></span>
+  <!-- STAGE BAR -->
+  <div class="stage-bar">
+    <div class="stage-btn active" id="stage-plan">📋 PLAN</div>
+    <div class="stage-btn" id="stage-show">🎸 RUN SHOW</div>
+    <div class="stage-btn" id="stage-review">📊 REVIEW</div>
+    <div class="stage-util-bar">
+      <button class="stage-util-btn" onclick="switchPanel('achievements')">🏆</button>
+      <button class="stage-util-btn" onclick="switchPanel('contacts')">👥</button>
+      <button class="stage-util-btn" style="position:relative" onclick="switchPanel('alerts')">🔔<span id="alerts-badge" style="display:none;position:absolute;top:-3px;right:-3px;width:7px;height:7px;border-radius:50%;background:#ff4466;"></span></button>
     </div>
   </div>
 
   <div class="main-content">
-    <!-- OFFICE PANEL — Scene Feed -->
+
+    <!-- PLAN PANEL — Book bands, promos, then run show -->
     <div class="panel active" id="panel-office">
-      <div class="panel-header" style="padding:1rem 1.5rem 0.8rem;display:flex;align-items:center;justify-content:space-between">
+      <div class="panel-header" style="padding:0.8rem 1.5rem;display:flex;align-items:center;justify-content:space-between">
         <div>
-          <div class="panel-title">Local Scene</div>
+          <div class="panel-title">Show Planning</div>
           <div class="panel-heading" id="office-venue-name" style="font-size:1.1rem">The Dive Bar</div>
         </div>
-
       </div>
       <div style="flex:1;overflow-y:auto;padding:0.8rem 1.2rem 1rem" id="scene-feed"></div>
     </div>
 
-    <!-- BANDBOOK PANEL -->
+    <!-- BANDBOOK — inline within plan flow -->
     <div class="panel" id="panel-bandbook">
       <div class="panel-header">
-        <div class="panel-title">Booking App</div>
-        <div class="panel-heading">BandBook</div>
+        <div class="panel-title">Book a Band</div>
+        <div class="panel-heading">BandBook 📱</div>
       </div>
-      <div class="tab-content" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
-        <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
-          <div class="band-grid" id="band-carousel"></div>
-        </div>
+      <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+        <div class="band-grid" id="band-carousel"></div>
       </div>
     </div>
 
-
-    <!-- ACHIEVEMENTS PANEL -->
+    <!-- ACHIEVEMENTS -->
     <div class="panel" id="panel-achievements">
-      <div class="panel-header">
-        <div class="panel-title">Venue Reputation</div>
-        <div class="panel-heading">Achievements</div>
+      <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="panel-title">Venue Reputation</div>
+          <div class="panel-heading">Achievements</div>
+        </div>
+        <button onclick="switchPanel('office')" style="background:none;border:1px solid #3a2a60;color:#6050a0;padding:0.3rem 0.8rem;border-radius:6px;cursor:pointer;font-size:0.8rem">← Back</button>
       </div>
       <div id="achievements-list" class="ach-grid"></div>
     </div>
 
-    <!-- CONTACTS PANEL -->
+    <!-- CONTACTS -->
     <div class="panel" id="panel-contacts">
-      <div class="panel-header">
-        <div class="panel-title">Relationship History</div>
-        <div class="panel-heading">Contacts</div>
+      <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="panel-title">Relationship History</div>
+          <div class="panel-heading">Contacts</div>
+        </div>
+        <button onclick="switchPanel('office')" style="background:none;border:1px solid #3a2a60;color:#6050a0;padding:0.3rem 0.8rem;border-radius:6px;cursor:pointer;font-size:0.8rem">← Back</button>
       </div>
       <div style="overflow-y:auto;flex:1;padding:1rem 1.5rem" id="contacts-list"></div>
     </div>
 
-    <!-- ALERTS PANEL -->
+    <!-- ALERTS -->
     <div class="panel" id="panel-alerts">
-      <div class="panel-header">
-        <div class="panel-title">Notifications</div>
-        <div class="panel-heading">Alerts</div>
+      <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="panel-title">Notifications</div>
+          <div class="panel-heading">Alerts</div>
+        </div>
+        <button onclick="switchPanel('office')" style="background:none;border:1px solid #3a2a60;color:#6050a0;padding:0.3rem 0.8rem;border-radius:6px;cursor:pointer;font-size:0.8rem">← Back</button>
       </div>
       <div style="overflow-y:auto;flex:1;padding:1rem 1.5rem" id="alerts-list"></div>
     </div>
-
-    <!-- INBOX PANEL -->
 
   </div>
 
   <!-- STATUS BAR -->
   <div class="status-bar">
-    <span class="status-week">WK&nbsp;<span id="sb-week">1</span></span>
+    <span class="status-item">WK&nbsp;<span id="sb-week">1</span></span>
     <span class="status-item">VENUE:&nbsp;<span id="sb-venue">The Dive Bar</span></span>
     <span class="status-item">BOSS:&nbsp;<span id="sb-boss">50%</span></span>
     <span class="status-item">REP:&nbsp;<span id="sb-rep">0</span></span>
     <span class="status-item">BUDGET:&nbsp;<span id="sb-budget">6/6 🎟️</span></span>
-
   </div>
 </div>
 
@@ -1073,22 +1073,29 @@ function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const e=document.getElementById(id); if(e) e.classList.add('active');
 }
-function switchPanel(id, btnEl){
+function switchPanel(id){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   const p=document.getElementById('panel-'+id); if(!p) return;
   p.classList.add('active');
-  if(btnEl) btnEl.classList.add('active');
-  if(id==='office')       renderOffice();
-  if(id==='bandbook')     { renderBandCarousel(); switchTab('discover'); }
+  // update stage bar
+  ['plan','show','review'].forEach(s=>{
+    const el=document.getElementById('stage-'+s);
+    if(el) el.classList.remove('active','done');
+  });
+  if(id==='office'){
+    const el=document.getElementById('stage-plan'); if(el) el.classList.add('active');
+    renderOffice();
+  } else if(id==='bandbook'){
+    const el=document.getElementById('stage-plan'); if(el) el.classList.add('active');
+    renderBandCarousel();
+  }
   if(id==='achievements') renderAchievements();
   if(id==='contacts')     renderContacts();
   if(id==='alerts')       renderAlerts();
-  if(id==='bandbook')     { renderBandCarousel(); }
 }
 function switchTab(tab){
   // inbox is now a top-level panel, redirect there
-  if(tab==='inbox'){ switchPanel('bandbook', document.querySelector('.nav-btn[data-panel="bandbook"]')); return; }
+  if(tab==='inbox'){ switchPanel('bandbook'); return; }
   document.querySelectorAll('.bb-tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.tab-pane').forEach(c=>c.classList.remove('active'));
   const btn=document.querySelector(`.bb-tab[data-tab="${tab}"]`);
@@ -1130,6 +1137,9 @@ function runShowIfReady(){
 }
 
 function endWeek(){
+  // reset stage bar to PLAN
+  ['plan','show','review'].forEach(s=>{ const el=document.getElementById('stage-'+s); if(el){el.classList.remove('active','done');} });
+  const _ep=document.getElementById('stage-plan'); if(_ep) _ep.classList.add('active');
   // Upset mechanic: bands with unanswered enquiries lose relationship
   if(G.enquiries){
     G.enquiries.forEach(enq=>{
@@ -1258,7 +1268,7 @@ function dismissAlertPopup(){
 }
 
 function shakeInbox(){
-  const btn = document.querySelector('.nav-btn[data-panel="bandbook"]');
+  // (no nav badge needed — stage bar handles context)
   if(!btn) return;
   btn.classList.remove('shaking');
   void btn.offsetWidth; // reflow to restart animation
@@ -1276,8 +1286,7 @@ function takeAlertAction(){
   else if(/achievement|unlocked/i.test(text)) panel = 'achievements';
   else if(/gear|sfx|smoke|laser|pyro|uv/i.test(text)) panel = 'sfx';
   else if(/rep|fan|cash|venue/i.test(text)) panel = 'office';
-  const btn = document.querySelector(`.nav-btn[data-panel="${panel}"]`);
-  switchPanel(panel, btn);
+  switchPanel(panel);
 }
 
 function muteAlertType(){
@@ -2331,6 +2340,9 @@ function resolveRivalry(choice, detail){
 
 // ── SHOW FLOW ──────────────────────────────────────────────────────────────
 function runShow(){
+  ['plan','show','review'].forEach(s=>{ const el=document.getElementById('stage-'+s); if(el){el.classList.remove('active','done');} });
+  const _sp=document.getElementById('stage-plan'); if(_sp) _sp.classList.add('done');
+  const _ss=document.getElementById('stage-show'); if(_ss) _ss.classList.add('active');
   if(G.headliner===null){ addAlert('No headliner confirmed!'); return; }
   const band=BANDS[G.headliner];
   const venue=VENUE_TIERS[G.venueTier];
@@ -2973,6 +2985,11 @@ function _doShowAnimation(canvas, band, venue, attendance, cap, profit, onDone, 
 }
 
 function renderPostShow({band,venue,attendance,cap,repGain,bossDelta,review,promo}){
+  // highlight REVIEW stage
+  ['plan','show','review'].forEach(s=>{ const el=document.getElementById('stage-'+s); if(el){el.classList.remove('active','done');} });
+  const _sp=document.getElementById('stage-plan'); if(_sp) _sp.classList.add('done');
+  const _ss=document.getElementById('stage-show'); if(_ss) _ss.classList.add('done');
+  const _sr=document.getElementById('stage-review'); if(_sr) _sr.classList.add('active');
   const fill=s=>s.replace(/{venue}/g,venue.name).replace(/{band}/g,band.name).replace(/{genre}/g,band.genre);
   const setText=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   const fillRate = attendance/cap;
